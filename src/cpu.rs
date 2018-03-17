@@ -9,10 +9,10 @@ pub struct CPU {
     pub y: u8,
 
     // Stack Pointer
-    sp: u8,
+    pub sp: u8,
 
     // Program Counter
-    pc: u16,
+    pub pc: u16,
 
     // Processor Flags NV_BDIZC
     p: u8,

@@ -15,21 +15,11 @@ type Operation = fn(
     operand_value: u8);
 
 pub struct Instruction {
-    operation: Operation,
-    addressing_mode: AddressingMode,
-    operand: Operand,
+    pub operation: Operation,
+    pub addressing_mode: AddressingMode,
 }
 
-impl Instruction {
-    pub fn execute(&self, cpu: &mut cpu::CPU, memory: &mut memory::RAM) {
-        (self.operation)(cpu, memory, self.load_operand());
-    }
-
-    fn load_operand(&self) -> u8 {
-        0
-    }
-}
-
+#[derive(Debug)]
 pub enum AddressingMode {
     // Implied: no operand.
     Implied,
@@ -72,7 +62,7 @@ pub enum AddressingMode {
     IndirectAbsolute,
 }
 
-pub fn lookup_opcode(opcode: u8) -> (Operation, AddressingMode) {
+pub fn lookup_opcode(opcode: u8) -> Instruction {
     match opcode {
         _ => panic!("Unknown opcode: {:X}", opcode)
     }
