@@ -1,11 +1,23 @@
 #![allow(dead_code)]
+pub mod bus;
 pub mod cpu;
 pub mod memory;
-pub mod instructions;
 
 pub struct MOS6500 {
     cpu: cpu::CPU,
     memory: memory::RAM,
+    address_bus: bus::AddressBus,
+    data_bus: bus::DataBus,
+}
+
+pub fn new() -> MOS6500 {
+    let address_bus = bus::new_address_bus();
+    let data_bus = bus::new_data_bus();
+    let cpu = cpu::new(address_bus.clone(), data_bus.clone());
+    let memory = memory::new();
+    MOS6500 {
+        cpu, memory, address_bus, data_bus,
+    }
 }
 
 impl MOS6500 {

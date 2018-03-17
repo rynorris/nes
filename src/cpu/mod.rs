@@ -1,3 +1,7 @@
+mod instructions;
+
+use bus;
+
 pub struct CPU {
     // Accumulator
     pub a: u8,
@@ -16,9 +20,15 @@ pub struct CPU {
 
     // Processor Flags NV_BDIZC
     p: u8,
+
+    // Address bus
+    address_bus: bus::AddressBus,
+
+    // Data bus
+    data_bus: bus::DataBus,
 }
 
-pub fn new() -> CPU {
+pub fn new(address_bus: bus::AddressBus, data_bus: bus::DataBus) -> CPU {
     CPU {
         a: 0,
         x: 0,
@@ -26,6 +36,8 @@ pub fn new() -> CPU {
         sp: 0,
         pc: 0,
         p: 0,
+        address_bus,
+        data_bus,
     }
 }
 
