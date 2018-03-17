@@ -7,7 +7,7 @@ use memory;
 // Does not affect the carry or overflow flags.
 // Sets the zero flag if the accumulator is 0 as a result, otherwise resets the zero flag.
 // Sets the negative flag if bit 7 of the accumulator is 1, otherwise resets the negative flag.
-fn lda(cpu: &mut cpu::CPU, _: &mut memory::RAM, operand_value: u8) {
+pub fn lda(cpu: &mut cpu::CPU, _: &mut memory::RAM, operand_value: u8) {
     cpu.a = operand_value;
 
     if cpu.a == 0 {
