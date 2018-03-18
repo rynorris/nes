@@ -1,6 +1,8 @@
 mod instructions;
 mod flags;
 
+use simul::bus;
+
 // CPU Implemented as a state machine.
 pub struct CPU {
     // Accumulator
@@ -21,19 +23,20 @@ pub struct CPU {
     // Processor Flags NV_BDIZC
     p: flags::ProcessorFlags,
 
+    // Current state.
+    state: State,
+
     // Current addressing mode.
     addressing_mode: AddressingMode,
 
-    /*
     // Address bus
-    address_bus: bus::AddressBus,
+    address_bus: bus::Bus<u16>,
 
     // Data bus
-    data_bus: bus::DataBus,
-    */
+    data_bus: bus::Bus<u8>,
 }
 
-pub fn new() -> CPU {
+pub fn new(address_bus: bus::Bus<u16>, data_bus: bus::Bus<u8>) -> CPU {
     CPU {
         a: 0,
         x: 0,
@@ -41,10 +44,14 @@ pub fn new() -> CPU {
         sp: 0,
         pc: 0,
         p: flags::new(),
+        state: State::Init,
         addressing_mode: AddressingMode::Implied,
+        address_bus,
+        data_bus,
     }
 }
 
+#[derive(Debug)]
 enum State {
     Init,
     StartOp,
@@ -96,11 +103,17 @@ pub enum AddressingMode {
 }
 
 impl CPU {
-    pub fn do_cycle() {
+    pub fn do_cycle(&mut self) {
+        let new_state = match self.state {
+            State::Init => self.init(),
+            _ => panic!("Unimplemented CPU state {:?}", self.state),
+        };
+        self.state = new_state;
     }
 
     // Initial state just prepares to load the first operation.
-    fn init() -> State {
+    fn init(&mut self) -> State {
+        self.address_bus.load(self.pc);
         State::StartOp
     }
 }

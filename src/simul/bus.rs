@@ -25,3 +25,19 @@ fn test_bus_u8() {
     bus.load(0xFA);
     assert_eq!(bus.read(), 0xFA);
 }
+
+#[test]
+fn test_clone_bus() {
+    let bus: Bus<u8> = new(0x00);
+    let clone = bus.clone();
+    assert_eq!(bus.read(), 0x00);
+    assert_eq!(clone.read(), 0x00);
+
+    bus.load(0xFF);
+    assert_eq!(bus.read(), 0xFF);
+    assert_eq!(clone.read(), 0xFF);
+
+    clone.load(0xAB);
+    assert_eq!(bus.read(), 0xAB);
+    assert_eq!(clone.read(), 0xAB);
+}

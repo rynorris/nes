@@ -13,7 +13,7 @@ pub struct MOS6500 {
 pub fn new() -> MOS6500 {
     let address_bus = bus::new(0x00);
     let data_bus = bus::new(0x00);
-    let cpu = cpu::new();
+    let cpu = cpu::new(address_bus.clone(), data_bus.clone());
     let memory = memory::new();
     MOS6500 {
         cpu, memory, address_bus, data_bus,
