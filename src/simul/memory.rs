@@ -11,11 +11,11 @@ pub struct RAM {
 }
 
 impl RAM {
-    pub fn get(&self, address: u16) -> u8 {
+    pub fn load(&self, address: u16) -> u8 {
         self.memory[address as usize]
     }
 
-    pub fn set(&mut self, address: u16, byte: u8) {
+    pub fn store(&mut self, address: u16, byte: u8) {
         self.memory[address as usize] = byte
     }
 }
@@ -23,6 +23,6 @@ impl RAM {
 #[test]
 fn test_get_and_set() {
     let mut ram = new();
-    ram.set(1234, 23);
-    assert_eq!(ram.get(1234), 23);
+    ram.store(1234, 23);
+    assert_eq!(ram.load(1234), 23);
 }
