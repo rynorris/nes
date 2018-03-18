@@ -3,41 +3,47 @@ use std::cell::RefCell;
 
 #[derive(Clone)]
 pub struct Bus<T> {
-    val: Rc<RefCell<T>>,
+    val: Rc<RefCell<Option<T>>>,
 }
 
 impl <T : Copy> Bus<T> {
-    pub fn load(&self, new: T) {
-        self.val.replace(new);
+    pub fn send(&self, new: T) {
+        self.val.replace(Some(new));
     }
 
-    pub fn read(&self) -> T { *self.val.borrow() }
+    pub fn read(&self) -> Option<T> { *self.val.borrow() }
+
+    pub fn clear(&self) {
+        self.val.replace(None);
+    }
 }
 
-pub fn new<T>(init: T) -> Bus<T> {
-    Bus{ val: Rc::new(RefCell::new(init)) }
+pub fn new<T>() -> Bus<T> {
+    Bus{ val: Rc::new(RefCell::new(None)) }
 }
 
 #[test]
 fn test_bus_u8() {
-    let bus: Bus<u8> = new(0x00);
-    assert_eq!(bus.read(), 0x00);
-    bus.load(0xFA);
-    assert_eq!(bus.read(), 0xFA);
+    let bus: Bus<u8> = new();
+    assert_eq!(bus.read(), None);
+    bus.send(0xFA);
+    assert_eq!(bus.read(), Some(0xFA));
+    bus.clear();
+    assert_eq!(bus.read(), None);
 }
 
 #[test]
 fn test_clone_bus() {
-    let bus: Bus<u8> = new(0x00);
+    let bus: Bus<u8> = new();
     let clone = bus.clone();
-    assert_eq!(bus.read(), 0x00);
-    assert_eq!(clone.read(), 0x00);
+    assert_eq!(bus.read(), None);
+    assert_eq!(clone.read(), None);
 
-    bus.load(0xFF);
-    assert_eq!(bus.read(), 0xFF);
-    assert_eq!(clone.read(), 0xFF);
+    bus.send(0xFF);
+    assert_eq!(bus.read(), Some(0xFF));
+    assert_eq!(clone.read(), Some(0xFF));
 
-    clone.load(0xAB);
-    assert_eq!(bus.read(), 0xAB);
-    assert_eq!(clone.read(), 0xAB);
+    clone.clear();
+    assert_eq!(bus.read(), None);
+    assert_eq!(clone.read(), None);
 }

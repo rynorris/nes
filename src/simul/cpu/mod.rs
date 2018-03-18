@@ -121,17 +121,17 @@ impl CPU {
 
     // Initial state just prepares to load the first operation.
     fn init(&mut self) -> State {
-        self.address_bus.load(self.pc);
+        self.address_bus.send(self.pc);
         State::LoadedOp
     }
 
     // New op loaded into data bus.
     fn loaded_op(&mut self) -> State {
         // Optimistically start reading next byte.
-        self.address_bus.load(self.pc);
+        self.address_bus.send(self.pc);
 
         // Decode instruction.
-        let instruction = instructions::lookup_opcode(self.data_bus.read());
+        let instruction = instructions::lookup_opcode(self.data_bus.read().unwrap());
         self.addressing_mode = instruction.addressing_mode;
 
         match self.addressing_mode {
@@ -152,8 +152,8 @@ impl CPU {
                 AddressingMode::Relative => State::ExecuteOp,
             AddressingMode::Implied => panic!("Should never be in state LoadedOperand1 with addressing mode Implied."),
             _ => {
-                self.hold = self.data_bus.read();
-                self.address_bus.load(self.pc);
+                self.hold = self.data_bus.read().unwrap();
+                self.address_bus.send(self.pc);
                 State::LoadedOperand2
             }
         }
