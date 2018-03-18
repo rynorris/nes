@@ -1,7 +1,7 @@
 mod accumulator;
 
-use cpu;
-use memory;
+use simul::cpu;
+use simul::memory;
 
 #[derive(Clone, Copy)]
 struct Operand {

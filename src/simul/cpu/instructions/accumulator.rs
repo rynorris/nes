@@ -1,5 +1,5 @@
-use cpu;
-use memory;
+use simul::cpu;
+use simul::memory;
 
 // LDA: Load Accumulator with Memory
 // M -> A
