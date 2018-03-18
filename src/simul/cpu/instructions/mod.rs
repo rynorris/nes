@@ -1,5 +1,3 @@
-mod accumulator;
-
 use simul::cpu;
 use simul::memory;
 

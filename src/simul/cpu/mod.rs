@@ -1,5 +1,7 @@
 mod instructions;
+mod flags;
 
+// CPU Implemented as a state machine.
 pub struct CPU {
     // Accumulator
     pub a: u8,
@@ -17,7 +19,10 @@ pub struct CPU {
     pub pc: u16,
 
     // Processor Flags NV_BDIZC
-    p: u8,
+    p: flags::ProcessorFlags,
+
+    // Current addressing mode.
+    addressing_mode: AddressingMode,
 
     /*
     // Address bus
@@ -35,32 +40,16 @@ pub fn new() -> CPU {
         y: 0,
         sp: 0,
         pc: 0,
-        p: 0,
+        p: flags::new(),
+        addressing_mode: AddressingMode::Implied,
     }
 }
 
-pub enum Flag {
-    N = 0b1000_0000, // Negative
-    V = 0b0100_0000, // Overflow
-    B = 0b0001_0000,
-    D = 0b0000_1000, // BCD Mode
-    I = 0b0000_0100,
-    Z = 0b0000_0010, // Zero
-    C = 0b0000_0001, // Carry
-}
-
-impl CPU {
-    pub fn flag_is_set(&self, flag: Flag) -> bool {
-        self.p & (flag as u8) != 0
-    }
-
-    pub fn set_flag(&mut self, flag: Flag) {
-        self.p = self.p | (flag as u8);
-    }
-
-    pub fn clear_flag(&mut self, flag: Flag) {
-        self.p = self.p & (0xFF ^ (flag as u8));
-    }
+enum State {
+    INIT,
+    START_OP,
+    LOADED_OPERAND_1,
+    LOADED_OPERAND_2,
 }
 
 #[derive(Debug)]
@@ -106,30 +95,12 @@ pub enum AddressingMode {
     IndirectAbsolute,
 }
 
+impl CPU {
+    pub fn do_cycle() {
+    }
 
-#[test]
-fn test_flags() {
-    let mut cpu = new();
-    assert_eq!(cpu.flag_is_set(Flag::N), false);
-    assert_eq!(cpu.flag_is_set(Flag::V), false);
-
-    cpu.set_flag(Flag::V);
-    assert_eq!(cpu.flag_is_set(Flag::N), false);
-    assert_eq!(cpu.flag_is_set(Flag::V), true);
-
-    cpu.clear_flag(Flag::N);
-    assert_eq!(cpu.flag_is_set(Flag::N), false);
-    assert_eq!(cpu.flag_is_set(Flag::V), true);
-
-    cpu.set_flag(Flag::N);
-    assert_eq!(cpu.flag_is_set(Flag::N), true);
-    assert_eq!(cpu.flag_is_set(Flag::V), true);
-
-    cpu.clear_flag(Flag::V);
-    assert_eq!(cpu.flag_is_set(Flag::N), true);
-    assert_eq!(cpu.flag_is_set(Flag::V), false);
-
-    cpu.clear_flag(Flag::N);
-    assert_eq!(cpu.flag_is_set(Flag::N), false);
-    assert_eq!(cpu.flag_is_set(Flag::V), false);
+    // Initial state just prepares to load the first operation.
+    fn init() -> State {
+        State::START_OP
+    }
 }
