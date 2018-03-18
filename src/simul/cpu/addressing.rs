@@ -18,7 +18,7 @@ pub fn implied(cpu: &mut cpu::CPU) -> (u16, u32) {
 pub fn immediate(cpu: &mut cpu::CPU) -> (u16, u32) {
     let addr = cpu.pc;
     cpu.pc += 1;
-    (addr, 1)
+    (addr, 0)
 }
 
 // Absolute: two byte operand indicates memory address.

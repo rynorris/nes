@@ -2,6 +2,9 @@ mod addressing;
 mod instructions;
 mod flags;
 
+#[cfg(test)]
+mod test;
+
 use simul::memory;
 
 // CPU Implemented as a state machine.
@@ -37,5 +40,26 @@ pub fn new(memory: memory::RAM) -> CPU {
         sp: 0,
         pc: 0,
         p: flags::new(),
+    }
+}
+
+impl CPU {
+    pub fn execute_next_instruction(&mut self) {
+        let opcode = self.memory.load(self.pc);
+        self.pc += 1;
+        let (operation, addressing_mode) = CPU::decode_instruction(opcode);
+        let _ = operation(self, addressing_mode);
+    }
+
+    fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode) {
+        match opcode {
+            // LDA
+            0xA9 => (instructions::lda, addressing::immediate),
+            0xA5 => (instructions::lda, addressing::zero_page),
+
+            // STA
+            0x85 => (instructions::sta, addressing::zero_page),
+            _ => panic!("Unknown opcode: {:X}", opcode)
+        }
     }
 }
