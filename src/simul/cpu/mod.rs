@@ -23,6 +23,9 @@ pub struct CPU {
     // Processor Flags NV_BDIZC
     p: flags::ProcessorFlags,
 
+    // Location where we can hold 1 byte of data in the processor between cycles.
+    hold: u8,
+
     // Current state.
     state: State,
 
@@ -44,6 +47,7 @@ pub fn new(address_bus: bus::Bus<u16>, data_bus: bus::Bus<u8>) -> CPU {
         sp: 0,
         pc: 0,
         p: flags::new(),
+        hold: 0,
         state: State::Init,
         addressing_mode: AddressingMode::Implied,
         address_bus,
@@ -54,9 +58,10 @@ pub fn new(address_bus: bus::Bus<u16>, data_bus: bus::Bus<u8>) -> CPU {
 #[derive(Debug)]
 enum State {
     Init,
-    StartOp,
+    LoadedOp,
     LoadedOperand1,
     LoadedOperand2,
+    ExecuteOp,
 }
 
 #[derive(Debug)]
@@ -106,14 +111,51 @@ impl CPU {
     pub fn do_cycle(&mut self) {
         let new_state = match self.state {
             State::Init => self.init(),
+            State::LoadedOp => self.loaded_op(),
+            State::LoadedOperand1 => self.loaded_operand_1(),
             _ => panic!("Unimplemented CPU state {:?}", self.state),
         };
         self.state = new_state;
+        self.pc += 1;
     }
 
     // Initial state just prepares to load the first operation.
     fn init(&mut self) -> State {
         self.address_bus.load(self.pc);
-        State::StartOp
+        State::LoadedOp
+    }
+
+    // New op loaded into data bus.
+    fn loaded_op(&mut self) -> State {
+        // Optimistically start reading next byte.
+        self.address_bus.load(self.pc);
+
+        // Decode instruction.
+        let instruction = instructions::lookup_opcode(self.data_bus.read());
+        self.addressing_mode = instruction.addressing_mode;
+
+        match self.addressing_mode {
+            AddressingMode::Implied => {
+                // Suppress incrementing the PC here since we over-read.
+                self.pc -= 1;
+                State::ExecuteOp
+            },
+            _ => State::LoadedOperand1,
+        }
+    }
+
+    fn loaded_operand_1(&mut self) -> State {
+        match self.addressing_mode {
+            AddressingMode::Immediate |
+                AddressingMode::ZeroPage |
+                AddressingMode::ZeroPageIndexedX |
+                AddressingMode::Relative => State::ExecuteOp,
+            AddressingMode::Implied => panic!("Should never be in state LoadedOperand1 with addressing mode Implied."),
+            _ => {
+                self.hold = self.data_bus.read();
+                self.address_bus.load(self.pc);
+                State::LoadedOperand2
+            }
+        }
     }
 }
