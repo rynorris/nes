@@ -13,7 +13,7 @@ pub struct MOS6500 {
 pub fn new() -> MOS6500 {
     let address_bus = bus::new_address_bus();
     let data_bus = bus::new_data_bus();
-    let cpu = cpu::new(address_bus.clone(), data_bus.clone());
+    let cpu = cpu::new();
     let memory = memory::new();
     MOS6500 {
         cpu, memory, address_bus, data_bus,
@@ -21,6 +21,7 @@ pub fn new() -> MOS6500 {
 }
 
 impl MOS6500 {
+    /*
     fn execute_next_instruction(&mut self) {
         let instruction = self.load_instruction();
         let operand_value = self.load_operand(instruction.addressing_mode);
@@ -84,7 +85,6 @@ impl MOS6500 {
             },
         }
     }
-
     fn load_next_byte(&mut self) -> u8 {
         self.cpu.pc += 1;
         self.memory.get(self.cpu.pc)
@@ -94,6 +94,7 @@ impl MOS6500 {
         let address = combine_bytes(high_byte, low_byte) + (index as u16);
         self.memory.get(address)
     }
+*/
 }
 
 fn combine_bytes(high: u8, low: u8) -> u16 {
