@@ -46,10 +46,10 @@ pub fn new() -> CPU {
 }
 
 enum State {
-    INIT,
-    START_OP,
-    LOADED_OPERAND_1,
-    LOADED_OPERAND_2,
+    Init,
+    StartOp,
+    LoadedOperand1,
+    LoadedOperand2,
 }
 
 #[derive(Debug)]
@@ -101,6 +101,6 @@ impl CPU {
 
     // Initial state just prepares to load the first operation.
     fn init() -> State {
-        State::START_OP
+        State::StartOp
     }
 }

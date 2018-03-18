@@ -6,13 +6,13 @@ pub mod memory;
 pub struct MOS6500 {
     cpu: cpu::CPU,
     memory: memory::RAM,
-    address_bus: bus::AddressBus,
-    data_bus: bus::DataBus,
+    address_bus: bus::Bus<u16>,
+    data_bus: bus::Bus<u8>,
 }
 
 pub fn new() -> MOS6500 {
-    let address_bus = bus::new_address_bus();
-    let data_bus = bus::new_data_bus();
+    let address_bus = bus::new(0x00);
+    let data_bus = bus::new(0x00);
     let cpu = cpu::new();
     let memory = memory::new();
     MOS6500 {
