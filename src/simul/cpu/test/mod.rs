@@ -1,4 +1,5 @@
 mod instructions_accumulator;
+mod instructions_arithmetic;
 
 use simul::cpu;
 use simul::memory;

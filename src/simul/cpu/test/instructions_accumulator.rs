@@ -1,5 +1,4 @@
 use simul::cpu;
-use simul::memory;
 
 use simul::cpu::test::load_data;
 use simul::cpu::test::new_cpu;

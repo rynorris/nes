@@ -1,5 +1,5 @@
 use simul::cpu;
-use simul::utils;
+use simul::util;
 
 pub type Operation = fn(&mut cpu::CPU, cpu::addressing::AddressingMode) -> u32;
 
@@ -41,7 +41,7 @@ pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 }
 
 // ADC: Add Memory to Accumulator with Carry
-// A + M + C -> A
+// A + M + C -> A, C
 pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
     let mem = cpu.load_memory(addr);
@@ -49,12 +49,12 @@ pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
     let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) {
         // BCD arithmetic.
-        let hex_a = utils::bcd_to_hex(cpu.a);
-        let hex_mem = utils::bcd_to_hex(mem);
+        let hex_a = util::bcd_to_hex(cpu.a);
+        let hex_mem = util::bcd_to_hex(mem);
 
         // Cannot be > 255.
         let hex_res = hex_a + hex_mem + carry_val;
-        (utils::hex_to_bcd(hex_res), hex_res > 99)
+        (util::hex_to_bcd(hex_res), hex_res > 99)
     } else {
         // Normal arithmetic.
         let (res, carry1) = cpu.a.overflowing_add(mem);

@@ -55,7 +55,18 @@ impl CPU {
     }
 
     fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode, u32) {
+        // Note: Maintain list in alphabetical order.
         match opcode {
+            // ADC
+            0x69 => (instructions::adc, addressing::immediate, 2),
+            0x65 => (instructions::adc, addressing::zero_page, 2),
+            0x75 => (instructions::adc, addressing::zero_page_indexed, 2),
+            0x6D => (instructions::adc, addressing::absolute, 2),
+            0x7D => (instructions::adc, addressing::absolute_indexed_x, 2),
+            0x79 => (instructions::adc, addressing::absolute_indexed_y, 2),
+            0x61 => (instructions::adc, addressing::indexed_indirect, 2),
+            0x71 => (instructions::adc, addressing::indirect_indexed, 2),
+
             // LDA
             0xA9 => (instructions::lda, addressing::immediate, 2),
             0xA5 => (instructions::lda, addressing::zero_page, 3),
