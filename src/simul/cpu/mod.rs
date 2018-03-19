@@ -1,6 +1,7 @@
 mod addressing;
 mod instructions;
 mod flags;
+mod opcodes;
 
 #[cfg(test)]
 mod test;
@@ -58,33 +59,33 @@ impl CPU {
         // Note: Maintain list in alphabetical order.
         match opcode {
             // ADC
-            0x69 => (instructions::adc, addressing::immediate, 2),
-            0x65 => (instructions::adc, addressing::zero_page, 3),
-            0x75 => (instructions::adc, addressing::zero_page_indexed, 4),
-            0x6D => (instructions::adc, addressing::absolute, 4),
-            0x7D => (instructions::adc, addressing::absolute_indexed_x, 4),
-            0x79 => (instructions::adc, addressing::absolute_indexed_y, 4),
-            0x61 => (instructions::adc, addressing::indexed_indirect, 6),
-            0x71 => (instructions::adc, addressing::indirect_indexed, 5),
+            opcodes::ADC_IMM => (instructions::adc, addressing::immediate, 2),
+            opcodes::ADC_ZPG => (instructions::adc, addressing::zero_page, 3),
+            opcodes::ADC_ZPG_X => (instructions::adc, addressing::zero_page_indexed, 4),
+            opcodes::ADC_ABS => (instructions::adc, addressing::absolute, 4),
+            opcodes::ADC_ABS_X => (instructions::adc, addressing::absolute_indexed_x, 4),
+            opcodes::ADC_ABS_Y => (instructions::adc, addressing::absolute_indexed_y, 4),
+            opcodes::ADC_IX_IND => (instructions::adc, addressing::indexed_indirect, 6),
+            opcodes::ADC_IND_IX => (instructions::adc, addressing::indirect_indexed, 5),
 
             // LDA
-            0xA9 => (instructions::lda, addressing::immediate, 2),
-            0xA5 => (instructions::lda, addressing::zero_page, 3),
-            0xB5 => (instructions::lda, addressing::zero_page_indexed, 4),
-            0xAD => (instructions::lda, addressing::absolute, 4),
-            0xBD => (instructions::lda, addressing::absolute_indexed_x, 4),
-            0xB9 => (instructions::lda, addressing::absolute_indexed_y, 4),
-            0xA1 => (instructions::lda, addressing::indexed_indirect, 6),
-            0xB1 => (instructions::lda, addressing::indirect_indexed, 5),
+            opcodes::LDA_IMM => (instructions::lda, addressing::immediate, 2),
+            opcodes::LDA_ZPG => (instructions::lda, addressing::zero_page, 3),
+            opcodes::LDA_ZPG_X => (instructions::lda, addressing::zero_page_indexed, 4),
+            opcodes::LDA_ABS => (instructions::lda, addressing::absolute, 4),
+            opcodes::LDA_ABS_X => (instructions::lda, addressing::absolute_indexed_x, 4),
+            opcodes::LDA_ABS_Y => (instructions::lda, addressing::absolute_indexed_y, 4),
+            opcodes::LDA_IX_IND => (instructions::lda, addressing::indexed_indirect, 6),
+            opcodes::LDA_IND_IX => (instructions::lda, addressing::indirect_indexed, 5),
 
             // STA
-            0x85 => (instructions::sta, addressing::zero_page, 3),
-            0x95 => (instructions::sta, addressing::zero_page_indexed, 4),
-            0x8D => (instructions::sta, addressing::absolute, 4),
-            0x9D => (instructions::sta, addressing::absolute_indexed_x, 5),
-            0x99 => (instructions::sta, addressing::absolute_indexed_y, 5),
-            0x81 => (instructions::sta, addressing::indexed_indirect, 6),
-            0x91 => (instructions::sta, addressing::indirect_indexed, 6),
+            opcodes::STA_ZPG => (instructions::sta, addressing::zero_page, 3),
+            opcodes::STA_ZPG_X => (instructions::sta, addressing::zero_page_indexed, 4),
+            opcodes::STA_ABS => (instructions::sta, addressing::absolute, 4),
+            opcodes::STA_ABS_X => (instructions::sta, addressing::absolute_indexed_x, 5),
+            opcodes::STA_ABS_Y => (instructions::sta, addressing::absolute_indexed_y, 5),
+            opcodes::STA_IX_IND => (instructions::sta, addressing::indexed_indirect, 6),
+            opcodes::STA_IND_IX => (instructions::sta, addressing::indirect_indexed, 6),
 
             _ => panic!("Unknown opcode: {:X}", opcode)
         }

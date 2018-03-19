@@ -1,0 +1,29 @@
+macro_rules! opcode {
+    ($name:ident, $value:expr) => (pub const $name: u8 = $value;)
+}
+
+opcode!(ADC_IMM, 0x69);
+opcode!(ADC_ZPG, 0x65);
+opcode!(ADC_ZPG_X, 0x75);
+opcode!(ADC_ABS, 0x6D);
+opcode!(ADC_ABS_X, 0x7D);
+opcode!(ADC_ABS_Y, 0x79);
+opcode!(ADC_IX_IND, 0x61);
+opcode!(ADC_IND_IX, 0x71);
+
+opcode!(LDA_IMM, 0xA9);
+opcode!(LDA_ZPG, 0xA5);
+opcode!(LDA_ZPG_X, 0xB5);
+opcode!(LDA_ABS, 0xAD);
+opcode!(LDA_ABS_X, 0xBD);
+opcode!(LDA_ABS_Y, 0xB9);
+opcode!(LDA_IX_IND, 0xA1);
+opcode!(LDA_IND_IX, 0xB1);
+
+opcode!(STA_ZPG, 0x85);
+opcode!(STA_ZPG_X, 0x95);
+opcode!(STA_ABS, 0x8D);
+opcode!(STA_ABS_X, 0x9D);
+opcode!(STA_ABS_Y, 0x99);
+opcode!(STA_IX_IND, 0x81);
+opcode!(STA_IND_IX, 0x91);
