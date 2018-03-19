@@ -13,6 +13,15 @@ fn test_lda_sets_zero_flag() {
 }
 
 #[test]
+fn test_lda_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), false);
+    run_program(&mut cpu, &[0xA9, 0x90]);
+    assert_eq!(cpu.a, 0x90);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+}
+
+#[test]
 fn test_lda_immediate() {
     let mut cpu = new_cpu();
     let cycles = run_program(&mut cpu, &[0xA9, 0x12]);
@@ -120,6 +129,28 @@ fn test_sta_absolute() {
     assert_eq!(cpu.a, 0x34);
     assert_eq!(cpu.memory.load(0x4567), 0x34);
     assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sta_absolute_x() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x97;
+    cpu.x = 0x34;
+    let cycles = run_program(&mut cpu, &[0x9D, 0x44, 0x56]);
+    assert_eq!(cpu.a, 0x97);
+    assert_eq!(cpu.memory.load(0x5678), 0x97);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_sta_absolute_y() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x97;
+    cpu.y = 0x34;
+    let cycles = run_program(&mut cpu, &[0x99, 0x44, 0x56]);
+    assert_eq!(cpu.a, 0x97);
+    assert_eq!(cpu.memory.load(0x5678), 0x97);
+    assert_eq!(cycles, 5);
 }
 
 fn new_cpu() -> cpu::CPU {

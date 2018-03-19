@@ -8,6 +8,7 @@ pub enum Flag {
     C = 0b0000_0001, // Carry
 }
 
+#[derive(Debug)]
 pub struct ProcessorFlags {
     byte: u8,
 }

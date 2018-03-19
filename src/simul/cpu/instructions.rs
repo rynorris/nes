@@ -11,10 +11,10 @@ fn update_zero_flag(cpu: &mut cpu::CPU, result: u8) {
 }
 
 fn update_negative_flag(cpu: &mut cpu::CPU, result: u8) {
-    if (result & 0b1000_0000) == 1 {
-        cpu.p.set(cpu::flags::Flag::Z);
+    if (result & 0b1000_0000) != 0 {
+        cpu.p.set(cpu::flags::Flag::N);
     } else {
-        cpu.p.clear(cpu::flags::Flag::Z);
+        cpu.p.clear(cpu::flags::Flag::N);
     }
 }
 
@@ -26,7 +26,7 @@ pub fn lda(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     update_negative_flag(cpu, res);
     cpu.a = res;
 
-    addr_cycles + 1
+    addr_cycles
 }
 
 // STA: Store Accumulator in Memory
@@ -34,5 +34,5 @@ pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let (addr, addr_cycles) = load_addr(cpu);
     let byte = cpu.a;
     cpu.store_memory(addr, byte);
-    addr_cycles + 1
+    addr_cycles
 }

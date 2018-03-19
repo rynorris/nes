@@ -1,8 +1,8 @@
 use simul::cpu;
 use simul::util;
 
-// An addressing mode calculates the final operand address, and returns it along with the number of
-// cycles it took.
+// An addressing mode calculates the final operand address, and returns it along with any extra
+// cycles it too, e.g. as the result of crossing a page boundary.
 // After finding the address, the function should leave the PC pointing at the next opcode.
 pub type AddressingMode = fn (cpu: &mut cpu::CPU) -> (u16, u32);
 
@@ -11,7 +11,7 @@ pub type AddressingMode = fn (cpu: &mut cpu::CPU) -> (u16, u32);
 // the CPU will read the next byte of memory and then discard it.
 pub fn implied(cpu: &mut cpu::CPU) -> (u16, u32) {
     let _ = cpu.load_memory(cpu.pc);
-    (0, 1)
+    (0, 0)
 }
 
 // Immediate: one byte literal operand.
@@ -26,14 +26,14 @@ pub fn absolute(cpu: &mut cpu::CPU) -> (u16, u32) {
     let low_byte = cpu.load_memory(cpu.pc);
     let high_byte = cpu.load_memory(cpu.pc + 1);
     cpu.pc += 2;
-    (util::combine_bytes(high_byte, low_byte), 2)
+    (util::combine_bytes(high_byte, low_byte), 0)
 }
 
 // Zero page: one byte operand indicates address in page 0 of memory.
 pub fn zero_page(cpu: &mut cpu::CPU) -> (u16, u32) {
     let low_byte = cpu.load_memory(cpu.pc);
     cpu.pc += 1;
-    (low_byte as u16, 1)
+    (low_byte as u16, 0)
 }
 
 // Relative: one byte operand indicates address relative to PC.
@@ -57,9 +57,9 @@ pub fn relative(cpu: &mut cpu::CPU) -> (u16, u32) {
         let _ = cpu.load_memory(util::combine_bytes(bah, adl));
 
         let adh = if is_add { bah + 1 } else { bal - 1 };
-        (util::combine_bytes(adh, adl), 5)
+        (util::combine_bytes(adh, adl), 1)
     } else {
-        (util::combine_bytes(bah, adl), 4)
+        (util::combine_bytes(bah, adl), 0)
     }
 }
 
@@ -76,9 +76,9 @@ pub fn absolute_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
         let _ = cpu.load_memory(util::combine_bytes(bah, adl));
 
         let adh = bah + 1;
-        (util::combine_bytes(adh, adl), 3)
+        (util::combine_bytes(adh, adl), 1)
     } else {
-        (util::combine_bytes(bah, adl), 2)
+        (util::combine_bytes(bah, adl), 0)
     }
 }
 
@@ -103,7 +103,7 @@ pub fn zero_page_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
     let _ = cpu.load_memory(low_byte as u16);
 
     let adjusted = (low_byte as u16) + (cpu.x as u16);
-    (adjusted & 0x00FF, 2)
+    (adjusted & 0x00FF, 0)
 }
 
 // Indirect addressing is where we look up the two byte address to read from a location in page-zero.
@@ -127,7 +127,7 @@ pub fn indexed_indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
     let addr = ((bal as u16) + (cpu.x as u16)) & 0x00FF;
     let adl = cpu.load_memory(addr);
     let adh = cpu.load_memory(addr + 1);
-    (util::combine_bytes(adh, adl), 4)
+    (util::combine_bytes(adh, adl), 0)
 }
 
 pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
@@ -142,8 +142,8 @@ pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
         let _ = cpu.load_memory(util::combine_bytes(bah, adl));
 
         let adh = bah + 1;
-        (util::combine_bytes(adh, adl), 4)
+        (util::combine_bytes(adh, adl), 1)
     } else {
-        (util::combine_bytes(bah, adl), 3)
+        (util::combine_bytes(bah, adl), 0)
     }
 }

@@ -48,29 +48,30 @@ impl CPU {
     pub fn execute_next_instruction(&mut self) -> u32 {
         let opcode = self.memory.load(self.pc);
         self.pc += 1;
-        let (operation, addressing_mode) = CPU::decode_instruction(opcode);
-        let op_cycles = operation(self, addressing_mode);
+        let (operation, addressing_mode, cycles) = CPU::decode_instruction(opcode);
+        let extra_cycles = operation(self, addressing_mode);
 
-        // +1 for loading the opcode itself.
-        op_cycles + 1
+        cycles + extra_cycles
     }
 
-    fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode) {
+    fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode, u32) {
         match opcode {
             // LDA
-            0xA9 => (instructions::lda, addressing::immediate),
-            0xA5 => (instructions::lda, addressing::zero_page),
-            0xB5 => (instructions::lda, addressing::zero_page_indexed),
-            0xAD => (instructions::lda, addressing::absolute),
-            0xBD => (instructions::lda, addressing::absolute_indexed_x),
-            0xB9 => (instructions::lda, addressing::absolute_indexed_y),
-            0xA1 => (instructions::lda, addressing::indexed_indirect),
-            0xB1 => (instructions::lda, addressing::indirect_indexed),
+            0xA9 => (instructions::lda, addressing::immediate, 2),
+            0xA5 => (instructions::lda, addressing::zero_page, 3),
+            0xB5 => (instructions::lda, addressing::zero_page_indexed, 4),
+            0xAD => (instructions::lda, addressing::absolute, 4),
+            0xBD => (instructions::lda, addressing::absolute_indexed_x, 4),
+            0xB9 => (instructions::lda, addressing::absolute_indexed_y, 4),
+            0xA1 => (instructions::lda, addressing::indexed_indirect, 6),
+            0xB1 => (instructions::lda, addressing::indirect_indexed, 5),
 
             // STA
-            0x85 => (instructions::sta, addressing::zero_page),
-            0x95 => (instructions::sta, addressing::zero_page_indexed),
-            0x8D => (instructions::sta, addressing::absolute),
+            0x85 => (instructions::sta, addressing::zero_page, 3),
+            0x95 => (instructions::sta, addressing::zero_page_indexed, 4),
+            0x8D => (instructions::sta, addressing::absolute, 4),
+            0x9D => (instructions::sta, addressing::absolute_indexed_x, 5),
+            0x99 => (instructions::sta, addressing::absolute_indexed_y, 5),
 
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
