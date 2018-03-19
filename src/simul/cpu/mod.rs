@@ -62,4 +62,12 @@ impl CPU {
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
     }
+
+    pub fn load_memory(&self, address: u16) -> u8 {
+        self.memory.load(address)
+    }
+
+    pub fn store_memory(&mut self, address: u16, byte: u8) {
+        self.memory.store(address, byte);
+    }
 }

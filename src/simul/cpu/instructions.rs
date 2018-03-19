@@ -21,7 +21,7 @@ fn update_negative_flag(cpu: &mut cpu::CPU, result: u8) {
 // LDA: Load Accumulator with Memory
 pub fn lda(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
-    let res = cpu.memory.load(addr);
+    let res = cpu.load_memory(addr);
     update_zero_flag(cpu, res);
     update_negative_flag(cpu, res);
     cpu.a = res;
@@ -32,6 +32,7 @@ pub fn lda(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 // STA: Store Accumulator in Memory
 pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
-    cpu.memory.store(addr, cpu.a);
+    let byte = cpu.a;
+    cpu.store_memory(addr, byte);
     addr_cycles + 1
 }
