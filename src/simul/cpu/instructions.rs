@@ -52,9 +52,15 @@ pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
         let hex_a = util::bcd_to_hex(cpu.a);
         let hex_mem = util::bcd_to_hex(mem);
 
-        // Cannot be > 255.
+        // Cannot be > 255 so don't need to check for wrapping.
         let hex_res = hex_a + hex_mem + carry_val;
-        (util::hex_to_bcd(hex_res), hex_res > 99)
+
+        // Wrap to <99.  Max value is 199 so only need to check once.
+        if hex_res <= 99 {
+            (util::hex_to_bcd(hex_res), false)
+        } else {
+            (util::hex_to_bcd(hex_res - 100), true)
+        }
     } else {
         // Normal arithmetic.
         let (res, carry1) = cpu.a.overflowing_add(mem);

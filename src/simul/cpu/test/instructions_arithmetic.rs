@@ -110,3 +110,25 @@ fn test_adc_indirect_indexed() {
     assert_eq!(cpu.a, 0x35);
 }
 
+#[test]
+fn test_adc_bcd_no_carry() {
+    let mut cpu = new_cpu();
+    // 79 + 12 = 91
+    cpu.a = 0b0111_1001;
+    cpu.p.set(cpu::flags::Flag::D);
+    let cycles = run_program(&mut cpu, &[0x69, 0b0001_0010]);
+    assert_eq!(cpu.a, 0b1001_0001);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_adc_bcd_with_carry() {
+    let mut cpu = new_cpu();
+    // 79 + 42 = 121
+    cpu.a = 0b0111_1001;
+    cpu.p.set(cpu::flags::Flag::D);
+    let cycles = run_program(&mut cpu, &[0x69, 0b0100_0010]);
+    assert_eq!(cpu.a, 0b0010_0001);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), true);
+    assert_eq!(cycles, 2);
+}
