@@ -153,6 +153,30 @@ fn test_sta_absolute_y() {
     assert_eq!(cycles, 5);
 }
 
+#[test]
+fn test_sta_indexed_indirect() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x97;
+    cpu.x = 0x12;
+    load_data(&mut cpu.memory, 0x0046, &[0xEF, 0xBE]);
+    let cycles = run_program(&mut cpu, &[0x81, 0x34]);
+    assert_eq!(cpu.a, 0x97);
+    assert_eq!(cpu.memory.load(0xBEEF), 0x97);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
+fn test_sta_indirect_indexed() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x97;
+    cpu.y = 0x12;
+    load_data(&mut cpu.memory, 0x0034, &[0xDD, 0xBE]);
+    let cycles = run_program(&mut cpu, &[0x91, 0x34]);
+    assert_eq!(cpu.a, 0x97);
+    assert_eq!(cpu.memory.load(0xBEEF), 0x97);
+    assert_eq!(cycles, 6);
+}
+
 fn new_cpu() -> cpu::CPU {
     cpu::new(memory::new())
 }

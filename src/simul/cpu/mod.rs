@@ -72,6 +72,8 @@ impl CPU {
             0x8D => (instructions::sta, addressing::absolute, 4),
             0x9D => (instructions::sta, addressing::absolute_indexed_x, 5),
             0x99 => (instructions::sta, addressing::absolute_indexed_y, 5),
+            0x81 => (instructions::sta, addressing::indexed_indirect, 6),
+            0x91 => (instructions::sta, addressing::indirect_indexed, 6),
 
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
