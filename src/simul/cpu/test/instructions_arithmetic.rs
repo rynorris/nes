@@ -45,8 +45,9 @@ fn test_adc_zero_page() {
     let mut cpu = new_cpu();
     cpu.a = 0x23;
     load_data(&mut cpu.memory, 0x0024, &[0x12]);
-    run_program(&mut cpu, &[0x65, 0x24]);
+    let cycles = run_program(&mut cpu, &[0x65, 0x24]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 3);
 }
 
 #[test]
@@ -55,8 +56,9 @@ fn test_adc_zero_page_indexed() {
     cpu.a = 0x23;
     cpu.x = 0x10;
     load_data(&mut cpu.memory, 0x0034, &[0x12]);
-    run_program(&mut cpu, &[0x75, 0x24]);
+    let cycles = run_program(&mut cpu, &[0x75, 0x24]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 4);
 }
 
 #[test]
@@ -64,8 +66,9 @@ fn test_adc_absolute() {
     let mut cpu = new_cpu();
     cpu.a = 0x23;
     load_data(&mut cpu.memory, 0xBEEF, &[0x12]);
-    run_program(&mut cpu, &[0x6D, 0xEF, 0xBE]);
+    let cycles = run_program(&mut cpu, &[0x6D, 0xEF, 0xBE]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 4);
 }
 
 #[test]
@@ -74,8 +77,9 @@ fn test_adc_absolute_x() {
     cpu.a = 0x23;
     cpu.x = 0x10;
     load_data(&mut cpu.memory, 0xBEEF, &[0x12]);
-    run_program(&mut cpu, &[0x7D, 0xDF, 0xBE]);
+    let cycles = run_program(&mut cpu, &[0x7D, 0xDF, 0xBE]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 4);
 }
 
 #[test]
@@ -84,8 +88,9 @@ fn test_adc_absolute_y() {
     cpu.a = 0x23;
     cpu.y = 0x10;
     load_data(&mut cpu.memory, 0xBEEF, &[0x12]);
-    run_program(&mut cpu, &[0x79, 0xDF, 0xBE]);
+    let cycles = run_program(&mut cpu, &[0x79, 0xDF, 0xBE]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 4);
 }
 
 #[test]
@@ -95,8 +100,9 @@ fn test_adc_indexed_indirect() {
     cpu.x = 0x10;
     load_data(&mut cpu.memory, 0x0046, &[0xEF, 0xBE]);
     load_data(&mut cpu.memory, 0xBEEF, &[0x12]);
-    run_program(&mut cpu, &[0x61, 0x36]);
+    let cycles = run_program(&mut cpu, &[0x61, 0x36]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 6);
 }
 
 #[test]
@@ -106,8 +112,9 @@ fn test_adc_indirect_indexed() {
     cpu.y = 0x10;
     load_data(&mut cpu.memory, 0x0046, &[0xDF, 0xBE]);
     load_data(&mut cpu.memory, 0xBEEF, &[0x12]);
-    run_program(&mut cpu, &[0x71, 0x46]);
+    let cycles = run_program(&mut cpu, &[0x71, 0x46]);
     assert_eq!(cpu.a, 0x35);
+    assert_eq!(cycles, 5);
 }
 
 #[test]
