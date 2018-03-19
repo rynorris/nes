@@ -44,11 +44,15 @@ pub fn new(memory: memory::RAM) -> CPU {
 }
 
 impl CPU {
-    pub fn execute_next_instruction(&mut self) {
+    // Returns number of elapsed cycles.
+    pub fn execute_next_instruction(&mut self) -> u32 {
         let opcode = self.memory.load(self.pc);
         self.pc += 1;
         let (operation, addressing_mode) = CPU::decode_instruction(opcode);
-        let _ = operation(self, addressing_mode);
+        let op_cycles = operation(self, addressing_mode);
+
+        // +1 for loading the opcode itself.
+        op_cycles + 1
     }
 
     fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode) {
@@ -56,9 +60,11 @@ impl CPU {
             // LDA
             0xA9 => (instructions::lda, addressing::immediate),
             0xA5 => (instructions::lda, addressing::zero_page),
+            0xB5 => (instructions::lda, addressing::zero_page_indexed),
 
             // STA
             0x85 => (instructions::sta, addressing::zero_page),
+            0x95 => (instructions::sta, addressing::zero_page_indexed),
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
     }
