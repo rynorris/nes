@@ -76,9 +76,9 @@ pub fn absolute_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
         let _ = cpu.load_memory(util::combine_bytes(bah, adl));
 
         let adh = bah + 1;
-        (util::combine_bytes(adh, adl), 5)
+        (util::combine_bytes(adh, adl), 3)
     } else {
-        (util::combine_bytes(bah, adl), 4)
+        (util::combine_bytes(bah, adl), 2)
     }
 }
 
@@ -142,8 +142,8 @@ pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
         let _ = cpu.load_memory(util::combine_bytes(bah, adl));
 
         let adh = bah + 1;
-        (util::combine_bytes(adh, adl), 5)
+        (util::combine_bytes(adh, adl), 4)
     } else {
-        (util::combine_bytes(bah, adl), 4)
+        (util::combine_bytes(bah, adl), 3)
     }
 }

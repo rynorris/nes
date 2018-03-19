@@ -61,10 +61,17 @@ impl CPU {
             0xA9 => (instructions::lda, addressing::immediate),
             0xA5 => (instructions::lda, addressing::zero_page),
             0xB5 => (instructions::lda, addressing::zero_page_indexed),
+            0xAD => (instructions::lda, addressing::absolute),
+            0xBD => (instructions::lda, addressing::absolute_indexed_x),
+            0xB9 => (instructions::lda, addressing::absolute_indexed_y),
+            0xA1 => (instructions::lda, addressing::indexed_indirect),
+            0xB1 => (instructions::lda, addressing::indirect_indexed),
 
             // STA
             0x85 => (instructions::sta, addressing::zero_page),
             0x95 => (instructions::sta, addressing::zero_page_indexed),
+            0x8D => (instructions::sta, addressing::absolute),
+
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
     }
