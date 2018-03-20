@@ -116,7 +116,7 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
         }
     } else {
         // Normal arithmetic.
-        let minus_m = !mem + carry_val;
+        let (minus_m, _) = (!mem).overflowing_add(carry_val);
         cpu.a.overflowing_add(minus_m)
     };
     

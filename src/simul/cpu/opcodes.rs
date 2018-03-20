@@ -20,6 +20,15 @@ opcode!(LDA_ABS_Y, 0xB9);
 opcode!(LDA_IX_IND, 0xA1);
 opcode!(LDA_IND_IX, 0xB1);
 
+opcode!(SBC_IMM, 0xE9);
+opcode!(SBC_ZPG, 0xE5);
+opcode!(SBC_ZPG_X, 0xF5);
+opcode!(SBC_ABS, 0xED);
+opcode!(SBC_ABS_X, 0xFD);
+opcode!(SBC_ABS_Y, 0xF9);
+opcode!(SBC_IX_IND, 0xE1);
+opcode!(SBC_IND_IX, 0xF1);
+
 opcode!(STA_ZPG, 0x85);
 opcode!(STA_ZPG_X, 0x95);
 opcode!(STA_ABS, 0x8D);

@@ -148,3 +148,153 @@ fn test_adc_bcd_with_carry() {
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), true);
     assert_eq!(cycles, 2);
 }
+
+#[test]
+fn test_sdc_immediate() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.p.set(cpu::flags::Flag::C);
+    let cycles = run_program(&mut cpu, &[0xE9, 0x23]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_sdc_immediate_with_borrow() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.p.clear(cpu::flags::Flag::C);
+    let cycles = run_program(&mut cpu, &[0xE9, 0x23]);
+    assert_eq!(cpu.a, 0x11);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_sdc_immediate_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.p.set(cpu::flags::Flag::C);
+    let cycles = run_program(&mut cpu, &[0xE9, 0x35]);
+    assert_eq!(cpu.a, 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_sdc_immediate_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.p.set(cpu::flags::Flag::C);
+    let cycles = run_program(&mut cpu, &[0xE9, 0x36]);
+    assert_eq!(cpu.a, 0xFF);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_sdc_immediate_negative_overflow() {
+    let mut cpu = new_cpu();
+    cpu.a = 0b1000_0000;
+    cpu.p.set(cpu::flags::Flag::C);
+    let cycles = run_program(&mut cpu, &[0xE9, 0x01]);
+    assert_eq!(cpu.a, 0b0111_1111);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_sdc_immediate_positive_overflow() {
+    let mut cpu = new_cpu();
+    cpu.a = 0b0111_1111;
+    cpu.p.set(cpu::flags::Flag::C);
+    let cycles = run_program(&mut cpu, &[0xE9, 0b1111_1111]);
+    assert_eq!(cpu.a, 0b1000_0000);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_sdc_zero_page() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0x0024, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xE5, 0x24]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 3);
+}
+
+#[test]
+fn test_sdc_zero_page_indexed() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.x = 0x11;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0x0024, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xF5, 0x13]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sdc_absolute() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0xBEEF, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xED, 0xEF, 0xBE]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sdc_absolute_x() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.x = 0x11;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0xBEEF, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xFD, 0xDE, 0xBE]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sdc_absolute_y() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.y = 0x11;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0xBEEF, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xF9, 0xDE, 0xBE]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sdc_indexed_indirect() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.x = 0x11;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0x0098, &[0xEF, 0xBE]);
+    load_data(&mut cpu.memory, 0xBEEF, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xE1, 0x87]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
+fn test_sdc_indirect_indexed() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x35;
+    cpu.y = 0x11;
+    cpu.p.set(cpu::flags::Flag::C);
+    load_data(&mut cpu.memory, 0x0087, &[0xDE, 0xBE]);
+    load_data(&mut cpu.memory, 0xBEEF, &[0x23]);
+    let cycles = run_program(&mut cpu, &[0xF1, 0x87]);
+    assert_eq!(cpu.a, 0x12);
+    assert_eq!(cycles, 5);
+}
