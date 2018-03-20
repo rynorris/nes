@@ -88,6 +88,9 @@ impl CPU {
             opcodes::SBC_IX_IND => (instructions::sbc, addressing::indexed_indirect, 6),
             opcodes::SBC_IND_IX => (instructions::sbc, addressing::indirect_indexed, 5),
 
+            // SEC
+            opcodes::SEC => (instructions::sec, addressing::immediate, 2),
+
             // STA
             opcodes::STA_ZPG => (instructions::sta, addressing::zero_page, 3),
             opcodes::STA_ZPG_X => (instructions::sta, addressing::zero_page_indexed, 4),

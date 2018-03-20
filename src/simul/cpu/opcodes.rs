@@ -29,6 +29,8 @@ opcode!(SBC_ABS_Y, 0xF9);
 opcode!(SBC_IX_IND, 0xE1);
 opcode!(SBC_IND_IX, 0xF1);
 
+opcode!(SEC, 0x38);
+
 opcode!(STA_ZPG, 0x85);
 opcode!(STA_ZPG_X, 0x95);
 opcode!(STA_ABS, 0x8D);

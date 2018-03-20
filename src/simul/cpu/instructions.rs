@@ -143,3 +143,10 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     cpu.a = res;
     addr_cycles
 }
+
+// SEC: Set Carry Flag
+// 1 -> C
+pub fn sec(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.set(cpu::flags::Flag::C);
+    0
+}
