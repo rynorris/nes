@@ -23,11 +23,20 @@ fn test_adc_immediate_with_carry() {
 }
 
 #[test]
-fn test_adc_immediate_with_overflow() {
+fn test_adc_immediate_with_positive_overflow() {
     let mut cpu = new_cpu();
-    cpu.a = 0x08;
-    run_program(&mut cpu, &[0x69, 0x82]);
-    assert_eq!(cpu.a, 0x8A);
+    cpu.a = 0b0111_1111;
+    run_program(&mut cpu, &[0x69, 0b0000_0001]);
+    assert_eq!(cpu.a, 0b1000_0000);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), true);
+}
+
+#[test]
+fn test_adc_immediate_with_negative_overflow() {
+    let mut cpu = new_cpu();
+    cpu.a = 0b1000_0000;
+    run_program(&mut cpu, &[0x69, 0b1111_1111]);
+    assert_eq!(cpu.a, 0b0111_1111);
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), true);
 }
 
