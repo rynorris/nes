@@ -17,6 +17,26 @@ fn test_load_add_save() {
 }
 
 #[test]
+fn test_16bit_addition() {
+    // Example code taken from MOS6500 programming manual.
+    // 384 + 128 = 512
+    // Memory: 0x0000 = 384 (little-endian), 0x0002 = 128, 0x0004 = result.
+    let mut cpu = new_cpu();
+    load_data(&mut cpu.memory, 0x0000, &[0b1000_0000, 0b0000_0001, 0b1000_0000, 0b0000_0000]);
+    let program = [
+        opcodes::LDA_ZPG, 0x00,
+        opcodes::ADC_ZPG, 0x02,
+        opcodes::STA_ZPG, 0x04,
+        opcodes::LDA_ZPG, 0x01,
+        opcodes::ADC_ZPG, 0x03,
+        opcodes::STA_ZPG, 0x05,
+    ];
+    run_program(&mut cpu, &program);
+    assert_eq!(cpu.memory.load(0x0004), 0b0000_0000);
+    assert_eq!(cpu.memory.load(0x0005), 0b0000_0010);
+}
+
+#[test]
 fn test_16bit_subtraction() {
     // Example code taken from MOS6500 programming manual.
     // 512 - 255 = 257
@@ -33,6 +53,6 @@ fn test_16bit_subtraction() {
         opcodes::STA_ZPG, 0x05,
     ];
     run_program(&mut cpu, &program);
-    assert_eq!(cpu.memory.load(0x0005), 0b0000_0001);
     assert_eq!(cpu.memory.load(0x0004), 0b0000_0001);
+    assert_eq!(cpu.memory.load(0x0005), 0b0000_0001);
 }
