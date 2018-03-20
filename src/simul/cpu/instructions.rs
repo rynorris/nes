@@ -106,13 +106,13 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
         let hex_mem = util::bcd_to_hex(mem);
         let borrow = 1 - carry_val;
         let hex_sub_amount = hex_mem + borrow;
-        let (res, carry) = hex_a.overflowing_sub(hex_sub_amount);
+        let (res, borrow) = hex_a.overflowing_sub(hex_sub_amount);
 
         // If we wrapped then we wrapped to 255.  Fudge it so we actually wrap to 99.
-        if carry {
-            (util::hex_to_bcd(res - (255 - 99)), carry)
+        if borrow {
+            (util::hex_to_bcd(res - (255 - 99)), false)
         } else {
-            (util::hex_to_bcd(res), carry)
+            (util::hex_to_bcd(res), true)
         }
     } else {
         // Normal arithmetic.

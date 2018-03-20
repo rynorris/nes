@@ -298,3 +298,37 @@ fn test_sdc_indirect_indexed() {
     assert_eq!(cpu.a, 0x12);
     assert_eq!(cycles, 5);
 }
+
+#[test]
+fn test_sdc_immediate_bcd() {
+    let mut cpu = new_cpu();
+    // 39 - 23 = 16
+    cpu.a = 0b0011_1001;
+    cpu.p.set(cpu::flags::Flag::C);
+    cpu.p.set(cpu::flags::Flag::D);
+    run_program(&mut cpu, &[0xE9, 0b0010_0011]);
+    assert_eq!(cpu.a, 0b0001_0110);
+}
+
+#[test]
+fn test_sdc_immediate_bcd_with_borrow() {
+    let mut cpu = new_cpu();
+    // 39 - 23 - 1= 15
+    cpu.a = 0b0011_1001;
+    cpu.p.clear(cpu::flags::Flag::C);
+    cpu.p.set(cpu::flags::Flag::D);
+    run_program(&mut cpu, &[0xE9, 0b0010_0011]);
+    assert_eq!(cpu.a, 0b0001_0101);
+}
+
+#[test]
+fn test_sdc_immediate_bcd_causing_borrow() {
+    let mut cpu = new_cpu();
+    // 19 - 23 = -4 (96 + borrow)
+    cpu.a = 0b0001_1001;
+    cpu.p.set(cpu::flags::Flag::C);
+    cpu.p.set(cpu::flags::Flag::D);
+    run_program(&mut cpu, &[0xE9, 0b0010_0011]);
+    assert_eq!(cpu.a, 0b1001_0110);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+}
