@@ -12,3 +12,5 @@ matrix:
       - nightly
   fast_finish: true
 
+cache: cargo
+
