@@ -11,3 +11,4 @@ matrix:
     rust:
       - nightly
   fast_finish: true
+
