@@ -1,2 +1,2 @@
 pub mod assembler;
-pub mod simul;
+pub mod emulator;

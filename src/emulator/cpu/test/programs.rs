@@ -1,8 +1,8 @@
-use simul::cpu::opcodes;
+use emulator::cpu::opcodes;
 
-use simul::cpu::test::load_data;
-use simul::cpu::test::new_cpu;
-use simul::cpu::test::run_program;
+use emulator::cpu::test::load_data;
+use emulator::cpu::test::new_cpu;
+use emulator::cpu::test::run_program;
 
 #[test]
 fn test_load_add_save() {

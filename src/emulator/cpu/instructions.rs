@@ -1,5 +1,5 @@
-use simul::cpu;
-use simul::util;
+use emulator::cpu;
+use emulator::util;
 
 pub type Operation = fn(&mut cpu::CPU, cpu::addressing::AddressingMode) -> u32;
 

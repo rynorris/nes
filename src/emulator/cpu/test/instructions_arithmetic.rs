@@ -1,8 +1,8 @@
-use simul::cpu;
+use emulator::cpu;
 
-use simul::cpu::test::load_data;
-use simul::cpu::test::new_cpu;
-use simul::cpu::test::run_program;
+use emulator::cpu::test::load_data;
+use emulator::cpu::test::new_cpu;
+use emulator::cpu::test::run_program;
 
 #[test]
 fn test_adc_immediate_no_carry() {

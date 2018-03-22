@@ -6,7 +6,7 @@ mod opcodes;
 #[cfg(test)]
 mod test;
 
-use simul::memory;
+use emulator::memory;
 
 // CPU Implemented as a state machine.
 pub struct CPU {

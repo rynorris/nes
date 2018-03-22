@@ -2,8 +2,8 @@ mod instructions_accumulator;
 mod instructions_arithmetic;
 mod programs;
 
-use simul::cpu;
-use simul::memory;
+use emulator::cpu;
+use emulator::memory;
 
 const PROGRAM_ROOT: u16 = 0xF000;
 fn new_cpu() -> cpu::CPU {
