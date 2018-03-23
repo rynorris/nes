@@ -68,6 +68,16 @@ impl CPU {
             opcodes::ADC_IX_IND => (instructions::adc, addressing::indexed_indirect, 6),
             opcodes::ADC_IND_IX => (instructions::adc, addressing::indirect_indexed, 5),
 
+            // AND
+            opcodes::AND_IMM => (instructions::and, addressing::immediate, 2),
+            opcodes::AND_ZPG => (instructions::and, addressing::zero_page, 3),
+            opcodes::AND_ZPG_X => (instructions::and, addressing::zero_page_indexed, 4),
+            opcodes::AND_ABS => (instructions::and, addressing::absolute, 4),
+            opcodes::AND_ABS_X => (instructions::and, addressing::absolute_indexed_x, 4),
+            opcodes::AND_ABS_Y => (instructions::and, addressing::absolute_indexed_y, 4),
+            opcodes::AND_IX_IND => (instructions::and, addressing::indexed_indirect, 6),
+            opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
+
             // LDA
             opcodes::LDA_IMM => (instructions::lda, addressing::immediate, 2),
             opcodes::LDA_ZPG => (instructions::lda, addressing::zero_page, 3),

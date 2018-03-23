@@ -144,6 +144,18 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     addr_cycles
 }
 
+// AND: Bitwise AND Memory with Accumulator
+// A /\ M -> A
+pub fn and(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+    let res = mem & cpu.a;
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.a = res;
+    addr_cycles
+}
+
 // SEC: Set Carry Flag
 // 1 -> C
 pub fn sec(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {

@@ -11,6 +11,15 @@ opcode!(ADC_ABS_Y, 0x79);
 opcode!(ADC_IX_IND, 0x61);
 opcode!(ADC_IND_IX, 0x71);
 
+opcode!(AND_IMM, 0x29);
+opcode!(AND_ZPG, 0x25);
+opcode!(AND_ZPG_X, 0x35);
+opcode!(AND_ABS, 0x2D);
+opcode!(AND_ABS_X, 0x3D);
+opcode!(AND_ABS_Y, 0x39);
+opcode!(AND_IX_IND, 0x21);
+opcode!(AND_IND_IX, 0x31);
+
 opcode!(LDA_IMM, 0xA9);
 opcode!(LDA_ZPG, 0xA5);
 opcode!(LDA_ZPG_X, 0xB5);
