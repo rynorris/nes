@@ -19,6 +19,8 @@ fn update_negative_flag(cpu: &mut cpu::CPU, result: u8) {
     }
 }
 
+/* 2.1 The Accumulator */
+
 // LDA: Load Accumulator with Memory
 // A -> M
 pub fn lda(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
@@ -39,6 +41,8 @@ pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     cpu.store_memory(addr, byte);
     addr_cycles
 }
+
+/* 2.2 The Arithmetic Unit */
 
 // ADC: Add Memory to Accumulator with Carry
 // A + M + C -> A, C
@@ -150,6 +154,30 @@ pub fn and(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let (addr, addr_cycles) = load_addr(cpu);
     let mem = cpu.load_memory(addr);
     let res = mem & cpu.a;
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.a = res;
+    addr_cycles
+}
+
+// ORA: Bitwise OR Memory with Accumulator
+// A \/ M -> A
+pub fn ora(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+    let res = mem | cpu.a;
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.a = res;
+    addr_cycles
+}
+
+// EOR: Bitwise Exclusive OR Memory with Accumulator
+// A \-/ M -> A
+pub fn eor(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+    let res = mem ^ cpu.a;
     update_zero_flag(cpu, res);
     update_negative_flag(cpu, res);
     cpu.a = res;

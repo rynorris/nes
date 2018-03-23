@@ -78,6 +78,16 @@ impl CPU {
             opcodes::AND_IX_IND => (instructions::and, addressing::indexed_indirect, 6),
             opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
 
+            // EOR
+            opcodes::EOR_IMM => (instructions::eor, addressing::immediate, 2),
+            opcodes::EOR_ZPG => (instructions::eor, addressing::zero_page, 3),
+            opcodes::EOR_ZPG_X => (instructions::eor, addressing::zero_page_indexed, 4),
+            opcodes::EOR_ABS => (instructions::eor, addressing::absolute, 4),
+            opcodes::EOR_ABS_X => (instructions::eor, addressing::absolute_indexed_x, 4),
+            opcodes::EOR_ABS_Y => (instructions::eor, addressing::absolute_indexed_y, 4),
+            opcodes::EOR_IX_IND => (instructions::eor, addressing::indexed_indirect, 6),
+            opcodes::EOR_IND_IX => (instructions::eor, addressing::indirect_indexed, 5),
+
             // LDA
             opcodes::LDA_IMM => (instructions::lda, addressing::immediate, 2),
             opcodes::LDA_ZPG => (instructions::lda, addressing::zero_page, 3),
@@ -87,6 +97,16 @@ impl CPU {
             opcodes::LDA_ABS_Y => (instructions::lda, addressing::absolute_indexed_y, 4),
             opcodes::LDA_IX_IND => (instructions::lda, addressing::indexed_indirect, 6),
             opcodes::LDA_IND_IX => (instructions::lda, addressing::indirect_indexed, 5),
+
+            // ORA
+            opcodes::ORA_IMM => (instructions::ora, addressing::immediate, 2),
+            opcodes::ORA_ZPG => (instructions::ora, addressing::zero_page, 3),
+            opcodes::ORA_ZPG_X => (instructions::ora, addressing::zero_page_indexed, 4),
+            opcodes::ORA_ABS => (instructions::ora, addressing::absolute, 4),
+            opcodes::ORA_ABS_X => (instructions::ora, addressing::absolute_indexed_x, 4),
+            opcodes::ORA_ABS_Y => (instructions::ora, addressing::absolute_indexed_y, 4),
+            opcodes::ORA_IX_IND => (instructions::ora, addressing::indexed_indirect, 6),
+            opcodes::ORA_IND_IX => (instructions::ora, addressing::indirect_indexed, 5),
 
             // SBC
             opcodes::SBC_IMM => (instructions::sbc, addressing::immediate, 2),

@@ -20,6 +20,15 @@ opcode!(AND_ABS_Y, 0x39);
 opcode!(AND_IX_IND, 0x21);
 opcode!(AND_IND_IX, 0x31);
 
+opcode!(EOR_IMM, 0x49);
+opcode!(EOR_ZPG, 0x45);
+opcode!(EOR_ZPG_X, 0x55);
+opcode!(EOR_ABS, 0x4D);
+opcode!(EOR_ABS_X, 0x5D);
+opcode!(EOR_ABS_Y, 0x59);
+opcode!(EOR_IX_IND, 0x41);
+opcode!(EOR_IND_IX, 0x51);
+
 opcode!(LDA_IMM, 0xA9);
 opcode!(LDA_ZPG, 0xA5);
 opcode!(LDA_ZPG_X, 0xB5);
@@ -28,6 +37,15 @@ opcode!(LDA_ABS_X, 0xBD);
 opcode!(LDA_ABS_Y, 0xB9);
 opcode!(LDA_IX_IND, 0xA1);
 opcode!(LDA_IND_IX, 0xB1);
+
+opcode!(ORA_IMM, 0x09);
+opcode!(ORA_ZPG, 0x05);
+opcode!(ORA_ZPG_X, 0x15);
+opcode!(ORA_ABS, 0x0D);
+opcode!(ORA_ABS_X, 0x1D);
+opcode!(ORA_ABS_Y, 0x19);
+opcode!(ORA_IX_IND, 0x01);
+opcode!(ORA_IND_IX, 0x11);
 
 opcode!(SBC_IMM, 0xE9);
 opcode!(SBC_ZPG, 0xE5);
