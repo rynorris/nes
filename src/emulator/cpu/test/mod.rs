@@ -1,5 +1,6 @@
 mod instructions_accumulator;
 mod instructions_arithmetic;
+mod instructions_flags_registers;
 mod instructions_logical;
 mod programs;
 

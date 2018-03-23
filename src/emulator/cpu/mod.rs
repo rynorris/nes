@@ -78,6 +78,12 @@ impl CPU {
             opcodes::AND_IX_IND => (instructions::and, addressing::indexed_indirect, 6),
             opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
 
+            // CLC, CLD, CLI
+            opcodes::CLC => (instructions::clc, addressing::immediate, 2),
+            opcodes::CLD => (instructions::cld, addressing::immediate, 2),
+            opcodes::CLI => (instructions::cli, addressing::immediate, 2),
+            opcodes::CLV => (instructions::clv, addressing::immediate, 2),
+
             // EOR
             opcodes::EOR_IMM => (instructions::eor, addressing::immediate, 2),
             opcodes::EOR_ZPG => (instructions::eor, addressing::zero_page, 3),
@@ -118,8 +124,10 @@ impl CPU {
             opcodes::SBC_IX_IND => (instructions::sbc, addressing::indexed_indirect, 6),
             opcodes::SBC_IND_IX => (instructions::sbc, addressing::indirect_indexed, 5),
 
-            // SEC
+            // SEC, SED, SEI
             opcodes::SEC => (instructions::sec, addressing::immediate, 2),
+            opcodes::SED => (instructions::sed, addressing::immediate, 2),
+            opcodes::SEI => (instructions::sei, addressing::immediate, 2),
 
             // STA
             opcodes::STA_ZPG => (instructions::sta, addressing::zero_page, 3),

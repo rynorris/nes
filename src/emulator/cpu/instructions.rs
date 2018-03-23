@@ -184,9 +184,53 @@ pub fn eor(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     addr_cycles
 }
 
+/* 3. Flags and Status Register */
+
 // SEC: Set Carry Flag
 // 1 -> C
 pub fn sec(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.p.set(cpu::flags::Flag::C);
+    0
+}
+
+// CLC: Clear Carry Flag
+// 0 -> C
+pub fn clc(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.clear(cpu::flags::Flag::C);
+    0
+}
+
+// SEI: Set Interrupt Disable
+// 1 -> I
+pub fn sei(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.set(cpu::flags::Flag::I);
+    0
+}
+
+// CLI: Clear Interrupt Disable
+// 0 -> I
+pub fn cli(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.clear(cpu::flags::Flag::I);
+    0
+}
+
+// SED: Set Decimal Mode
+// 1 -> D
+pub fn sed(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.set(cpu::flags::Flag::D);
+    0
+}
+
+// CLD: Clear Decimal Mode
+// 0 -> D
+pub fn cld(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.clear(cpu::flags::Flag::D);
+    0
+}
+
+// CLV: Clear Overflow Flag
+// 0 -> V
+pub fn clv(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.p.clear(cpu::flags::Flag::V);
     0
 }

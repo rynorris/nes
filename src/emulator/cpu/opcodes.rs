@@ -20,6 +20,11 @@ opcode!(AND_ABS_Y, 0x39);
 opcode!(AND_IX_IND, 0x21);
 opcode!(AND_IND_IX, 0x31);
 
+opcode!(CLC, 0x18);
+opcode!(CLD, 0xD8);
+opcode!(CLI, 0x58);
+opcode!(CLV, 0xB8);
+
 opcode!(EOR_IMM, 0x49);
 opcode!(EOR_ZPG, 0x45);
 opcode!(EOR_ZPG_X, 0x55);
@@ -57,6 +62,8 @@ opcode!(SBC_IX_IND, 0xE1);
 opcode!(SBC_IND_IX, 0xF1);
 
 opcode!(SEC, 0x38);
+opcode!(SED, 0xF8);
+opcode!(SEI, 0x78);
 
 opcode!(STA_ZPG, 0x85);
 opcode!(STA_ZPG_X, 0x95);
