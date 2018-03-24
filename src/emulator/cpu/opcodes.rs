@@ -24,6 +24,9 @@ opcode!(BCC, 0x90);
 opcode!(BCS, 0xB0);
 opcode!(BEQ, 0xF0);
 
+opcode!(BIT_ZPG, 0x24);
+opcode!(BIT_ABS, 0x2C);
+
 opcode!(BMI, 0x30);
 opcode!(BNE, 0xD0);
 opcode!(BPL, 0x10);

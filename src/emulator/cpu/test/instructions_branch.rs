@@ -304,3 +304,54 @@ fn test_cmp_indirect_indexed() {
     assert_eq!(cycles, 5);
 }
 
+#[test]
+fn test_bit_zero_page_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    load_data(&mut cpu.memory, 0x00AB, &[0b1000_0000]);
+    let cycles = run_program(&mut cpu, &[0x24, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 3);
+
+    load_data(&mut cpu.memory, 0x00AB, &[0b0000_0000]);
+    run_program(&mut cpu, &[0x24, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), false);
+}
+
+#[test]
+fn test_bit_zero_page_sets_overflow_flag() {
+    let mut cpu = new_cpu();
+    load_data(&mut cpu.memory, 0x00AB, &[0b0100_0000]);
+    let cycles = run_program(&mut cpu, &[0x24, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), true);
+    assert_eq!(cycles, 3);
+
+    load_data(&mut cpu.memory, 0x00AB, &[0b0000_0000]);
+    run_program(&mut cpu, &[0x24, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+}
+
+#[test]
+fn test_bit_zero_page_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0b1100_0011;
+    load_data(&mut cpu.memory, 0x00AB, &[0b0011_1100]);
+    let cycles = run_program(&mut cpu, &[0x24, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 3);
+
+    load_data(&mut cpu.memory, 0x00AB, &[0b0000_0011]);
+    run_program(&mut cpu, &[0x24, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+}
+
+#[test]
+fn test_bit_absolute() {
+    let mut cpu = new_cpu();
+    cpu.a = 0b0011_1001;
+    load_data(&mut cpu.memory, 0xBEEF, &[0b1100_0000]);
+    let cycles = run_program(&mut cpu, &[0x2C, 0xEF, 0xBE]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 4);
+}

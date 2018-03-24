@@ -323,3 +323,29 @@ pub fn cmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 
     addr_cycles
 }
+
+// BIT: Test Bits in Memory with Accumulator
+// M /\ A, M7 -> N, M6 -> V
+pub fn bit(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+
+    // N is set to bit 7 of the memory being tested.
+    update_negative_flag(cpu, mem);
+
+    // V is set to bit 6 of the memory being tested.
+    if (mem & 0b0100_0000) != 0 {
+        cpu.p.set(cpu::flags::Flag::V);
+    } else {
+        cpu.p.clear(cpu::flags::Flag::V);
+    }
+
+    // Z is set if M AND A is 0.
+    if (mem & cpu.a) == 0 {
+        cpu.p.set(cpu::flags::Flag::Z);
+    } else {
+        cpu.p.clear(cpu::flags::Flag::Z);
+    }
+
+    addr_cycles
+}
