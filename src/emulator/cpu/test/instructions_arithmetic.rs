@@ -150,7 +150,7 @@ fn test_adc_bcd_with_carry() {
 }
 
 #[test]
-fn test_sdc_immediate() {
+fn test_sbc_immediate() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.p.set(cpu::flags::Flag::C);
@@ -161,7 +161,7 @@ fn test_sdc_immediate() {
 }
 
 #[test]
-fn test_sdc_immediate_with_borrow() {
+fn test_sbc_immediate_with_borrow() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.p.clear(cpu::flags::Flag::C);
@@ -172,7 +172,7 @@ fn test_sdc_immediate_with_borrow() {
 }
 
 #[test]
-fn test_sdc_immediate_sets_zero_flag() {
+fn test_sbc_immediate_sets_zero_flag() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.p.set(cpu::flags::Flag::C);
@@ -183,7 +183,7 @@ fn test_sdc_immediate_sets_zero_flag() {
 }
 
 #[test]
-fn test_sdc_immediate_sets_negative_flag() {
+fn test_sbc_immediate_sets_negative_flag() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.p.set(cpu::flags::Flag::C);
@@ -194,7 +194,7 @@ fn test_sdc_immediate_sets_negative_flag() {
 }
 
 #[test]
-fn test_sdc_immediate_negative_overflow() {
+fn test_sbc_immediate_negative_overflow() {
     let mut cpu = new_cpu();
     cpu.a = 0b1000_0000;
     cpu.p.set(cpu::flags::Flag::C);
@@ -205,7 +205,7 @@ fn test_sdc_immediate_negative_overflow() {
 }
 
 #[test]
-fn test_sdc_immediate_positive_overflow() {
+fn test_sbc_immediate_positive_overflow() {
     let mut cpu = new_cpu();
     cpu.a = 0b0111_1111;
     cpu.p.set(cpu::flags::Flag::C);
@@ -216,7 +216,7 @@ fn test_sdc_immediate_positive_overflow() {
 }
 
 #[test]
-fn test_sdc_zero_page() {
+fn test_sbc_zero_page() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.p.set(cpu::flags::Flag::C);
@@ -227,7 +227,7 @@ fn test_sdc_zero_page() {
 }
 
 #[test]
-fn test_sdc_zero_page_indexed() {
+fn test_sbc_zero_page_indexed() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.x = 0x11;
@@ -239,7 +239,7 @@ fn test_sdc_zero_page_indexed() {
 }
 
 #[test]
-fn test_sdc_absolute() {
+fn test_sbc_absolute() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.p.set(cpu::flags::Flag::C);
@@ -250,7 +250,7 @@ fn test_sdc_absolute() {
 }
 
 #[test]
-fn test_sdc_absolute_x() {
+fn test_sbc_absolute_x() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.x = 0x11;
@@ -262,7 +262,7 @@ fn test_sdc_absolute_x() {
 }
 
 #[test]
-fn test_sdc_absolute_y() {
+fn test_sbc_absolute_y() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.y = 0x11;
@@ -274,7 +274,7 @@ fn test_sdc_absolute_y() {
 }
 
 #[test]
-fn test_sdc_indexed_indirect() {
+fn test_sbc_indexed_indirect() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.x = 0x11;
@@ -287,7 +287,7 @@ fn test_sdc_indexed_indirect() {
 }
 
 #[test]
-fn test_sdc_indirect_indexed() {
+fn test_sbc_indirect_indexed() {
     let mut cpu = new_cpu();
     cpu.a = 0x35;
     cpu.y = 0x11;
@@ -300,7 +300,7 @@ fn test_sdc_indirect_indexed() {
 }
 
 #[test]
-fn test_sdc_immediate_bcd() {
+fn test_sbc_immediate_bcd() {
     let mut cpu = new_cpu();
     // 39 - 23 = 16
     cpu.a = 0b0011_1001;
@@ -311,7 +311,7 @@ fn test_sdc_immediate_bcd() {
 }
 
 #[test]
-fn test_sdc_immediate_bcd_with_borrow() {
+fn test_sbc_immediate_bcd_with_borrow() {
     let mut cpu = new_cpu();
     // 39 - 23 - 1= 15
     cpu.a = 0b0011_1001;
@@ -322,7 +322,7 @@ fn test_sdc_immediate_bcd_with_borrow() {
 }
 
 #[test]
-fn test_sdc_immediate_bcd_causing_borrow() {
+fn test_sbc_immediate_bcd_causing_borrow() {
     let mut cpu = new_cpu();
     // 19 - 23 = -4 (96 + borrow)
     cpu.a = 0b0001_1001;
