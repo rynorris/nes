@@ -94,6 +94,10 @@ impl CPU {
             opcodes::EOR_IX_IND => (instructions::eor, addressing::indexed_indirect, 6),
             opcodes::EOR_IND_IX => (instructions::eor, addressing::indirect_indexed, 5),
 
+            // JMP
+            opcodes::JMP_ABS => (instructions::jmp, addressing::absolute, 3),
+            opcodes::JMP_IND => (instructions::jmp, addressing::indirect, 5),
+
             // LDA
             opcodes::LDA_IMM => (instructions::lda, addressing::immediate, 2),
             opcodes::LDA_ZPG => (instructions::lda, addressing::zero_page, 3),

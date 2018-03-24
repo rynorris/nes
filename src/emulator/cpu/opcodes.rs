@@ -34,6 +34,9 @@ opcode!(EOR_ABS_Y, 0x59);
 opcode!(EOR_IX_IND, 0x41);
 opcode!(EOR_IND_IX, 0x51);
 
+opcode!(JMP_ABS, 0x4C);
+opcode!(JMP_IND, 0x6C);
+
 opcode!(LDA_IMM, 0xA9);
 opcode!(LDA_ZPG, 0xA5);
 opcode!(LDA_ZPG_X, 0xB5);

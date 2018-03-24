@@ -1,5 +1,6 @@
 mod instructions_accumulator;
 mod instructions_arithmetic;
+mod instructions_branch;
 mod instructions_flags_registers;
 mod instructions_logical;
 mod programs;
@@ -38,4 +39,12 @@ fn run_program(cpu: &mut cpu::CPU, program: &[u8]) -> u32 {
     }
 
     panic!("Program didn't terminate after 1000 ticks");
+}
+
+fn run_instructions(cpu: &mut cpu::CPU, num_instructions: u32) -> u32 {
+    let mut cycles = 0;
+    for _ in 0..num_instructions {
+        cycles += cpu.execute_next_instruction();
+    }
+    cycles
 }

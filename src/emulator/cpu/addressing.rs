@@ -147,3 +147,16 @@ pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
         (util::combine_bytes(bah, adl), 0)
     }
 }
+
+pub fn indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
+    let ial = cpu.load_memory(cpu.pc);
+    cpu.pc += 1;
+    let iah = cpu.load_memory(cpu.pc);
+    cpu.pc += 1;
+    
+    let addr = util::combine_bytes(iah, ial);
+    let adl = cpu.load_memory(addr);
+    let adh = cpu.load_memory(addr + 1);
+
+    (util::combine_bytes(adh, adl), 0)
+}

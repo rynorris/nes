@@ -234,3 +234,13 @@ pub fn clv(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.p.clear(cpu::flags::Flag::V);
     0
 }
+
+/* 4. Test, Branch and Jump Instructions */
+
+// JMP: Jump to New Location
+// (PC + 1) -> PCL, (PC + 2) -> PCH
+pub fn jmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    cpu.pc = addr;
+    addr_cycles
+}
