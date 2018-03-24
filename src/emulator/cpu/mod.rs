@@ -94,6 +94,16 @@ impl CPU {
             opcodes::CLI => (instructions::cli, addressing::immediate, 2),
             opcodes::CLV => (instructions::clv, addressing::immediate, 2),
 
+            // CMP
+            opcodes::CMP_IMM => (instructions::cmp, addressing::immediate, 2),
+            opcodes::CMP_ZPG => (instructions::cmp, addressing::zero_page, 3),
+            opcodes::CMP_ZPG_X => (instructions::cmp, addressing::zero_page_indexed, 4),
+            opcodes::CMP_ABS => (instructions::cmp, addressing::absolute, 4),
+            opcodes::CMP_ABS_X => (instructions::cmp, addressing::absolute_indexed_x, 4),
+            opcodes::CMP_ABS_Y => (instructions::cmp, addressing::absolute_indexed_y, 4),
+            opcodes::CMP_IX_IND => (instructions::cmp, addressing::indexed_indirect, 6),
+            opcodes::CMP_IND_IX => (instructions::cmp, addressing::indirect_indexed, 5),
+
             // EOR
             opcodes::EOR_IMM => (instructions::eor, addressing::immediate, 2),
             opcodes::EOR_ZPG => (instructions::eor, addressing::zero_page, 3),

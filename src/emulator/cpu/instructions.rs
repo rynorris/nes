@@ -305,3 +305,21 @@ pub fn bvc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     branch_if(cpu, load_addr, should_branch)
 }
 
+// CMP - Compare Memory and Accumulator
+// A - M
+pub fn cmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+
+    let diff = cpu.a.wrapping_sub(mem);
+    update_zero_flag(cpu, diff);
+    update_negative_flag(cpu, diff);
+
+    if cpu.a < mem {
+        cpu.p.clear(cpu::flags::Flag::C);
+    } else {
+        cpu.p.set(cpu::flags::Flag::C);
+    }
+
+    addr_cycles
+}

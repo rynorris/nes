@@ -35,6 +35,15 @@ opcode!(CLD, 0xD8);
 opcode!(CLI, 0x58);
 opcode!(CLV, 0xB8);
 
+opcode!(CMP_IMM, 0xC9);
+opcode!(CMP_ZPG, 0xC5);
+opcode!(CMP_ZPG_X, 0xD5);
+opcode!(CMP_ABS, 0xCD);
+opcode!(CMP_ABS_X, 0xDD);
+opcode!(CMP_ABS_Y, 0xD9);
+opcode!(CMP_IX_IND, 0xC1);
+opcode!(CMP_IND_IX, 0xD1);
+
 opcode!(EOR_IMM, 0x49);
 opcode!(EOR_ZPG, 0x45);
 opcode!(EOR_ZPG_X, 0x55);
