@@ -38,7 +38,7 @@ pub fn new(memory: memory::RAM) -> CPU {
         a: 0,
         x: 0,
         y: 0,
-        sp: 0,
+        sp: 0xFF,
         pc: 0,
         p: flags::new(),
     }
@@ -124,6 +124,9 @@ impl CPU {
             opcodes::JMP_ABS => (instructions::jmp, addressing::absolute, 3),
             opcodes::JMP_IND => (instructions::jmp, addressing::indirect, 5),
 
+            // JSR
+            opcodes::JSR => (instructions::jsr, addressing::absolute, 6),
+
             // LDA
             opcodes::LDA_IMM => (instructions::lda, addressing::immediate, 2),
             opcodes::LDA_ZPG => (instructions::lda, addressing::zero_page, 3),
@@ -143,6 +146,9 @@ impl CPU {
             opcodes::ORA_ABS_Y => (instructions::ora, addressing::absolute_indexed_y, 4),
             opcodes::ORA_IX_IND => (instructions::ora, addressing::indexed_indirect, 6),
             opcodes::ORA_IND_IX => (instructions::ora, addressing::indirect_indexed, 5),
+
+            // RTS
+            opcodes::RTS => (instructions::rts, addressing::implied, 6),
 
             // SBC
             opcodes::SBC_IMM => (instructions::sbc, addressing::immediate, 2),
@@ -178,5 +184,17 @@ impl CPU {
 
     pub fn store_memory(&mut self, address: u16, byte: u8) {
         self.memory.store(address, byte);
+    }
+
+    pub fn stack_push(&mut self, byte: u8) {
+        let addr = 0x0100 | (self.sp as u16);
+        self.sp -= 1;
+        self.store_memory(addr, byte);
+    }
+
+    pub fn stack_pop(&mut self) -> u8 {
+        self.sp += 1;
+        let addr = 0x0100 | (self.sp as u16);
+        self.load_memory(addr)
     }
 }

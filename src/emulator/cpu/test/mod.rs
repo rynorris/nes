@@ -3,6 +3,7 @@ mod instructions_arithmetic;
 mod instructions_branch;
 mod instructions_flags_registers;
 mod instructions_logical;
+mod instructions_stack;
 mod programs;
 
 use emulator::cpu;

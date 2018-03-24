@@ -58,6 +58,7 @@ opcode!(EOR_IND_IX, 0x51);
 
 opcode!(JMP_ABS, 0x4C);
 opcode!(JMP_IND, 0x6C);
+opcode!(JSR, 0x20);
 
 opcode!(LDA_IMM, 0xA9);
 opcode!(LDA_ZPG, 0xA5);
@@ -76,6 +77,8 @@ opcode!(ORA_ABS_X, 0x1D);
 opcode!(ORA_ABS_Y, 0x19);
 opcode!(ORA_IX_IND, 0x01);
 opcode!(ORA_IND_IX, 0x11);
+
+opcode!(RTS, 0x60);
 
 opcode!(SBC_IMM, 0xE9);
 opcode!(SBC_ZPG, 0xE5);

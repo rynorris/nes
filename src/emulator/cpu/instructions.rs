@@ -349,3 +349,44 @@ pub fn bit(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 
     addr_cycles
 }
+
+/* 8. Stack Processing */
+
+// JSR: Jump to Subroutine
+// PC + 2>, (PC + 1) -> PCL, (PC + 2) -> PCH
+pub fn jsr(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+
+    // load_addr will leave the PC pointing at the next opcode.
+    // JSR is actually supposed to store the previous address.
+    cpu.pc -= 1;
+
+    // Store PC on stack.
+    let pc_high = (cpu.pc >> 8) as u8;
+    let pc_low = cpu.pc as u8;
+    println!("PC: {:?}", cpu.pc);
+    println!("PCH: {:?}", pc_high);
+    println!("PCL: {:?}", pc_low);
+    cpu.stack_push(pc_high);
+    cpu.stack_push(pc_low);
+
+    // Jump to target address.
+    cpu.pc = addr;
+
+    addr_cycles
+}
+
+// RTS: Return from Subroutine
+// PC<, INC PC
+pub fn rts(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    // Load PC from stack.
+    let pc_low = cpu.stack_pop();
+    let pc_high = cpu.stack_pop();
+    cpu.pc = util::combine_bytes(pc_high, pc_low);
+
+    // JSR stores the address of the end of the JSR instruction.
+    // So we need to increment the PC by 1 to point at the next opcode.
+    cpu.pc += 1;
+
+    0
+}
