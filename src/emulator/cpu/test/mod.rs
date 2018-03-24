@@ -8,7 +8,7 @@ mod programs;
 use emulator::cpu;
 use emulator::memory;
 
-const PROGRAM_ROOT: u16 = 0xF000;
+pub const PROGRAM_ROOT: u16 = 0xF000;
 fn new_cpu() -> cpu::CPU {
     cpu::new(memory::new())
 }

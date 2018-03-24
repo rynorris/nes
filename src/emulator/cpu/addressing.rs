@@ -39,27 +39,27 @@ pub fn zero_page(cpu: &mut cpu::CPU) -> (u16, u32) {
 // Relative: one byte operand indicates address relative to PC.
 // Only used by branch instructions.
 pub fn relative(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let offset = cpu.load_memory(cpu.pc);
-    let is_add = (offset & 0b1000_0000) == 0x00;
-    let value = offset & 0b0111_1111;
+    let offset: u8 = cpu.load_memory(cpu.pc);
     cpu.pc += 1;
-    
+
     // Quirk in CPU means we unnecessarily read this memory.
     let _ = cpu.load_memory(cpu.pc);
-    cpu.pc += 1;
 
-    let bah = (cpu.pc >> 8) as u8;
-    let bal = cpu.pc as u8;
-
-    let (adl, carry) = if is_add { bal.overflowing_add(value) } else { bal.overflowing_sub(value) };
-    if carry {
-        // Quirk in CPU means we unnecessarily read this memory.
-        let _ = cpu.load_memory(util::combine_bytes(bah, adl));
-
-        let adh = if is_add { bah + 1 } else { bal - 1 };
-        (util::combine_bytes(adh, adl), 1)
+    // Signed addition.
+    // TODO: Find out if wrapping is the correct behaviour.
+    let is_negative = (offset & 0b1000_0000) != 0;
+    let (addr, _) = if is_negative {
+        let tc = (!offset) + 1;
+        cpu.pc.overflowing_sub(tc as u16)
     } else {
-        (util::combine_bytes(bah, adl), 0)
+        cpu.pc.overflowing_add(offset as u16)
+    };
+
+    // One extra cycle if we crossed a page boundary.
+    if (addr & 0xFF00) != (cpu.pc & 0xFF00) {
+        (addr, 1)
+    } else {
+        (addr, 0)
     }
 }
 

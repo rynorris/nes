@@ -20,6 +20,16 @@ opcode!(AND_ABS_Y, 0x39);
 opcode!(AND_IX_IND, 0x21);
 opcode!(AND_IND_IX, 0x31);
 
+opcode!(BCC, 0x90);
+opcode!(BCS, 0xB0);
+opcode!(BEQ, 0xF0);
+
+opcode!(BMI, 0x30);
+opcode!(BNE, 0xD0);
+opcode!(BPL, 0x10);
+opcode!(BVC, 0x50);
+opcode!(BVS, 0x70);
+
 opcode!(CLC, 0x18);
 opcode!(CLD, 0xD8);
 opcode!(CLI, 0x58);

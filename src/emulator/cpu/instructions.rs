@@ -244,3 +244,64 @@ pub fn jmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     cpu.pc = addr;
     addr_cycles
 }
+
+// Common functionality for branch instructions.
+fn branch_if(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode, should_branch: bool) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    if should_branch {
+        cpu.pc = addr;
+        addr_cycles + 1
+    } else {
+        // If not branching we don't incur any of the extra cycles.
+        0
+    }
+}
+
+// BMI - Branch on Result Minus
+pub fn bmi(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = cpu.p.is_set(cpu::flags::Flag::N);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BPL - Branch on Result Plus
+pub fn bpl(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = !cpu.p.is_set(cpu::flags::Flag::N);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BCC - Branch on Carry Clear
+pub fn bcc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = !cpu.p.is_set(cpu::flags::Flag::C);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BCS - Branch on Carry Set
+pub fn bcs(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = cpu.p.is_set(cpu::flags::Flag::C);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BEQ - Branch on Result Zero
+pub fn beq(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = cpu.p.is_set(cpu::flags::Flag::Z);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BNE - Branch on Result Not Zero
+pub fn bne(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = !cpu.p.is_set(cpu::flags::Flag::Z);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BVS - Branch on Overflow Set
+pub fn bvs(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = cpu.p.is_set(cpu::flags::Flag::V);
+    branch_if(cpu, load_addr, should_branch)
+}
+
+// BVC - Branch on Overflow Clear
+pub fn bvc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let should_branch = !cpu.p.is_set(cpu::flags::Flag::V);
+    branch_if(cpu, load_addr, should_branch)
+}
+

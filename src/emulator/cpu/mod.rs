@@ -78,6 +78,16 @@ impl CPU {
             opcodes::AND_IX_IND => (instructions::and, addressing::indexed_indirect, 6),
             opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
 
+            //  BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS
+            opcodes::BCC => (instructions::bcc, addressing::relative, 2),
+            opcodes::BCS => (instructions::bcs, addressing::relative, 2),
+            opcodes::BEQ => (instructions::beq, addressing::relative, 2),
+            opcodes::BMI => (instructions::bmi, addressing::relative, 2),
+            opcodes::BNE => (instructions::bne, addressing::relative, 2),
+            opcodes::BPL => (instructions::bpl, addressing::relative, 2),
+            opcodes::BVC => (instructions::bvc, addressing::relative, 2),
+            opcodes::BVS => (instructions::bvs, addressing::relative, 2),
+
             // CLC, CLD, CLI
             opcodes::CLC => (instructions::clc, addressing::immediate, 2),
             opcodes::CLD => (instructions::cld, addressing::immediate, 2),
