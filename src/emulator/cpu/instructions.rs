@@ -305,23 +305,28 @@ pub fn bvc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     branch_if(cpu, load_addr, should_branch)
 }
 
-// CMP - Compare Memory and Accumulator
-// A - M
-pub fn cmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+fn compare_instruction(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode, compare_with: u8) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
     let mem = cpu.load_memory(addr);
 
-    let diff = cpu.a.wrapping_sub(mem);
+    let diff = compare_with.wrapping_sub(mem);
     update_zero_flag(cpu, diff);
     update_negative_flag(cpu, diff);
 
-    if cpu.a < mem {
+    if compare_with < mem {
         cpu.p.clear(cpu::flags::Flag::C);
     } else {
         cpu.p.set(cpu::flags::Flag::C);
     }
 
     addr_cycles
+}
+
+// CMP - Compare Memory and Accumulator
+// A - M
+pub fn cmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    compare_instruction(cpu, load_addr, byte)
 }
 
 // BIT: Test Bits in Memory with Accumulator
@@ -434,6 +439,20 @@ pub fn dey(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     update_negative_flag(cpu, res);
     cpu.y = res;
     0
+}
+
+// CPX - Compare Index Register X to Memory
+// X - M
+pub fn cpx(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.x;
+    compare_instruction(cpu, load_addr, byte)
+}
+
+// CPY - Compare Index Register Y to Memory
+// Y - M
+pub fn cpy(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.y;
+    compare_instruction(cpu, load_addr, byte)
 }
 
 /* 8. Stack Processing */

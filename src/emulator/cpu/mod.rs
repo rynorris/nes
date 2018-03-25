@@ -110,6 +110,16 @@ impl CPU {
             opcodes::CMP_IX_IND => (instructions::cmp, addressing::indexed_indirect, 6),
             opcodes::CMP_IND_IX => (instructions::cmp, addressing::indirect_indexed, 5),
 
+            // CPX
+            opcodes::CPX_IMM => (instructions::cpx, addressing::immediate, 2),
+            opcodes::CPX_ZPG => (instructions::cpx, addressing::zero_page, 3),
+            opcodes::CPX_ABS => (instructions::cpx, addressing::absolute, 4),
+
+            // CPY
+            opcodes::CPY_IMM => (instructions::cpy, addressing::immediate, 2),
+            opcodes::CPY_ZPG => (instructions::cpy, addressing::zero_page, 3),
+            opcodes::CPY_ABS => (instructions::cpy, addressing::absolute, 4),
+
             // DEX, INY
             opcodes::DEX => (instructions::dex, addressing::implied, 2),
             opcodes::DEY => (instructions::dey, addressing::implied, 2),

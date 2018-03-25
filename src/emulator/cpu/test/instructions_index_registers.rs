@@ -266,3 +266,79 @@ fn test_dey_wrap() {
     assert_eq!(cycles, 2);
 }
 
+#[test]
+fn test_cpx_immediate_lt() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x15;
+    let cycles = run_program(&mut cpu, &[0xE0, 0x25]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_cpx_zero_page_lt() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x15;
+    load_data(&mut cpu.memory, 0x00AB, &[0x25]);
+    let cycles = run_program(&mut cpu, &[0xE4, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+    assert_eq!(cycles, 3);
+}
+
+#[test]
+fn test_cpx_absolute_lt() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x15;
+    load_data(&mut cpu.memory, 0xBEEF, &[0x25]);
+    let cycles = run_program(&mut cpu, &[0xEC, 0xEF, 0xBE]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_cpy_immediate_lt() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x15;
+    let cycles = run_program(&mut cpu, &[0xC0, 0x25]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_cpy_zero_page_lt() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x15;
+    load_data(&mut cpu.memory, 0x00AB, &[0x25]);
+    let cycles = run_program(&mut cpu, &[0xC4, 0xAB]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+    assert_eq!(cycles, 3);
+}
+
+#[test]
+fn test_cpy_absolute_lt() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x15;
+    load_data(&mut cpu.memory, 0xBEEF, &[0x25]);
+    let cycles = run_program(&mut cpu, &[0xCC, 0xEF, 0xBE]);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::C), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
+    assert_eq!(cycles, 4);
+}
+

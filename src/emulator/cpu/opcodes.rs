@@ -47,6 +47,14 @@ opcode!(CMP_ABS_Y, 0xD9);
 opcode!(CMP_IX_IND, 0xC1);
 opcode!(CMP_IND_IX, 0xD1);
 
+opcode!(CPX_IMM, 0xE0);
+opcode!(CPX_ZPG, 0xE4);
+opcode!(CPX_ABS, 0xEC);
+
+opcode!(CPY_IMM, 0xC0);
+opcode!(CPY_ZPG, 0xC4);
+opcode!(CPY_ABS, 0xCC);
+
 opcode!(DEX, 0xCA);
 opcode!(DEY, 0x88);
 
