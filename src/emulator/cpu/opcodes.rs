@@ -135,3 +135,7 @@ opcode!(STY_ZPG, 0x84);
 opcode!(STY_ZPG_X, 0x94);
 opcode!(STY_ABS, 0x8C);
 
+opcode!(TAX, 0xAA);
+opcode!(TXA, 0x8A);
+opcode!(TAY, 0xA8);
+opcode!(TYA, 0x98);

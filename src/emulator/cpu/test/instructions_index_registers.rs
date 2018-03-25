@@ -342,3 +342,143 @@ fn test_cpy_absolute_lt() {
     assert_eq!(cycles, 4);
 }
 
+#[test]
+fn test_tax() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x34;
+    cpu.x = 0x00;
+    let cycles = run_program(&mut cpu, &[0xAA]);
+    assert_eq!(cpu.a, 0x34);
+    assert_eq!(cpu.x, 0x34);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tax_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0xFF;
+    cpu.x = 0x00;
+    let cycles = run_program(&mut cpu, &[0xAA]);
+    assert_eq!(cpu.a, 0xFF);
+    assert_eq!(cpu.x, 0xFF);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tax_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x00;
+    cpu.x = 0xAA;
+    let cycles = run_program(&mut cpu, &[0xAA]);
+    assert_eq!(cpu.a, 0x00);
+    assert_eq!(cpu.x, 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_txa() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    cpu.a = 0x00;
+    let cycles = run_program(&mut cpu, &[0x8A]);
+    assert_eq!(cpu.a, 0x34);
+    assert_eq!(cpu.x, 0x34);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_txa_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.x = 0xFF;
+    cpu.a = 0x00;
+    let cycles = run_program(&mut cpu, &[0x8A]);
+    assert_eq!(cpu.a, 0xFF);
+    assert_eq!(cpu.x, 0xFF);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_txa_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x00;
+    cpu.a = 0xAA;
+    let cycles = run_program(&mut cpu, &[0x8A]);
+    assert_eq!(cpu.a, 0x00);
+    assert_eq!(cpu.x, 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tay() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x34;
+    cpu.y = 0x00;
+    let cycles = run_program(&mut cpu, &[0xA8]);
+    assert_eq!(cpu.a, 0x34);
+    assert_eq!(cpu.y, 0x34);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tay_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0xFF;
+    cpu.y = 0x00;
+    let cycles = run_program(&mut cpu, &[0xA8]);
+    assert_eq!(cpu.a, 0xFF);
+    assert_eq!(cpu.y, 0xFF);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tay_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.a = 0x00;
+    cpu.y = 0xAA;
+    let cycles = run_program(&mut cpu, &[0xA8]);
+    assert_eq!(cpu.a, 0x00);
+    assert_eq!(cpu.y, 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tya() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x34;
+    cpu.a = 0x00;
+    let cycles = run_program(&mut cpu, &[0x98]);
+    assert_eq!(cpu.a, 0x34);
+    assert_eq!(cpu.y, 0x34);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tya_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.y = 0xFF;
+    cpu.a = 0x00;
+    let cycles = run_program(&mut cpu, &[0x98]);
+    assert_eq!(cpu.a, 0xFF);
+    assert_eq!(cpu.y, 0xFF);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tya_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x00;
+    cpu.a = 0xAA;
+    let cycles = run_program(&mut cpu, &[0x98]);
+    assert_eq!(cpu.a, 0x00);
+    assert_eq!(cpu.y, 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 2);
+}
+

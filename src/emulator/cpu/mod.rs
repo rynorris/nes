@@ -216,6 +216,12 @@ impl CPU {
             opcodes::STY_ZPG_X => (instructions::sty, addressing::zero_page_indexed, 4),
             opcodes::STY_ABS => (instructions::sty, addressing::absolute, 4),
 
+            // TAX, TXA, TAY, TYA
+            opcodes::TAX => (instructions::tax, addressing::immediate, 2),
+            opcodes::TXA => (instructions::txa, addressing::immediate, 2),
+            opcodes::TAY => (instructions::tay, addressing::immediate, 2),
+            opcodes::TYA => (instructions::tya, addressing::immediate, 2),
+
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
     }

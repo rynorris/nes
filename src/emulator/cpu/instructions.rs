@@ -455,6 +455,46 @@ pub fn cpy(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     compare_instruction(cpu, load_addr, byte)
 }
 
+// TAX: Transfer Accumulator to Index X
+// A -> X
+pub fn tax(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    update_negative_flag(cpu, byte);
+    update_zero_flag(cpu, byte);
+    cpu.x = byte;
+    0
+}
+
+// TXA: Transfer Index X to Accumulator
+// X -> A
+pub fn txa(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.x;
+    update_negative_flag(cpu, byte);
+    update_zero_flag(cpu, byte);
+    cpu.a = byte;
+    0
+}
+
+// TAY: Transfer Accumulator to Index Y
+// A -> Y
+pub fn tay(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    update_negative_flag(cpu, byte);
+    update_zero_flag(cpu, byte);
+    cpu.y = byte;
+    0
+}
+
+// TYA: Transfer Index Y to Accumulator
+// Y -> A
+pub fn tya(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.y;
+    update_negative_flag(cpu, byte);
+    update_zero_flag(cpu, byte);
+    cpu.a = byte;
+    0
+}
+
 /* 8. Stack Processing */
 
 // JSR: Jump to Subroutine
