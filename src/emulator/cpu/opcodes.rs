@@ -112,3 +112,12 @@ opcode!(STA_ABS_X, 0x9D);
 opcode!(STA_ABS_Y, 0x99);
 opcode!(STA_IX_IND, 0x81);
 opcode!(STA_IND_IX, 0x91);
+
+opcode!(STX_ZPG, 0x86);
+opcode!(STX_ZPG_Y, 0x96);
+opcode!(STX_ABS, 0x8E);
+
+opcode!(STY_ZPG, 0x84);
+opcode!(STY_ZPG_X, 0x94);
+opcode!(STY_ABS, 0x8C);
+

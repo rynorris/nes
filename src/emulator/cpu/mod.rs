@@ -188,6 +188,16 @@ impl CPU {
             opcodes::STA_IX_IND => (instructions::sta, addressing::indexed_indirect, 6),
             opcodes::STA_IND_IX => (instructions::sta, addressing::indirect_indexed, 6),
 
+            // STX
+            opcodes::STX_ZPG => (instructions::stx, addressing::zero_page, 3),
+            opcodes::STX_ZPG_Y => (instructions::stx, addressing::zero_page_indexed_y, 4),
+            opcodes::STX_ABS => (instructions::stx, addressing::absolute, 4),
+
+            // STY
+            opcodes::STY_ZPG => (instructions::sty, addressing::zero_page, 3),
+            opcodes::STY_ZPG_X => (instructions::sty, addressing::zero_page_indexed, 4),
+            opcodes::STY_ABS => (instructions::sty, addressing::absolute, 4),
+
             _ => panic!("Unknown opcode: {:X}", opcode)
         }
     }

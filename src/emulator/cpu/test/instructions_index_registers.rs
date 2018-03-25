@@ -132,3 +132,67 @@ fn test_ldy_absolute_x() {
     assert_eq!(cycles, 4);
 }
 
+#[test]
+fn test_stx_zero_page() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    let cycles = run_program(&mut cpu, &[0x86, 0x67]);
+    assert_eq!(cpu.x, 0x34);
+    assert_eq!(cpu.memory.load(0x0067), 0x34);
+    assert_eq!(cycles, 3);
+}
+
+#[test]
+fn test_stx_zero_page_y() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    cpu.y = 0x08;
+    let cycles = run_program(&mut cpu, &[0x96, 0x67]);
+    assert_eq!(cpu.x, 0x34);
+    assert_eq!(cpu.memory.load(0x006F), 0x34);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_stx_absolute() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    let cycles = run_program(&mut cpu, &[0x8E, 0x67, 0x45]);
+    assert_eq!(cpu.x, 0x34);
+    assert_eq!(cpu.memory.load(0x4567), 0x34);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sty_zero_page() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x34;
+    let cycles = run_program(&mut cpu, &[0x84, 0x67]);
+    assert_eq!(cpu.y, 0x34);
+    assert_eq!(cpu.memory.load(0x0067), 0x34);
+    assert_eq!(cycles, 3);
+}
+
+#[test]
+fn test_sty_zero_page_y() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x34;
+    cpu.x = 0x08;
+    let cycles = run_program(&mut cpu, &[0x94, 0x67]);
+    assert_eq!(cpu.y, 0x34);
+    assert_eq!(cpu.memory.load(0x006F), 0x34);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_sty_absolute() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x34;
+    let cycles = run_program(&mut cpu, &[0x8C, 0x67, 0x45]);
+    assert_eq!(cpu.y, 0x34);
+    assert_eq!(cpu.memory.load(0x4567), 0x34);
+    assert_eq!(cycles, 4);
+}
+
+
+

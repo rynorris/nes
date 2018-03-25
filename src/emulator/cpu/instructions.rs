@@ -378,6 +378,24 @@ pub fn ldy(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     addr_cycles
 }
 
+// STX: Store Index Register X in Memory
+// X -> M
+pub fn stx(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.x;
+    cpu.store_memory(addr, byte);
+    addr_cycles
+}
+
+// STY: Store Index Register Y in Memory
+// Y -> M
+pub fn sty(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.y;
+    cpu.store_memory(addr, byte);
+    addr_cycles
+}
+
 /* 8. Stack Processing */
 
 // JSR: Jump to Subroutine
@@ -392,9 +410,6 @@ pub fn jsr(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     // Store PC on stack.
     let pc_high = (cpu.pc >> 8) as u8;
     let pc_low = cpu.pc as u8;
-    println!("PC: {:?}", cpu.pc);
-    println!("PCH: {:?}", pc_high);
-    println!("PCL: {:?}", pc_low);
     cpu.stack_push(pc_high);
     cpu.stack_push(pc_low);
 
