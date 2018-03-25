@@ -110,6 +110,10 @@ impl CPU {
             opcodes::CMP_IX_IND => (instructions::cmp, addressing::indexed_indirect, 6),
             opcodes::CMP_IND_IX => (instructions::cmp, addressing::indirect_indexed, 5),
 
+            // DEX, INY
+            opcodes::DEX => (instructions::dex, addressing::implied, 2),
+            opcodes::DEY => (instructions::dey, addressing::implied, 2),
+
             // EOR
             opcodes::EOR_IMM => (instructions::eor, addressing::immediate, 2),
             opcodes::EOR_ZPG => (instructions::eor, addressing::zero_page, 3),
@@ -119,6 +123,10 @@ impl CPU {
             opcodes::EOR_ABS_Y => (instructions::eor, addressing::absolute_indexed_y, 4),
             opcodes::EOR_IX_IND => (instructions::eor, addressing::indexed_indirect, 6),
             opcodes::EOR_IND_IX => (instructions::eor, addressing::indirect_indexed, 5),
+
+            // INX, INY
+            opcodes::INX => (instructions::inx, addressing::implied, 2),
+            opcodes::INY => (instructions::iny, addressing::implied, 2),
 
             // JMP
             opcodes::JMP_ABS => (instructions::jmp, addressing::absolute, 3),

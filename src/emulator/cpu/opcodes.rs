@@ -47,6 +47,9 @@ opcode!(CMP_ABS_Y, 0xD9);
 opcode!(CMP_IX_IND, 0xC1);
 opcode!(CMP_IND_IX, 0xD1);
 
+opcode!(DEX, 0xCA);
+opcode!(DEY, 0x88);
+
 opcode!(EOR_IMM, 0x49);
 opcode!(EOR_ZPG, 0x45);
 opcode!(EOR_ZPG_X, 0x55);
@@ -55,6 +58,9 @@ opcode!(EOR_ABS_X, 0x5D);
 opcode!(EOR_ABS_Y, 0x59);
 opcode!(EOR_IX_IND, 0x41);
 opcode!(EOR_IND_IX, 0x51);
+
+opcode!(INX, 0xE8);
+opcode!(INY, 0xC8);
 
 opcode!(JMP_ABS, 0x4C);
 opcode!(JMP_IND, 0x6C);

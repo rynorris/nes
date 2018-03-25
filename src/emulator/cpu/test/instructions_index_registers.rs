@@ -194,5 +194,75 @@ fn test_sty_absolute() {
     assert_eq!(cycles, 4);
 }
 
+#[test]
+fn test_inx_no_wrap() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    let cycles = run_program(&mut cpu, &[0xE8]);
+    assert_eq!(cpu.x, 0x35);
+    assert_eq!(cycles, 2);
+}
 
+#[test]
+fn test_inx_wrap() {
+    let mut cpu = new_cpu();
+    cpu.x = 0xFF;
+    let cycles = run_program(&mut cpu, &[0xE8]);
+    assert_eq!(cpu.x, 0x00);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_iny_no_wrap() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x34;
+    let cycles = run_program(&mut cpu, &[0xC8]);
+    assert_eq!(cpu.y, 0x35);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_iny_wrap() {
+    let mut cpu = new_cpu();
+    cpu.y = 0xFF;
+    let cycles = run_program(&mut cpu, &[0xC8]);
+    assert_eq!(cpu.y, 0x00);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_dex_no_wrap() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    let cycles = run_program(&mut cpu, &[0xCA]);
+    assert_eq!(cpu.x, 0x33);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_dex_wrap() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x00;
+    let cycles = run_program(&mut cpu, &[0xCA]);
+    assert_eq!(cpu.x, 0xFF);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_dey_no_wrap() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x34;
+    let cycles = run_program(&mut cpu, &[0x88]);
+    assert_eq!(cpu.y, 0x33);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_dey_wrap() {
+    let mut cpu = new_cpu();
+    cpu.y = 0x00;
+    let cycles = run_program(&mut cpu, &[0x88]);
+    assert_eq!(cpu.y, 0xFF);
+    assert_eq!(cycles, 2);
+}
 

@@ -396,6 +396,46 @@ pub fn sty(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     addr_cycles
 }
 
+// INX: Increment Index Register X by One
+// X + 1 -> X
+pub fn inx(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let res = cpu.x.wrapping_add(1);
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.x = res;
+    0
+}
+
+// INY: Increment Index Register Y by One
+// Y + 1 -> Y
+pub fn iny(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let res = cpu.y.wrapping_add(1);
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.y = res;
+    0
+}
+
+// DEX: Decrement Index Register X by One
+// X + 1 -> X
+pub fn dex(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let res = cpu.x.wrapping_sub(1);
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.x = res;
+    0
+}
+
+// DEY: Decrement Index Register Y by One
+// Y + 1 -> Y
+pub fn dey(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let res = cpu.y.wrapping_sub(1);
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    cpu.y = res;
+    0
+}
+
 /* 8. Stack Processing */
 
 // JSR: Jump to Subroutine
