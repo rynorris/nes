@@ -137,6 +137,20 @@ impl CPU {
             opcodes::LDA_IX_IND => (instructions::lda, addressing::indexed_indirect, 6),
             opcodes::LDA_IND_IX => (instructions::lda, addressing::indirect_indexed, 5),
 
+            // LDX
+            opcodes::LDX_IMM => (instructions::ldx, addressing::immediate, 2),
+            opcodes::LDX_ZPG => (instructions::ldx, addressing::zero_page, 3),
+            opcodes::LDX_ZPG_Y => (instructions::ldx, addressing::zero_page_indexed_y, 4),
+            opcodes::LDX_ABS => (instructions::ldx, addressing::absolute, 4),
+            opcodes::LDX_ABS_Y => (instructions::ldx, addressing::absolute_indexed_y, 4),
+
+            // LDY
+            opcodes::LDY_IMM => (instructions::ldy, addressing::immediate, 2),
+            opcodes::LDY_ZPG => (instructions::ldy, addressing::zero_page, 3),
+            opcodes::LDY_ZPG_X => (instructions::ldy, addressing::zero_page_indexed, 4),
+            opcodes::LDY_ABS => (instructions::ldy, addressing::absolute, 4),
+            opcodes::LDY_ABS_X => (instructions::ldy, addressing::absolute_indexed_x, 4),
+
             // ORA
             opcodes::ORA_IMM => (instructions::ora, addressing::immediate, 2),
             opcodes::ORA_ZPG => (instructions::ora, addressing::zero_page, 3),

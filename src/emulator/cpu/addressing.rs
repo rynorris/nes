@@ -65,7 +65,7 @@ pub fn relative(cpu: &mut cpu::CPU) -> (u16, u32) {
 
 // Absolute indexed: same as absolute addressing, but adds an index register to the
 // address.
-pub fn absolute_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
+fn absolute_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
     let bal = cpu.load_memory(cpu.pc);
     let bah = cpu.load_memory(cpu.pc + 1);
     cpu.pc += 2;
@@ -93,17 +93,28 @@ pub fn absolute_indexed_y(cpu: &mut cpu::CPU) -> (u16, u32) {
 }
 
 // Zero page indexed: same as zero page, but adds an index register to the address.
-// Only supported for index X.
+// Only supported for index X except for LDX and STX.
 // If the resulting value is greated than 255, the address wraps within page 0.
-pub fn zero_page_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
+fn zero_page_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
     let low_byte = cpu.load_memory(cpu.pc);
     cpu.pc += 1;
 
     // Quirk in CPU means we unnecessarily read this memory.
     let _ = cpu.load_memory(low_byte as u16);
 
-    let adjusted = (low_byte as u16) + (cpu.x as u16);
+    let adjusted = (low_byte as u16) + (offset as u16);
     (adjusted & 0x00FF, 0)
+}
+
+pub fn zero_page_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
+    let offset = cpu.x;
+    absolute_indexed_load(cpu, offset)
+}
+
+// Y-indexed version.  Only supported for LDX, STX.
+pub fn zero_page_indexed_y(cpu: &mut cpu::CPU) -> (u16, u32) {
+    let offset = cpu.y;
+    absolute_indexed_load(cpu, offset)
 }
 
 // Indirect addressing is where we look up the two byte address to read from a location in page-zero.

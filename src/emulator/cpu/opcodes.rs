@@ -69,6 +69,18 @@ opcode!(LDA_ABS_Y, 0xB9);
 opcode!(LDA_IX_IND, 0xA1);
 opcode!(LDA_IND_IX, 0xB1);
 
+opcode!(LDX_IMM, 0xA2);
+opcode!(LDX_ZPG, 0xA6);
+opcode!(LDX_ZPG_Y, 0xB6);
+opcode!(LDX_ABS, 0xAE);
+opcode!(LDX_ABS_Y, 0xBE);
+
+opcode!(LDY_IMM, 0xA0);
+opcode!(LDY_ZPG, 0xA4);
+opcode!(LDY_ZPG_X, 0xB4);
+opcode!(LDY_ABS, 0xAC);
+opcode!(LDY_ABS_X, 0xBC);
+
 opcode!(ORA_IMM, 0x09);
 opcode!(ORA_ZPG, 0x05);
 opcode!(ORA_ZPG_X, 0x15);

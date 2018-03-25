@@ -350,6 +350,34 @@ pub fn bit(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     addr_cycles
 }
 
+/* Index Register Instructions */
+
+// LDX: Load Index Register X from Memory
+// M -> X
+pub fn ldx(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+
+    update_zero_flag(cpu, mem);
+    update_negative_flag(cpu, mem);
+    cpu.x = mem;
+
+    addr_cycles
+}
+
+// LDY: Load Index Register Y from Memory
+// M -> Y
+pub fn ldy(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let mem = cpu.load_memory(addr);
+
+    update_zero_flag(cpu, mem);
+    update_negative_flag(cpu, mem);
+    cpu.y = mem;
+
+    addr_cycles
+}
+
 /* 8. Stack Processing */
 
 // JSR: Jump to Subroutine
