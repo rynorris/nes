@@ -498,7 +498,7 @@ pub fn tya(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 /* 8. Stack Processing */
 
 // JSR: Jump to Subroutine
-// PC + 2>, (PC + 1) -> PCL, (PC + 2) -> PCH
+// PC + 2v, (PC + 1) -> PCL, (PC + 2) -> PCH
 pub fn jsr(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
 
@@ -519,7 +519,7 @@ pub fn jsr(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 }
 
 // RTS: Return from Subroutine
-// PC<, INC PC
+// PC^, INC PC
 pub fn rts(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     // Load PC from stack.
     let pc_low = cpu.stack_pop();
@@ -530,5 +530,23 @@ pub fn rts(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     // So we need to increment the PC by 1 to point at the next opcode.
     cpu.pc += 1;
 
+    0
+}
+
+// PHA: Push Accumulator on Stack
+// Av
+pub fn pha(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    cpu.stack_push(byte);
+    0
+}
+
+// PLA: Pull Accumulator from Stack
+// A^
+pub fn pla(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.stack_pop();
+    update_negative_flag(cpu, byte);
+    update_zero_flag(cpu, byte);
+    cpu.a = byte;
     0
 }

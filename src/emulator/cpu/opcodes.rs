@@ -104,6 +104,9 @@ opcode!(ORA_ABS_Y, 0x19);
 opcode!(ORA_IX_IND, 0x01);
 opcode!(ORA_IND_IX, 0x11);
 
+opcode!(PHA, 0x48);
+opcode!(PLA, 0x68);
+
 opcode!(RTS, 0x60);
 
 opcode!(SBC_IMM, 0xE9);
