@@ -181,7 +181,7 @@ impl CPU {
 
             // PHA, PLA
             opcodes::PHA => (instructions::pha, addressing::implied, 3),
-            opcodes::PLA => (instructions::pla, addressing::implied, 3),
+            opcodes::PLA => (instructions::pla, addressing::implied, 4),
 
             // RTS
             opcodes::RTS => (instructions::rts, addressing::implied, 6),

@@ -49,7 +49,7 @@ fn test_pla() {
     cpu.stack_push(0x34);
     let cycles = run_program(&mut cpu, &[0x68]);
     assert_eq!(cpu.a, 0x34);
-    assert_eq!(cycles, 3);
+    assert_eq!(cycles, 4);
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn test_pla_sets_negative_flag() {
     let cycles = run_program(&mut cpu, &[0x68]);
     assert_eq!(cpu.a, 0xFF);
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
-    assert_eq!(cycles, 3);
+    assert_eq!(cycles, 4);
 }
 
 #[test]
@@ -69,6 +69,6 @@ fn test_pla_sets_zero_flag() {
     let cycles = run_program(&mut cpu, &[0x68]);
     assert_eq!(cpu.a, 0x00);
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
-    assert_eq!(cycles, 3);
+    assert_eq!(cycles, 4);
 }
 
