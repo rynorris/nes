@@ -142,3 +142,5 @@ opcode!(TAX, 0xAA);
 opcode!(TXA, 0x8A);
 opcode!(TAY, 0xA8);
 opcode!(TYA, 0x98);
+opcode!(TSX, 0xBA);
+opcode!(TXS, 0x9A);

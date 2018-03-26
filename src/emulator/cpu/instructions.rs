@@ -550,3 +550,21 @@ pub fn pla(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.a = byte;
     0
 }
+
+// TXS: Transfer Index X to Stack Pointer
+// X -> S
+pub fn txs(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    cpu.sp = cpu.x;
+    0
+}
+
+// TSX: Transfer Stack Pointer to Index X
+// S -> X
+pub fn tsx(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.sp;
+    update_negative_flag(cpu, byte);
+    update_zero_flag(cpu, byte);
+    cpu.x = cpu.sp;
+    0
+}
+

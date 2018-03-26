@@ -72,3 +72,46 @@ fn test_pla_sets_zero_flag() {
     assert_eq!(cycles, 4);
 }
 
+#[test]
+fn test_txs() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x34;
+    assert_ne!(cpu.sp, 0x34);
+    let cycles = run_program(&mut cpu, &[0x9A]);
+    assert_eq!(cpu.sp, 0x34);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tsx() {
+    let mut cpu = new_cpu();
+    cpu.sp = 0x34;
+    assert_ne!(cpu.x, 0x34);
+    let cycles = run_program(&mut cpu, &[0xBA]);
+    assert_eq!(cpu.x, 0x34);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tsx_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.sp = 0xFF;
+    assert_ne!(cpu.x, 0xFF);
+    let cycles = run_program(&mut cpu, &[0xBA]);
+    assert_eq!(cpu.x, 0xFF);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 2);
+}
+
+#[test]
+fn test_tsx_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.sp = 0x00;
+    cpu.x = 0x34;
+    assert_ne!(cpu.x, 0x00);
+    let cycles = run_program(&mut cpu, &[0xBA]);
+    assert_eq!(cpu.x, 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 2);
+}
+
