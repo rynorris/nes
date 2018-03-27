@@ -106,6 +106,8 @@ opcode!(ORA_IND_IX, 0x11);
 
 opcode!(PHA, 0x48);
 opcode!(PLA, 0x68);
+opcode!(PHP, 0x08);
+opcode!(PLP, 0x28);
 
 opcode!(RTS, 0x60);
 

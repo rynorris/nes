@@ -568,3 +568,19 @@ pub fn tsx(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     0
 }
 
+// PHP: Push Processor Status on Stack
+// Pv
+pub fn php(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.p.as_byte();
+    cpu.stack_push(byte);
+    0
+}
+
+// PLP: Pull Processor Status from Stack
+// P^
+pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.stack_pop();
+    cpu.p.load_byte(byte);
+    0
+}
+

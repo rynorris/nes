@@ -179,9 +179,11 @@ impl CPU {
             opcodes::ORA_IX_IND => (instructions::ora, addressing::indexed_indirect, 6),
             opcodes::ORA_IND_IX => (instructions::ora, addressing::indirect_indexed, 5),
 
-            // PHA, PLA
+            // PHA, PLA, PHP, PLP
             opcodes::PHA => (instructions::pha, addressing::implied, 3),
             opcodes::PLA => (instructions::pla, addressing::implied, 4),
+            opcodes::PHP => (instructions::php, addressing::implied, 3),
+            opcodes::PLP => (instructions::plp, addressing::implied, 4),
 
             // RTS
             opcodes::RTS => (instructions::rts, addressing::implied, 6),

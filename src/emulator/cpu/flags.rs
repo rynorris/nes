@@ -29,6 +29,14 @@ impl ProcessorFlags {
     pub fn clear(&mut self, flag: Flag) {
         self.byte = self.byte & (0xFF ^ (flag as u8));
     }
+
+    pub fn as_byte(&self) -> u8 {
+        self.byte
+    }
+
+    pub fn load_byte(&mut self, byte: u8) {
+        self.byte = byte;
+    }
 }
 
 #[test]

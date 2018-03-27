@@ -115,3 +115,22 @@ fn test_tsx_sets_zero_flag() {
     assert_eq!(cycles, 2);
 }
 
+#[test]
+fn test_php() {
+    let mut cpu = new_cpu();
+    cpu.p.load_byte(0x34);
+    let cycles = run_program(&mut cpu, &[0x08]);
+    assert_eq!(cpu.p.as_byte(), 0x34);
+    assert_eq!(cpu.stack_pop(), 0x34);
+    assert_eq!(cycles, 3);
+}
+
+#[test]
+fn test_plp() {
+    let mut cpu = new_cpu();
+    cpu.stack_push(0x34);
+    let cycles = run_program(&mut cpu, &[0x28]);
+    assert_eq!(cpu.p.as_byte(), 0x34);
+    assert_eq!(cycles, 4);
+}
+
