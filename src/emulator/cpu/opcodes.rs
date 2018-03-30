@@ -33,6 +33,8 @@ opcode!(BPL, 0x10);
 opcode!(BVC, 0x50);
 opcode!(BVS, 0x70);
 
+opcode!(BRK, 0x00);
+
 opcode!(CLC, 0x18);
 opcode!(CLD, 0xD8);
 opcode!(CLI, 0x58);

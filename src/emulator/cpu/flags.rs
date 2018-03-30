@@ -1,9 +1,9 @@
 pub enum Flag {
     N = 0b1000_0000, // Negative
     V = 0b0100_0000, // Overflow
-    B = 0b0001_0000,
+    B = 0b0001_0000, // Break Flag
     D = 0b0000_1000, // BCD Mode
-    I = 0b0000_0100,
+    I = 0b0000_0100, // Interrupt Disable
     Z = 0b0000_0010, // Zero
     C = 0b0000_0001, // Carry
 }

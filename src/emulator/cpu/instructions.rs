@@ -597,3 +597,25 @@ pub fn rti(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.pc = util::combine_bytes(pch, pcl);
     0
 }
+
+// BRK: Break Command
+// PC+2v (FFFE) -> PCL, (FFFF) -> PCH
+pub fn brk(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    // Note: I'm not sure why it stores PC+2, but that's what the documentation says.
+    // PC was incremented by 1 already for us before this function, so just add one.
+    let pch = (cpu.pc >> 8) as u8;
+    let pcl = cpu.pc as u8;
+    cpu.stack_push(pch);
+    cpu.stack_push(pcl + 1);
+
+    // Enable break flag before storing P.
+    cpu.p.set(cpu::flags::Flag::B);
+    let byte = cpu.p.as_byte();
+    cpu.stack_push(byte);
+
+    // Load interrupt vector.
+    let pcl = cpu.load_memory(0xFFFE);
+    let pch = cpu.load_memory(0xFFFF);
+    cpu.pc = util::combine_bytes(pch, pcl);
+    0
+}

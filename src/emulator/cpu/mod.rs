@@ -94,6 +94,9 @@ impl CPU {
             opcodes::BVC => (instructions::bvc, addressing::relative, 2),
             opcodes::BVS => (instructions::bvs, addressing::relative, 2),
 
+            // BRK
+            opcodes::BRK => (instructions::brk, addressing::implied, 7),
+
             // CLC, CLD, CLI
             opcodes::CLC => (instructions::clc, addressing::immediate, 2),
             opcodes::CLD => (instructions::cld, addressing::immediate, 2),
