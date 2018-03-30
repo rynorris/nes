@@ -584,3 +584,16 @@ pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     0
 }
 
+/* 8. Reset and Interrupt Considerations */
+
+// RTI: Return from Interrupt
+// ^P ^PC
+pub fn rti(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.stack_pop();
+    cpu.p.load_byte(byte);
+
+    let pcl = cpu.stack_pop();
+    let pch = cpu.stack_pop();
+    cpu.pc = util::combine_bytes(pch, pcl);
+    0
+}

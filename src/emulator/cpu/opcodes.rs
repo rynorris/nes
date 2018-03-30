@@ -109,6 +109,7 @@ opcode!(PLA, 0x68);
 opcode!(PHP, 0x08);
 opcode!(PLP, 0x28);
 
+opcode!(RTI, 0x40);
 opcode!(RTS, 0x60);
 
 opcode!(SBC_IMM, 0xE9);

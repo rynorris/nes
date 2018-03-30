@@ -185,7 +185,8 @@ impl CPU {
             opcodes::PHP => (instructions::php, addressing::implied, 3),
             opcodes::PLP => (instructions::plp, addressing::implied, 4),
 
-            // RTS
+            // RTI, RTS
+            opcodes::RTI => (instructions::rti, addressing::implied, 6),
             opcodes::RTS => (instructions::rts, addressing::implied, 6),
 
             // SBC
