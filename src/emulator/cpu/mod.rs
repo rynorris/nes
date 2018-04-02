@@ -172,6 +172,13 @@ impl CPU {
             opcodes::LDY_ABS => (instructions::ldy, addressing::absolute, 4),
             opcodes::LDY_ABS_X => (instructions::ldy, addressing::absolute_indexed_x, 4),
 
+            // LSR
+            opcodes::LSR_A => (instructions::lsra, addressing::implied, 2),
+            opcodes::LSR_ZPG => (instructions::lsr, addressing::zero_page, 5),
+            opcodes::LSR_ZPG_X => (instructions::lsr, addressing::zero_page_indexed, 6),
+            opcodes::LSR_ABS => (instructions::lsr, addressing::absolute, 6),
+            opcodes::LSR_ABS_X => (instructions::lsr, addressing::absolute_indexed_x, 7),
+
             // ORA
             opcodes::ORA_IMM => (instructions::ora, addressing::immediate, 2),
             opcodes::ORA_ZPG => (instructions::ora, addressing::zero_page, 3),

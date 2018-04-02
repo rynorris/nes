@@ -97,6 +97,12 @@ opcode!(LDY_ZPG_X, 0xB4);
 opcode!(LDY_ABS, 0xAC);
 opcode!(LDY_ABS_X, 0xBC);
 
+opcode!(LSR_A, 0x4A);
+opcode!(LSR_ZPG, 0x46);
+opcode!(LSR_ZPG_X, 0x56);
+opcode!(LSR_ABS, 0x4E);
+opcode!(LSR_ABS_X, 0x5E);
+
 opcode!(ORA_IMM, 0x09);
 opcode!(ORA_ZPG, 0x05);
 opcode!(ORA_ZPG_X, 0x15);

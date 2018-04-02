@@ -5,6 +5,7 @@ mod instructions_flags_registers;
 mod instructions_logical;
 mod instructions_index_registers;
 mod instructions_reset_interrupt;
+mod instructions_shift_modify;
 mod instructions_stack;
 mod programs;
 

@@ -619,3 +619,91 @@ pub fn brk(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.pc = util::combine_bytes(pch, pcl);
     0
 }
+
+/* 10. Shift and Memory Modify Instructions */
+
+fn shift_set_flags(cpu: &mut cpu::CPU, res: u8, carry: bool) {
+    if carry {
+        cpu.p.set(cpu::flags::Flag::C);
+    } else {
+        cpu.p.clear(cpu::flags::Flag::C);
+    }
+
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+}
+
+// The shift instructions have a special accumulator addressing mode which doesn't fit out model of
+// addressing modes.  So we implement them as separate instructions.
+
+// LSR: Logical Shift Right
+pub fn lsr(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.load_memory(addr);
+    let (res, carry) = util::shift_right(byte);
+    shift_set_flags(cpu, res, carry);
+    cpu.store_memory(addr, res);
+    addr_cycles
+}
+
+pub fn lsra(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    let (res, carry) = util::shift_right(byte);
+    shift_set_flags(cpu, res, carry);
+    cpu.a = res;
+    0
+}
+
+// ASL: Arithmetic Shift Left
+pub fn asl(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.load_memory(addr);
+    let (res, carry) = util::shift_left(byte);
+    shift_set_flags(cpu, res, carry);
+    cpu.store_memory(addr, res);
+    addr_cycles
+}
+
+pub fn asla(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    let (res, carry) = util::shift_left(byte);
+    shift_set_flags(cpu, res, carry);
+    cpu.a = res;
+    0
+}
+
+// ROR: Rotate Right
+pub fn ror(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.load_memory(addr);
+    let (res, carry) = util::rotate_right(byte, cpu.p.is_set(cpu::flags::Flag::C));
+    shift_set_flags(cpu, res, carry);
+    cpu.store_memory(addr, res);
+    addr_cycles
+}
+
+pub fn rora(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    let (res, carry) = util::rotate_right(byte, cpu.p.is_set(cpu::flags::Flag::C));
+    shift_set_flags(cpu, res, carry);
+    cpu.a = res;
+    0
+}
+
+// ROL: Rotate Left
+pub fn rol(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.load_memory(addr);
+    let (res, carry) = util::rotate_left(byte, cpu.p.is_set(cpu::flags::Flag::C));
+    shift_set_flags(cpu, res, carry);
+    cpu.store_memory(addr, res);
+    addr_cycles
+}
+
+pub fn rola(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    let byte = cpu.a;
+    let (res, carry) = util::rotate_left(byte, cpu.p.is_set(cpu::flags::Flag::C));
+    shift_set_flags(cpu, res, carry);
+    cpu.a = res;
+    0
+}
