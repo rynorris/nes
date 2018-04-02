@@ -20,6 +20,12 @@ opcode!(AND_ABS_Y, 0x39);
 opcode!(AND_IX_IND, 0x21);
 opcode!(AND_IND_IX, 0x31);
 
+opcode!(ASL_A, 0x0A);
+opcode!(ASL_ZPG, 0x06);
+opcode!(ASL_ZPG_X, 0x16);
+opcode!(ASL_ABS, 0x0E);
+opcode!(ASL_ABS_X, 0x1E);
+
 opcode!(BCC, 0x90);
 opcode!(BCS, 0xB0);
 opcode!(BEQ, 0xF0);
@@ -116,6 +122,18 @@ opcode!(PHA, 0x48);
 opcode!(PLA, 0x68);
 opcode!(PHP, 0x08);
 opcode!(PLP, 0x28);
+
+opcode!(ROL_A, 0x2A);
+opcode!(ROL_ZPG, 0x26);
+opcode!(ROL_ZPG_X, 0x36);
+opcode!(ROL_ABS, 0x2E);
+opcode!(ROL_ABS_X, 0x3E);
+
+opcode!(ROR_A, 0x6A);
+opcode!(ROR_ZPG, 0x66);
+opcode!(ROR_ZPG_X, 0x76);
+opcode!(ROR_ABS, 0x6E);
+opcode!(ROR_ABS_X, 0x7E);
 
 opcode!(RTI, 0x40);
 opcode!(RTS, 0x60);

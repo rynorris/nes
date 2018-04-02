@@ -78,6 +78,13 @@ impl CPU {
             opcodes::AND_IX_IND => (instructions::and, addressing::indexed_indirect, 6),
             opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
 
+            // ASL
+            opcodes::ASL_A => (instructions::asla, addressing::immediate, 2),
+            opcodes::ASL_ZPG => (instructions::asl, addressing::zero_page, 5),
+            opcodes::ASL_ZPG_X => (instructions::asl, addressing::zero_page_indexed, 6),
+            opcodes::ASL_ABS => (instructions::asl, addressing::absolute, 6),
+            opcodes::ASL_ABS_X => (instructions::asl, addressing::absolute_indexed_x, 7),
+
             // BCC, BCS, BEQ
             opcodes::BCC => (instructions::bcc, addressing::relative, 2),
             opcodes::BCS => (instructions::bcs, addressing::relative, 2),
@@ -194,6 +201,20 @@ impl CPU {
             opcodes::PLA => (instructions::pla, addressing::implied, 4),
             opcodes::PHP => (instructions::php, addressing::implied, 3),
             opcodes::PLP => (instructions::plp, addressing::implied, 4),
+
+            // ROL
+            opcodes::ROL_A => (instructions::rola, addressing::implied, 2),
+            opcodes::ROL_ZPG => (instructions::rol, addressing::zero_page, 5),
+            opcodes::ROL_ZPG_X => (instructions::rol, addressing::zero_page_indexed, 6),
+            opcodes::ROL_ABS => (instructions::rol, addressing::absolute, 6),
+            opcodes::ROL_ABS_X => (instructions::rol, addressing::absolute_indexed_x, 7),
+
+            // ROR
+            opcodes::ROR_A => (instructions::rora, addressing::implied, 2),
+            opcodes::ROR_ZPG => (instructions::ror, addressing::zero_page, 5),
+            opcodes::ROR_ZPG_X => (instructions::ror, addressing::zero_page_indexed, 6),
+            opcodes::ROR_ABS => (instructions::ror, addressing::absolute, 6),
+            opcodes::ROR_ABS_X => (instructions::ror, addressing::absolute_indexed_x, 7),
 
             // RTI, RTS
             opcodes::RTI => (instructions::rti, addressing::implied, 6),
