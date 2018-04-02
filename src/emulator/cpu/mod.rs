@@ -11,22 +11,22 @@ use emulator::memory;
 // CPU Implemented as a state machine.
 pub struct CPU {
     // Connection to main memory.
-    pub memory: memory::RAM,
+    memory: memory::RAM,
 
     // Accumulator
-    pub a: u8,
+    a: u8,
 
     // X Index Register
-    pub x: u8,
+    x: u8,
 
     // Y Index Register
-    pub y: u8,
+    y: u8,
 
     // Stack Pointer
-    pub sp: u8,
+    sp: u8,
 
     // Program Counter
-    pub pc: u16,
+    pc: u16,
 
     // Processor Flags NV_BDIZC
     p: flags::ProcessorFlags,
