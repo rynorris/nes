@@ -50,7 +50,7 @@ pub fn new(memory: memory::RAM) -> CPU {
 }
 
 impl CPU {
-    pub fn start_sequence(&mut self) -> u32 {
+    pub fn startup_sequence(&mut self) -> u32 {
         self.load_vector_to_pc(START_VECTOR);
 
         // Disable interrupts at startup.  The programmer should re-enable once they have completed

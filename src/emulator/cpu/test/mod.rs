@@ -8,6 +8,7 @@ mod instructions_reset_interrupt;
 mod instructions_shift_modify;
 mod instructions_stack;
 mod programs;
+mod startup_interrupts;
 
 use emulator::cpu;
 use emulator::memory;
