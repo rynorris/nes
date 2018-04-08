@@ -345,3 +345,137 @@ fn test_rol_absolute_x() {
     assert_eq!(cycles, 7);
 }
 
+#[test]
+fn test_inc_zero_page() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xAB);
+    let cycles = run_program(&mut cpu, &[0xE6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0xAC);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_inc_zero_page_wraps() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xFF);
+    let cycles = run_program(&mut cpu, &[0xE6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0x00);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_inc_zero_page_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xFF);
+    let cycles = run_program(&mut cpu, &[0xE6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_inc_zero_page_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xEB);
+    let cycles = run_program(&mut cpu, &[0xE6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0xEC);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_inc_zero_page_x() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xAB);
+    cpu.x = 0x10;
+    let cycles = run_program(&mut cpu, &[0xF6, 0x24]);
+    assert_eq!(cpu.load_memory(0x0034), 0xAC);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
+fn test_inc_absolute() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0xBEEF, 0xAB);
+    let cycles = run_program(&mut cpu, &[0xEE, 0xEF, 0xBE]);
+    assert_eq!(cpu.load_memory(0xBEEF), 0xAC);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
+fn test_inc_absolute_x() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0xBEEF, 0xAB);
+    cpu.x = 0x10;
+    let cycles = run_program(&mut cpu, &[0xFE, 0xDF, 0xBE]);
+    assert_eq!(cpu.load_memory(0xBEEF), 0xAC);
+    assert_eq!(cycles, 7);
+}
+
+#[test]
+fn test_dec_zero_page() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xAB);
+    let cycles = run_program(&mut cpu, &[0xC6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0xAA);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_dec_zero_page_wraps() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0x00);
+    let cycles = run_program(&mut cpu, &[0xC6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0xFF);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_dec_zero_page_sets_zero_flag() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0x01);
+    let cycles = run_program(&mut cpu, &[0xC6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0x00);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_dec_zero_page_sets_negative_flag() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xEB);
+    let cycles = run_program(&mut cpu, &[0xC6, 0x34]);
+    assert_eq!(cpu.load_memory(0x0034), 0xEA);
+    assert_eq!(cpu.p.is_set(cpu::flags::Flag::N), true);
+    assert_eq!(cycles, 5);
+}
+
+#[test]
+fn test_dec_zero_page_x() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0x0034, 0xAB);
+    cpu.x = 0x10;
+    let cycles = run_program(&mut cpu, &[0xD6, 0x24]);
+    assert_eq!(cpu.load_memory(0x0034), 0xAA);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
+fn test_dec_absolute() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0xBEEF, 0xAB);
+    let cycles = run_program(&mut cpu, &[0xCE, 0xEF, 0xBE]);
+    assert_eq!(cpu.load_memory(0xBEEF), 0xAA);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
+fn test_dec_absolute_x() {
+    let mut cpu = new_cpu();
+    cpu.store_memory(0xBEEF, 0xAB);
+    cpu.x = 0x10;
+    let cycles = run_program(&mut cpu, &[0xDE, 0xDF, 0xBE]);
+    assert_eq!(cpu.load_memory(0xBEEF), 0xAA);
+    assert_eq!(cycles, 7);
+}
+

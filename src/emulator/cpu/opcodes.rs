@@ -63,6 +63,11 @@ opcode!(CPY_IMM, 0xC0);
 opcode!(CPY_ZPG, 0xC4);
 opcode!(CPY_ABS, 0xCC);
 
+opcode!(DEC_ZPG, 0xC6);
+opcode!(DEC_ZPG_X, 0xD6);
+opcode!(DEC_ABS, 0xCE);
+opcode!(DEC_ABS_X, 0xDE);
+
 opcode!(DEX, 0xCA);
 opcode!(DEY, 0x88);
 
@@ -74,6 +79,11 @@ opcode!(EOR_ABS_X, 0x5D);
 opcode!(EOR_ABS_Y, 0x59);
 opcode!(EOR_IX_IND, 0x41);
 opcode!(EOR_IND_IX, 0x51);
+
+opcode!(INC_ZPG, 0xE6);
+opcode!(INC_ZPG_X, 0xF6);
+opcode!(INC_ABS, 0xEE);
+opcode!(INC_ABS_X, 0xFE);
 
 opcode!(INX, 0xE8);
 opcode!(INY, 0xC8);

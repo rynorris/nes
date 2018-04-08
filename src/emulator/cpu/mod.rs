@@ -130,6 +130,12 @@ impl CPU {
             opcodes::CPY_ZPG => (instructions::cpy, addressing::zero_page, 3),
             opcodes::CPY_ABS => (instructions::cpy, addressing::absolute, 4),
 
+            // DEC
+            opcodes::DEC_ZPG => (instructions::dec, addressing::zero_page, 5),
+            opcodes::DEC_ZPG_X => (instructions::dec, addressing::zero_page_indexed, 6),
+            opcodes::DEC_ABS => (instructions::dec, addressing::absolute, 6),
+            opcodes::DEC_ABS_X => (instructions::dec, addressing::absolute_indexed_x, 7),
+
             // DEX, INY
             opcodes::DEX => (instructions::dex, addressing::implied, 2),
             opcodes::DEY => (instructions::dey, addressing::implied, 2),
@@ -143,6 +149,12 @@ impl CPU {
             opcodes::EOR_ABS_Y => (instructions::eor, addressing::absolute_indexed_y, 4),
             opcodes::EOR_IX_IND => (instructions::eor, addressing::indexed_indirect, 6),
             opcodes::EOR_IND_IX => (instructions::eor, addressing::indirect_indexed, 5),
+
+            // INC
+            opcodes::INC_ZPG => (instructions::inc, addressing::zero_page, 5),
+            opcodes::INC_ZPG_X => (instructions::inc, addressing::zero_page_indexed, 6),
+            opcodes::INC_ABS => (instructions::inc, addressing::absolute, 6),
+            opcodes::INC_ABS_X => (instructions::inc, addressing::absolute_indexed_x, 7),
 
             // INX, INY
             opcodes::INX => (instructions::inx, addressing::implied, 2),

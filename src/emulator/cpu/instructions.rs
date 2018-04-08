@@ -707,3 +707,27 @@ pub fn rola(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.a = res;
     0
 }
+
+// INC: Increment Memory by One
+// M + 1 -> M
+pub fn inc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.load_memory(addr);
+    let res = byte.wrapping_add(1);
+    cpu.store_memory(addr, res);
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    addr_cycles
+}
+
+// DEC: Decrement Memory by One
+// M - 1 -> M
+pub fn dec(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
+    let (addr, addr_cycles) = load_addr(cpu);
+    let byte = cpu.load_memory(addr);
+    let res = byte.wrapping_sub(1);
+    cpu.store_memory(addr, res);
+    update_zero_flag(cpu, res);
+    update_negative_flag(cpu, res);
+    addr_cycles
+}
