@@ -178,3 +178,10 @@ fn test_sta_indirect_indexed() {
     assert_eq!(cycles, 6);
 }
 
+#[test]
+fn test_nop_does_nothing_and_takes_2_cycles() {
+    let mut cpu = new_cpu();
+    let cycles = run_program(&mut cpu, &[0xEA]);
+    assert_eq!(cycles, 2);
+}
+

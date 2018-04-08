@@ -731,3 +731,8 @@ pub fn dec(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     update_negative_flag(cpu, res);
     addr_cycles
 }
+
+// NOP: No operation
+pub fn nop(_: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
+    0
+}

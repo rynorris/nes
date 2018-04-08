@@ -198,6 +198,9 @@ impl CPU {
             opcodes::LSR_ABS => (instructions::lsr, addressing::absolute, 6),
             opcodes::LSR_ABS_X => (instructions::lsr, addressing::absolute_indexed_x, 7),
 
+            // NOP
+            opcodes::NOP => (instructions::nop, addressing::implied, 2),
+
             // ORA
             opcodes::ORA_IMM => (instructions::ora, addressing::immediate, 2),
             opcodes::ORA_ZPG => (instructions::ora, addressing::zero_page, 3),
