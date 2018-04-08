@@ -7,8 +7,13 @@ mod opcodes;
 mod test;
 
 use emulator::memory;
+use emulator::util;
 
-// CPU Implemented as a state machine.
+// Program vector locations.
+pub const START_VECTOR: u16 = 0xFFFC;
+pub const IRQ_VECTOR: u16= 0xFFFE;
+pub const NMI_VECTOR: u16= 0xFFFA;
+
 pub struct CPU {
     // Connection to main memory.
     memory: memory::RAM,
@@ -19,7 +24,7 @@ pub struct CPU {
     // X Index Register
     x: u8,
 
-    // Y Index Register
+    
     y: u8,
 
     // Stack Pointer
@@ -45,14 +50,66 @@ pub fn new(memory: memory::RAM) -> CPU {
 }
 
 impl CPU {
+    pub fn start_sequence(&mut self) -> u32 {
+        self.load_vector_to_pc(START_VECTOR);
+
+        // Disable interrupts at startup.  The programmer should re-enable once they have completed
+        // initializing the system.
+        self.p.set(flags::Flag::I);
+        8
+    }
+
+    pub fn tick(&mut self) -> u32 {
+        return if self.should_non_maskable_interrupt() {
+            self.non_maskable_interrupt()
+        } else if self.should_interrupt() {
+            self.interrupt()
+        } else {
+            self.execute_next_instruction()
+        }
+    }
+
     // Returns number of elapsed cycles.
-    pub fn execute_next_instruction(&mut self) -> u32 {
+    fn execute_next_instruction(&mut self) -> u32 {
         let opcode = self.memory.load(self.pc);
         self.pc += 1;
         let (operation, addressing_mode, cycles) = CPU::decode_instruction(opcode);
         let extra_cycles = operation(self, addressing_mode);
 
         cycles + extra_cycles
+    }
+
+    fn interrupt(&mut self) -> u32 {
+        self.interrupt_to_vector(IRQ_VECTOR)
+    }
+
+    fn non_maskable_interrupt(&mut self) -> u32 {
+        self.interrupt_to_vector(NMI_VECTOR)
+    }
+
+    fn interrupt_to_vector(&mut self, vector: u16) -> u32 {
+        // Store processor state.
+        let pch = (self.pc >> 8) as u8;
+        let pcl = self.pc as u8;
+        self.stack_push(pch);
+        self.stack_push(pcl);
+        let p = self.p.as_byte();
+        self.stack_push(p);
+
+        self.load_vector_to_pc(vector);
+
+        // Disable interrupts.  The programmer should re-enable once they have completed
+        // initial interrupt handling.
+        self.p.set(flags::Flag::I);
+        8
+    }
+
+    fn should_interrupt(&self) -> bool {
+        false
+    }
+
+    fn should_non_maskable_interrupt(&self) -> bool {
+        false
     }
 
     fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode, u32) {
@@ -281,23 +338,29 @@ impl CPU {
         }
     }
 
-    pub fn load_memory(&self, address: u16) -> u8 {
+    fn load_memory(&self, address: u16) -> u8 {
         self.memory.load(address)
     }
 
-    pub fn store_memory(&mut self, address: u16, byte: u8) {
+    fn store_memory(&mut self, address: u16, byte: u8) {
         self.memory.store(address, byte);
     }
 
-    pub fn stack_push(&mut self, byte: u8) {
+    fn stack_push(&mut self, byte: u8) {
         let addr = 0x0100 | (self.sp as u16);
         self.sp -= 1;
         self.store_memory(addr, byte);
     }
 
-    pub fn stack_pop(&mut self) -> u8 {
+    fn stack_pop(&mut self) -> u8 {
         self.sp += 1;
         let addr = 0x0100 | (self.sp as u16);
         self.load_memory(addr)
+    }
+
+    fn load_vector_to_pc(&mut self, vector: u16) {
+        let vector_low = self.load_memory(vector);
+        let vector_high = self.load_memory(vector + 1);
+        self.pc = util::combine_bytes(vector_high, vector_low);
     }
 }
