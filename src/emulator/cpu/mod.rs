@@ -7,6 +7,8 @@ mod opcodes;
 mod test;
 
 use emulator::memory;
+use emulator::memory::Reader;
+use emulator::memory::Writer;
 use emulator::util;
 
 // Program vector locations.
@@ -16,7 +18,7 @@ pub const NMI_VECTOR: u16= 0xFFFA;
 
 pub struct CPU {
     // Connection to main memory.
-    memory: memory::RAM,
+    memory: memory::Manager,
 
     // Accumulator
     a: u8,
@@ -37,7 +39,7 @@ pub struct CPU {
     p: flags::ProcessorFlags,
 }
 
-pub fn new(memory: memory::RAM) -> CPU {
+pub fn new(memory: memory::Manager) -> CPU {
     CPU {
         memory,
         a: 0,
@@ -71,7 +73,7 @@ impl CPU {
 
     // Returns number of elapsed cycles.
     fn execute_next_instruction(&mut self) -> u32 {
-        let opcode = self.memory.load(self.pc);
+        let opcode = self.memory.read(self.pc);
         self.pc += 1;
         let (operation, addressing_mode, cycles) = CPU::decode_instruction(opcode);
         let extra_cycles = operation(self, addressing_mode);
@@ -339,11 +341,11 @@ impl CPU {
     }
 
     fn load_memory(&self, address: u16) -> u8 {
-        self.memory.load(address)
+        self.memory.read(address)
     }
 
     fn store_memory(&mut self, address: u16, byte: u8) {
-        self.memory.store(address, byte);
+        self.memory.write(address, byte);
     }
 
     fn stack_push(&mut self, byte: u8) {

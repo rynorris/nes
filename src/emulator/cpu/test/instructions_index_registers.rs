@@ -4,6 +4,8 @@ use emulator::cpu::test::load_data;
 use emulator::cpu::test::new_cpu;
 use emulator::cpu::test::run_program;
 
+use emulator::memory::Reader;
+
 #[test]
 fn test_ldx_immediate() {
     let mut cpu = new_cpu();
@@ -138,7 +140,7 @@ fn test_stx_zero_page() {
     cpu.x = 0x34;
     let cycles = run_program(&mut cpu, &[0x86, 0x67]);
     assert_eq!(cpu.x, 0x34);
-    assert_eq!(cpu.memory.load(0x0067), 0x34);
+    assert_eq!(cpu.memory.read(0x0067), 0x34);
     assert_eq!(cycles, 3);
 }
 
@@ -149,7 +151,7 @@ fn test_stx_zero_page_y() {
     cpu.y = 0x08;
     let cycles = run_program(&mut cpu, &[0x96, 0x67]);
     assert_eq!(cpu.x, 0x34);
-    assert_eq!(cpu.memory.load(0x006F), 0x34);
+    assert_eq!(cpu.memory.read(0x006F), 0x34);
     assert_eq!(cycles, 4);
 }
 
@@ -159,7 +161,7 @@ fn test_stx_absolute() {
     cpu.x = 0x34;
     let cycles = run_program(&mut cpu, &[0x8E, 0x67, 0x45]);
     assert_eq!(cpu.x, 0x34);
-    assert_eq!(cpu.memory.load(0x4567), 0x34);
+    assert_eq!(cpu.memory.read(0x4567), 0x34);
     assert_eq!(cycles, 4);
 }
 
@@ -169,7 +171,7 @@ fn test_sty_zero_page() {
     cpu.y = 0x34;
     let cycles = run_program(&mut cpu, &[0x84, 0x67]);
     assert_eq!(cpu.y, 0x34);
-    assert_eq!(cpu.memory.load(0x0067), 0x34);
+    assert_eq!(cpu.memory.read(0x0067), 0x34);
     assert_eq!(cycles, 3);
 }
 
@@ -180,7 +182,7 @@ fn test_sty_zero_page_y() {
     cpu.x = 0x08;
     let cycles = run_program(&mut cpu, &[0x94, 0x67]);
     assert_eq!(cpu.y, 0x34);
-    assert_eq!(cpu.memory.load(0x006F), 0x34);
+    assert_eq!(cpu.memory.read(0x006F), 0x34);
     assert_eq!(cycles, 4);
 }
 
@@ -190,7 +192,7 @@ fn test_sty_absolute() {
     cpu.y = 0x34;
     let cycles = run_program(&mut cpu, &[0x8C, 0x67, 0x45]);
     assert_eq!(cpu.y, 0x34);
-    assert_eq!(cpu.memory.load(0x4567), 0x34);
+    assert_eq!(cpu.memory.read(0x4567), 0x34);
     assert_eq!(cycles, 4);
 }
 

@@ -4,6 +4,8 @@ use emulator::cpu::test::load_data;
 use emulator::cpu::test::new_cpu;
 use emulator::cpu::test::run_program;
 
+use emulator::memory::Reader;
+
 #[test]
 fn test_lda_sets_zero_flag() {
     let mut cpu = new_cpu();
@@ -107,7 +109,7 @@ fn test_sta_zero_page() {
     cpu.a = 0x34;
     let cycles = run_program(&mut cpu, &[0x85, 0x67]);
     assert_eq!(cpu.a, 0x34);
-    assert_eq!(cpu.memory.load(0x0067), 0x34);
+    assert_eq!(cpu.memory.read(0x0067), 0x34);
     assert_eq!(cycles, 3);
 }
 
@@ -118,7 +120,7 @@ fn test_sta_zero_page_indexed() {
     cpu.x = 0x08;
     let cycles = run_program(&mut cpu, &[0x95, 0x67]);
     assert_eq!(cpu.a, 0x34);
-    assert_eq!(cpu.memory.load(0x006F), 0x34);
+    assert_eq!(cpu.memory.read(0x006F), 0x34);
     assert_eq!(cycles, 4);
 }
 
@@ -128,7 +130,7 @@ fn test_sta_absolute() {
     cpu.a = 0x34;
     let cycles = run_program(&mut cpu, &[0x8D, 0x67, 0x45]);
     assert_eq!(cpu.a, 0x34);
-    assert_eq!(cpu.memory.load(0x4567), 0x34);
+    assert_eq!(cpu.memory.read(0x4567), 0x34);
     assert_eq!(cycles, 4);
 }
 
@@ -139,7 +141,7 @@ fn test_sta_absolute_x() {
     cpu.x = 0x34;
     let cycles = run_program(&mut cpu, &[0x9D, 0x44, 0x56]);
     assert_eq!(cpu.a, 0x97);
-    assert_eq!(cpu.memory.load(0x5678), 0x97);
+    assert_eq!(cpu.memory.read(0x5678), 0x97);
     assert_eq!(cycles, 5);
 }
 
@@ -150,7 +152,7 @@ fn test_sta_absolute_y() {
     cpu.y = 0x34;
     let cycles = run_program(&mut cpu, &[0x99, 0x44, 0x56]);
     assert_eq!(cpu.a, 0x97);
-    assert_eq!(cpu.memory.load(0x5678), 0x97);
+    assert_eq!(cpu.memory.read(0x5678), 0x97);
     assert_eq!(cycles, 5);
 }
 
@@ -162,7 +164,7 @@ fn test_sta_indexed_indirect() {
     load_data(&mut cpu.memory, 0x0046, &[0xEF, 0xBE]);
     let cycles = run_program(&mut cpu, &[0x81, 0x34]);
     assert_eq!(cpu.a, 0x97);
-    assert_eq!(cpu.memory.load(0xBEEF), 0x97);
+    assert_eq!(cpu.memory.read(0xBEEF), 0x97);
     assert_eq!(cycles, 6);
 }
 
@@ -174,7 +176,7 @@ fn test_sta_indirect_indexed() {
     load_data(&mut cpu.memory, 0x0034, &[0xDD, 0xBE]);
     let cycles = run_program(&mut cpu, &[0x91, 0x34]);
     assert_eq!(cpu.a, 0x97);
-    assert_eq!(cpu.memory.load(0xBEEF), 0x97);
+    assert_eq!(cpu.memory.read(0xBEEF), 0x97);
     assert_eq!(cycles, 6);
 }
 

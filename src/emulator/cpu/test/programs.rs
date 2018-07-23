@@ -4,6 +4,8 @@ use emulator::cpu::test::load_data;
 use emulator::cpu::test::new_cpu;
 use emulator::cpu::test::run_program;
 
+use emulator::memory::Reader;
+
 #[test]
 fn test_load_add_save() {
     let mut cpu = new_cpu();
@@ -13,7 +15,7 @@ fn test_load_add_save() {
                 opcodes::ADC_IMM, 0x56,  // ADC # 0x56
                 opcodes::STA_ABS, 0xEF, 0xBE  // STA 0xBEEF
     ]);
-    assert_eq!(cpu.memory.load(0xBEEF), 0x8A);
+    assert_eq!(cpu.memory.read(0xBEEF), 0x8A);
 }
 
 #[test]
@@ -32,8 +34,8 @@ fn test_16bit_addition() {
         opcodes::STA_ZPG, 0x05,
     ];
     run_program(&mut cpu, &program);
-    assert_eq!(cpu.memory.load(0x0004), 0b0000_0000);
-    assert_eq!(cpu.memory.load(0x0005), 0b0000_0010);
+    assert_eq!(cpu.memory.read(0x0004), 0b0000_0000);
+    assert_eq!(cpu.memory.read(0x0005), 0b0000_0010);
 }
 
 #[test]
@@ -53,6 +55,6 @@ fn test_16bit_subtraction() {
         opcodes::STA_ZPG, 0x05,
     ];
     run_program(&mut cpu, &program);
-    assert_eq!(cpu.memory.load(0x0004), 0b0000_0001);
-    assert_eq!(cpu.memory.load(0x0005), 0b0000_0001);
+    assert_eq!(cpu.memory.read(0x0004), 0b0000_0001);
+    assert_eq!(cpu.memory.read(0x0005), 0b0000_0001);
 }
