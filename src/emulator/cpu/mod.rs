@@ -6,6 +6,8 @@ mod opcodes;
 #[cfg(test)]
 mod test;
 
+use std::io::Write;
+
 use emulator::memory;
 use emulator::memory::Reader;
 use emulator::memory::Writer;
@@ -69,6 +71,26 @@ impl CPU {
         } else {
             self.execute_next_instruction()
         }
+    }
+
+    pub fn load_program(&mut self, program: &[u8]) {
+        for (ix, byte) in program.iter().enumerate() {
+            self.memory.write(ix as u16, *byte);
+        }
+    }
+
+    pub fn trace_next_instruction<W : Write>(&mut self, writer: W) {
+        // Note since addressing modes modify the PC themselves we have to hack a bit here
+        // to figure out which bytes form the next instruction.
+        // Should probably refactor addressing modes so we can just query how many bytes it is.
+        let saved_pc = self.pc;
+        let opcode = self.memory.read(self.pc);
+        let (operation, addressing_mode, cycles) = CPU::decode_instruction(opcode);
+        let (_, _) = addressing_mode(self);
+        let num_bytes = self.pc - saved_pc;
+        self.pc = saved_pc;
+
+        // Now we have the number of bytes, lets trace out the instruction.
     }
 
     // Returns number of elapsed cycles.
