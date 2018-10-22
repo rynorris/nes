@@ -22,7 +22,7 @@ fn main() {
 
     cpu.startup_sequence();
     let mut cycles: u64 = 0;
-    for ix in 0..100 {
+    for ix in 0..1000 {
         cpu.trace_next_instruction(&trace_file);
         let new_cycles = cpu.tick();
         

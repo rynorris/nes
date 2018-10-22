@@ -64,6 +64,7 @@ impl CPU {
 
         // HACK FOR NESTEST.
         self.p.load_byte(0x24);
+        self.sp = 0xFD;
         8
     }
 

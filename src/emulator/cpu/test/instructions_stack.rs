@@ -118,10 +118,12 @@ fn test_tsx_sets_zero_flag() {
 #[test]
 fn test_php() {
     let mut cpu = new_cpu();
-    cpu.p.load_byte(0x34);
+    // Choose a byte that doesn't have B set (position 5).
+    // B should get set on the stack, but not in the register.
+    cpu.p.load_byte(0b1010_0101);
     let cycles = run_program(&mut cpu, &[0x08]);
-    assert_eq!(cpu.p.as_byte(), 0x34);
-    assert_eq!(cpu.stack_pop(), 0x34);
+    assert_eq!(cpu.p.as_byte(), 0b1010_0101);
+    assert_eq!(cpu.stack_pop(), 0b1011_0101);
     assert_eq!(cycles, 3);
 }
 
