@@ -19,6 +19,12 @@ fn update_negative_flag(cpu: &mut cpu::CPU, result: u8) {
     }
 }
 
+fn load_status_from_stack(cpu: &mut cpu::CPU) {
+    let bits_from_stack = cpu.stack_pop() & 0b1100_1111;
+    let bits_from_register = cpu.p.as_byte() & 0b0011_0000;
+    cpu.p.load_byte(bits_from_stack | bits_from_register);
+}
+
 /* 2.1 The Accumulator */
 
 // LDA: Load Accumulator with Memory
@@ -581,9 +587,7 @@ pub fn php(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 // P^
 // Make sure to ignore bits 4 and 5 since these are unused.
 pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
-    let bits_from_stack = cpu.stack_pop() & 0b1100_1111;
-    let bits_from_register = cpu.p.as_byte() & 0b0011_0000;
-    cpu.p.load_byte(bits_from_stack | bits_from_register);
+    load_status_from_stack(cpu);
     0
 }
 
@@ -592,8 +596,7 @@ pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 // RTI: Return from Interrupt
 // ^P ^PC
 pub fn rti(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
-    let byte = cpu.stack_pop();
-    cpu.p.load_byte(byte);
+    load_status_from_stack(cpu);
 
     let pcl = cpu.stack_pop();
     let pch = cpu.stack_pop();
