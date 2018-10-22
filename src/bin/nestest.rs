@@ -2,6 +2,7 @@ extern crate mos_6500;
 
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 use std::path::Path;
 
 use mos_6500::emulator::cpu;
@@ -14,6 +15,24 @@ fn main() {
 
     load_rom(&mut cpu, String::from("./nestest.nes"));
 
+    let trace_file = match File::create("cpu.trace") {
+        Err(cause) => panic!("Couldn't create cpu.trace: {}", cause),
+        Ok(file) => file,
+    };
+
+    cpu.startup_sequence();
+    let mut cycles: u64 = 0;
+    for ix in 0..100 {
+        cpu.trace_next_instruction(&trace_file);
+        let new_cycles = cpu.tick();
+        
+        // Append the cycles to the trace since the CPU doesn't track these itself.
+        // Needs to be the cycles BEFORE the instruction, because that's just how nestest traces.
+        write!(&trace_file, " CYC:{:>3}", (cycles * 3) % 341);
+        write!(&trace_file, "\n");
+
+        cycles += new_cycles as u64;
+    }
 }
 
 fn load_rom(cpu: &mut cpu::CPU, path_string: String) {
@@ -38,15 +57,4 @@ fn load_rom(cpu: &mut cpu::CPU, path_string: String) {
         program[0xFFFD] = 0xC0;
     }
     cpu.load_program(&program);
-
-    let trace_file = match File::create("cpu.trace") {
-        Err(cause) => panic!("Couldn't create {}: {}", path.display(), cause),
-        Ok(file) => file,
-    };
-
-    cpu.startup_sequence();
-    for ix in 0..100 {
-        cpu.trace_next_instruction(&trace_file);
-        cpu.tick();
-    }
 }

@@ -117,7 +117,6 @@ impl CPU {
         // Dump registers.
         write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.a, self.x, self.y, self.p.as_byte(), self.sp);
 
-        write!(w, "|\n");
     }
 
     // Returns number of elapsed cycles.
@@ -213,10 +212,10 @@ impl CPU {
             opcodes::BRK => (instructions::brk, addressing::implied, 7),
 
             // CLC, CLD, CLI
-            opcodes::CLC => (instructions::clc, addressing::immediate, 2),
-            opcodes::CLD => (instructions::cld, addressing::immediate, 2),
-            opcodes::CLI => (instructions::cli, addressing::immediate, 2),
-            opcodes::CLV => (instructions::clv, addressing::immediate, 2),
+            opcodes::CLC => (instructions::clc, addressing::implied, 2),
+            opcodes::CLD => (instructions::cld, addressing::implied, 2),
+            opcodes::CLI => (instructions::cli, addressing::implied, 2),
+            opcodes::CLV => (instructions::clv, addressing::implied, 2),
 
             // CMP
             opcodes::CMP_IMM => (instructions::cmp, addressing::immediate, 2),

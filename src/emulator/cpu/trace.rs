@@ -98,10 +98,10 @@ pub fn format_instruction(opcode: u8, b1: u8, b2: u8) -> String {
         opcodes::BRK => format_implied("BRK"),
 
         // CLC, CLD, CLI
-        opcodes::CLC => format_immediate("CLC", b1),
-        opcodes::CLD => format_immediate("CLD", b1),
-        opcodes::CLI => format_immediate("CLI", b1),
-        opcodes::CLV => format_immediate("CLV", b1),
+        opcodes::CLC => format_implied("CLC"),
+        opcodes::CLD => format_implied("CLD"),
+        opcodes::CLI => format_implied("CLI"),
+        opcodes::CLV => format_implied("CLV"),
 
         // CMP
         opcodes::CMP_IMM => format_immediate("CMP", b1),
