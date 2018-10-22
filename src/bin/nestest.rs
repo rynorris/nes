@@ -12,6 +12,7 @@ use mos_6500::emulator::memory;
 fn main() {
     println!("Hello, world!");
     let mut cpu = cpu::new(memory::new());
+    cpu.disable_bcd();
 
     load_rom(&mut cpu, String::from("./nestest.nes"));
 

@@ -51,7 +51,7 @@ pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let mem = cpu.load_memory(addr);
 
     let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
-    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) {
+    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) && cpu.dec_arith_on {
         // BCD arithmetic.
         let hex_a = util::bcd_to_hex(cpu.a);
         let hex_mem = util::bcd_to_hex(mem);
@@ -104,7 +104,7 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let mem = cpu.load_memory(addr);
 
     let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
-    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) {
+    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) && cpu.dec_arith_on {
         // BCD arithmetic.
         let hex_a = util::bcd_to_hex(cpu.a);
         let hex_mem = util::bcd_to_hex(mem);

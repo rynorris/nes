@@ -40,6 +40,9 @@ pub struct CPU {
 
     // Processor Flags NV_BDIZC
     p: flags::ProcessorFlags,
+
+    // Decimal arithmetic enabled?
+    dec_arith_on: bool,
 }
 
 pub fn new(memory: memory::Manager) -> CPU {
@@ -51,6 +54,7 @@ pub fn new(memory: memory::Manager) -> CPU {
         sp: 0xFF,
         pc: 0,
         p: flags::new(),
+        dec_arith_on: true,
     }
 }
 
@@ -82,6 +86,14 @@ impl CPU {
         for (ix, byte) in program.iter().enumerate() {
             self.memory.write(ix as u16, *byte);
         }
+    }
+
+    pub fn disable_bcd(&mut self) {
+        self.dec_arith_on = false;
+    }
+
+    pub fn enable_bcd(&mut self) {
+        self.dec_arith_on = true;
     }
 
     pub fn trace_next_instruction<W : Write>(&mut self, mut w: W) {
