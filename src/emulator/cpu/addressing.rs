@@ -108,13 +108,13 @@ fn zero_page_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
 
 pub fn zero_page_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
     let offset = cpu.x;
-    absolute_indexed_load(cpu, offset)
+    zero_page_indexed_load(cpu, offset)
 }
 
 // Y-indexed version.  Only supported for LDX, STX.
 pub fn zero_page_indexed_y(cpu: &mut cpu::CPU) -> (u16, u32) {
     let offset = cpu.y;
-    absolute_indexed_load(cpu, offset)
+    zero_page_indexed_load(cpu, offset)
 }
 
 // Indirect addressing is where we look up the two byte address to read from a location in page-zero.
@@ -137,7 +137,9 @@ pub fn indexed_indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
 
     let addr = ((bal as u16) + (cpu.x as u16)) & 0x00FF;
     let adl = cpu.load_memory(addr);
-    let adh = cpu.load_memory(addr + 1);
+
+    // Second byte also has to wrap within page zero.
+    let adh = cpu.load_memory((addr + 1) & 0x00FF);
     (util::combine_bytes(adh, adl), 0)
 }
 

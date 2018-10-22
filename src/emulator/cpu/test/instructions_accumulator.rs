@@ -93,6 +93,18 @@ fn test_lda_indexed_indirect() {
 }
 
 #[test]
+fn test_lda_indexed_indirect_second_address_byte_wraps() {
+    let mut cpu = new_cpu();
+    cpu.x = 0x00;
+    load_data(&mut cpu.memory, 0x00FF, &[0xEF]);
+    load_data(&mut cpu.memory, 0x0000, &[0xBE]);
+    load_data(&mut cpu.memory, 0xBEEF, &[0x97]);
+    let cycles = run_program(&mut cpu, &[0xA1, 0xFF]);
+    assert_eq!(cpu.a, 0x97);
+    assert_eq!(cycles, 6);
+}
+
+#[test]
 fn test_lda_indirect_indexed() {
     let mut cpu = new_cpu();
     cpu.y = 0x12;
