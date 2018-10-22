@@ -572,7 +572,8 @@ pub fn tsx(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 // Pv
 pub fn php(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     let byte = cpu.p.as_byte();
-    cpu.stack_push(byte);
+    // Set the B flag to the value we push, but do not modify the status register.
+    cpu.stack_push(byte | (cpu::flags::Flag::B as u8));
     0
 }
 
@@ -608,10 +609,11 @@ pub fn brk(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.stack_push(pch);
     cpu.stack_push(pcl + 1);
 
-    // Enable break flag before storing P.
     cpu.p.set(cpu::flags::Flag::B);
     let byte = cpu.p.as_byte();
-    cpu.stack_push(byte);
+    //
+    // Set the B flag to the value we push, but do not modify the status register.
+    cpu.stack_push(byte | (cpu::flags::Flag::B as u8));
 
     // Load interrupt vector.
     let pcl = cpu.load_memory(0xFFFE);

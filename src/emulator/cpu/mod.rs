@@ -2,6 +2,7 @@ mod addressing;
 mod instructions;
 mod flags;
 mod opcodes;
+mod trace;
 
 #[cfg(test)]
 mod test;
@@ -60,6 +61,9 @@ impl CPU {
         // Disable interrupts at startup.  The programmer should re-enable once they have completed
         // initializing the system.
         self.p.set(flags::Flag::I);
+
+        // HACK FOR NESTEST.
+        self.p.load_byte(0x24);
         8
     }
 
@@ -79,7 +83,7 @@ impl CPU {
         }
     }
 
-    pub fn trace_next_instruction<W : Write>(&mut self, writer: W) {
+    pub fn trace_next_instruction<W : Write>(&mut self, mut w: W) {
         // Note since addressing modes modify the PC themselves we have to hack a bit here
         // to figure out which bytes form the next instruction.
         // Should probably refactor addressing modes so we can just query how many bytes it is.
@@ -91,6 +95,29 @@ impl CPU {
         self.pc = saved_pc;
 
         // Now we have the number of bytes, lets trace out the instruction.
+        let b1 = if num_bytes > 0 { self.memory.read(self.pc + 1) } else { 0 };
+        let b2 = if num_bytes > 1 { self.memory.read(self.pc + 2) } else { 0 };
+
+        write!(w, "{:04X}  {:02X} ", self.pc, opcode);
+
+        if num_bytes > 0 {
+            write!(w, "{:02X} ", b1);
+        } else {
+            write!(w, "   ");
+        }
+
+        if num_bytes > 1 {
+            write!(w, "{:02X}  ", b2);
+        } else {
+            write!(w, "    ");
+        }
+
+        write!(w, "{:<32}", trace::format_instruction(opcode, b1, b2));
+
+        // Dump registers.
+        write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.a, self.x, self.y, self.p.as_byte(), self.sp);
+
+        write!(w, "|\n");
     }
 
     // Returns number of elapsed cycles.
