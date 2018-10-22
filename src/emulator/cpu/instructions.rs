@@ -579,9 +579,11 @@ pub fn php(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 
 // PLP: Pull Processor Status from Stack
 // P^
+// Make sure to ignore bits 4 and 5 since these are unused.
 pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
-    let byte = cpu.stack_pop();
-    cpu.p.load_byte(byte);
+    let bits_from_stack = cpu.stack_pop() & 0b1100_1111;
+    let bits_from_register = cpu.p.as_byte() & 0b0011_0000;
+    cpu.p.load_byte(bits_from_stack | bits_from_register);
     0
 }
 

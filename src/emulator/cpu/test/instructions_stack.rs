@@ -130,9 +130,20 @@ fn test_php() {
 #[test]
 fn test_plp() {
     let mut cpu = new_cpu();
-    cpu.stack_push(0x34);
+    cpu.stack_push(0xCF);
     let cycles = run_program(&mut cpu, &[0x28]);
-    assert_eq!(cpu.p.as_byte(), 0x34);
+    assert_eq!(cpu.p.as_byte(), 0xCF);
+    assert_eq!(cycles, 4);
+}
+
+#[test]
+fn test_plp_ignores_bits_4_and_5() {
+    // Bits 4 and 5 in the status register are unused.
+    // The CPU should not touch them when loading from the stack.
+    let mut cpu = new_cpu();
+    cpu.stack_push(0xFF);
+    let cycles = run_program(&mut cpu, &[0x28]);
+    assert_eq!(cpu.p.as_byte(), 0xCF);
     assert_eq!(cycles, 4);
 }
 
