@@ -75,7 +75,7 @@ fn absolute_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
         // Quirk in CPU means we unnecessarily read this memory.
         let _ = cpu.load_memory(util::combine_bytes(bah, adl));
 
-        let adh = bah + 1;
+        let (adh, _) = bah.overflowing_add(1);
         (util::combine_bytes(adh, adl), 1)
     } else {
         (util::combine_bytes(bah, adl), 0)
