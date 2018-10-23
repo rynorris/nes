@@ -273,3 +273,44 @@ pub fn format_instruction(opcode: u8, b1: u8, b2: u8) -> String {
         _ => panic!("Unknown opcode: {:X}", opcode)
     }
 }
+
+// And parsing functions.
+pub fn parse_pc(line: &str) -> u16 {
+    u16::from_str_radix(&line[..4], 16).unwrap()
+}
+
+pub fn parse_opcode(line: &str) -> u8 {
+    u8::from_str_radix(&line[6..8], 16).unwrap()
+}
+
+pub fn parse_instruction_byte_1(line: &str) -> u8 {
+    u8::from_str_radix(&line[9..11], 16).unwrap()
+}
+
+pub fn parse_instruction_byte_2(line: &str) -> u8 {
+    u8::from_str_radix(&line[12..14], 16).unwrap()
+}
+
+pub fn parse_a(line: &str) -> u8 {
+    u8::from_str_radix(&line[50..52], 16).unwrap()
+}
+
+pub fn parse_x(line: &str) -> u8 {
+    u8::from_str_radix(&line[55..57], 16).unwrap()
+}
+
+pub fn parse_y(line: &str) -> u8 {
+    u8::from_str_radix(&line[60..62], 16).unwrap()
+}
+
+pub fn parse_p(line: &str) -> u8 {
+    u8::from_str_radix(&line[65..67], 16).unwrap()
+}
+
+pub fn parse_sp(line: &str) -> u8 {
+    u8::from_str_radix(&line[71..73], 16).unwrap()
+}
+
+pub fn parse_cyc(line: &str) -> u64 {
+    u64::from_str_radix(&line[78..81].trim(), 10).unwrap()
+}

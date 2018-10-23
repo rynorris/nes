@@ -96,36 +96,40 @@ impl CPU {
         self.dec_arith_on = true;
     }
 
-    pub fn trace_next_instruction<W : Write>(&mut self, mut w: W) {
+    fn peek_next_instruction(&mut self) -> (u8, Option<u8>, Option<u8>) {
         // Note since addressing modes modify the PC themselves we have to hack a bit here
         // to figure out which bytes form the next instruction.
         // Should probably refactor addressing modes so we can just query how many bytes it is.
         let saved_pc = self.pc;
         let opcode = self.memory.read(self.pc);
-        let (operation, addressing_mode, cycles) = CPU::decode_instruction(opcode);
+        let (_, addressing_mode, _) = CPU::decode_instruction(opcode);
         let (_, _) = addressing_mode(self);
         let num_bytes = self.pc - saved_pc;
         self.pc = saved_pc;
 
         // Now we have the number of bytes, lets trace out the instruction.
-        let b1 = if num_bytes > 0 { self.memory.read(self.pc + 1) } else { 0 };
-        let b2 = if num_bytes > 1 { self.memory.read(self.pc + 2) } else { 0 };
+        let b1 = if num_bytes > 0 { Some(self.memory.read(self.pc + 1)) } else { None };
+        let b2 = if num_bytes > 1 { Some(self.memory.read(self.pc + 2)) } else { None };
+
+        (opcode, b1, b2)
+    }
+
+    pub fn trace_next_instruction<W : Write>(&mut self, mut w: W) {
+        let (opcode, b1, b2) = self.peek_next_instruction();
 
         write!(w, "{:04X}  {:02X} ", self.pc, opcode);
 
-        if num_bytes > 0 {
-            write!(w, "{:02X} ", b1);
-        } else {
-            write!(w, "   ");
-        }
+        let _ = match b1 {
+            Some(b) => write!(w, "{:02X} ", b),
+            None => write!(w, "   "),
+        };
 
-        if num_bytes > 1 {
-            write!(w, "{:02X}  ", b2);
-        } else {
-            write!(w, "    ");
-        }
+        let _ = match b2 {
+            Some(b) => write!(w, "{:02X}  ", b),
+            None => write!(w, "    "),
+        };
 
-        write!(w, "{:<32}", trace::format_instruction(opcode, b1, b2));
+        write!(w, "{:<32}", trace::format_instruction(opcode, b1.unwrap_or(0), b2.unwrap_or(0)));
 
         // Dump registers.
         write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.a, self.x, self.y, self.p.as_byte(), self.sp);
@@ -199,7 +203,7 @@ impl CPU {
             opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
 
             // ASL
-            opcodes::ASL_A => (instructions::asla, addressing::immediate, 2),
+            opcodes::ASL_A => (instructions::asla, addressing::implied, 2),
             opcodes::ASL_ZPG => (instructions::asl, addressing::zero_page, 5),
             opcodes::ASL_ZPG_X => (instructions::asl, addressing::zero_page_indexed, 6),
             opcodes::ASL_ABS => (instructions::asl, addressing::absolute, 6),
