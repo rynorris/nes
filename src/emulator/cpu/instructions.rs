@@ -45,7 +45,10 @@ pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let (addr, addr_cycles) = load_addr(cpu);
     let byte = cpu.a;
     cpu.store_memory(addr, byte);
-    addr_cycles
+    // STA doesn't incur the extra "oops" cycle.
+    // Or more correctly, it always does, but it's taken into account by the
+    // instruction timings already, so we ignore it here.
+    0
 }
 
 /* 2.2 The Arithmetic Unit */
