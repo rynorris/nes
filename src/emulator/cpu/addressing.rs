@@ -128,6 +128,20 @@ pub fn zero_page_indexed_y(cpu: &mut cpu::CPU) -> (u16, u32) {
 //
 // Indirect absolute is where we look up the address to read from another absolute address.
 // This is only used by the jump instruction.
+
+// Utility function to load a byte from page zero, with auto wrapping.
+fn load_byte_from_page_zero(cpu: &mut cpu::CPU, addr: u16) -> u8 {
+    cpu.load_memory(addr & 0x00FF)
+}
+
+// Loads a 16-bit address form the given address.  Takes into account wrapping within the page.
+fn load_addr_within_page(cpu: &mut cpu::CPU, addr: u16) -> u16 {
+    let high = addr & 0xFF00;
+    let (low, _) = addr.overflowing_add(1);
+    let addr_2 = high | (low & 0x00FF);
+    util::combine_bytes(cpu.load_memory(addr_2), cpu.load_memory(addr))
+}
+
 pub fn indexed_indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
     let bal = cpu.load_memory(cpu.pc);
     cpu.pc += 1;
@@ -135,19 +149,17 @@ pub fn indexed_indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
     // Quirk in CPU means we unnecessarily read this memory.
     let _ = cpu.load_memory(bal as u16);
 
+    // Wrap within page 0.
     let addr = ((bal as u16) + (cpu.x as u16)) & 0x00FF;
-    let adl = cpu.load_memory(addr);
-
-    // Second byte also has to wrap within page zero.
-    let adh = cpu.load_memory((addr + 1) & 0x00FF);
-    (util::combine_bytes(adh, adl), 0)
+    let target = load_addr_within_page(cpu, addr);
+    (target, 0)
 }
 
 pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
     let ial = cpu.load_memory(cpu.pc);
     cpu.pc += 1;
-    let bal = cpu.load_memory(ial as u16);
-    let bah = cpu.load_memory((ial as u16) + 1);
+    let bal = load_byte_from_page_zero(cpu, ial as u16);
+    let bah = load_byte_from_page_zero(cpu, (ial as u16) + 1);
 
     let (adl, carry) = bal.overflowing_add(cpu.y);
     if carry {
@@ -168,8 +180,6 @@ pub fn indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
     cpu.pc += 1;
     
     let addr = util::combine_bytes(iah, ial);
-    let adl = cpu.load_memory(addr);
-    let adh = cpu.load_memory(addr + 1);
-
-    (util::combine_bytes(adh, adl), 0)
+    let target = load_addr_within_page(cpu, addr);
+    (target, 0)
 }
