@@ -22,6 +22,11 @@ fn test_nestest() {
     };
 
     cpu.startup_sequence();
+
+    // TODO(rnorris): Figure out if these starting conditions are universal.
+    cpu.p.load_byte(0x24);
+    cpu.sp = 0xFD;
+
     let mut cycles: u64 = 0;
 
     // At instruction 5004 it starts testing undocumented opcodes which we don't support.
@@ -68,7 +73,6 @@ fn assert_state(cpu: &mut cpu::CPU, cycles: u64, line: String) {
     // So we have to convert.
     let ppu_x = (cycles * 3) % 341;
     assert_eq!(ppu_x, cpu::trace::parse_cyc(&line));
-
 }
 
 fn load_rom(cpu: &mut cpu::CPU) {
@@ -89,6 +93,8 @@ fn load_rom(cpu: &mut cpu::CPU) {
     for ix in 0..0x4000 {
         program[0x8000 + ix] = contents[0x0010 + ix];
         program[0xC000 + ix] = contents[0x0010 + ix];
+
+        // Override the startup vector so we start from the right place.
         program[0xFFFC] = 0x00;
         program[0xFFFD] = 0xC0;
     }
