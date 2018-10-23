@@ -42,7 +42,7 @@ pub fn lda(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 // STA: Store Accumulator in Memory
 // M -> A
 pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.a;
     cpu.store_memory(addr, byte);
     // STA doesn't incur the extra "oops" cycle.

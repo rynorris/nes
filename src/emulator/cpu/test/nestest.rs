@@ -16,7 +16,7 @@ fn test_nestest() {
     let mut trace_lines = load_trace();
 
     let trace_out_path = Path::new("./cpu.trace");
-    let mut trace_out = match File::create(trace_out_path) {
+    let trace_out = match File::create(trace_out_path) {
         Err(cause) => panic!("Couldn't open {}: {}", trace_out_path.display(), cause),
         Ok(file) => file,
     };
@@ -30,7 +30,7 @@ fn test_nestest() {
     let mut cycles: u64 = 0;
 
     // At instruction 5004 it starts testing undocumented opcodes which we don't support.
-    for ix in 0..5003 {
+    for _ in 0..5003 {
         // We know there are more than 5000 lines.
         cpu.trace_next_instruction(&trace_out);
         write!(&trace_out, " CYC:{:>3}", (cycles * 3) % 341);
@@ -103,7 +103,7 @@ fn load_rom(cpu: &mut cpu::CPU) {
 
 fn load_trace() -> impl Iterator<Item = String> {
     let path = test_resource_path("nestest.trace");
-    let mut file = match File::open(&path) {
+    let file = match File::open(&path) {
         Err(cause) => panic!("Couldn't open {}: {}", path.display(), cause),
         Ok(file) => file,
     };
