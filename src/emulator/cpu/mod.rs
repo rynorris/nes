@@ -2,9 +2,12 @@ mod addressing;
 mod instructions;
 mod flags;
 mod opcodes;
+mod trace;
 
 #[cfg(test)]
 mod test;
+
+use std::io::Write;
 
 use emulator::memory;
 use emulator::memory::Reader;
@@ -37,6 +40,9 @@ pub struct CPU {
 
     // Processor Flags NV_BDIZC
     p: flags::ProcessorFlags,
+
+    // Decimal arithmetic enabled?
+    dec_arith_on: bool,
 }
 
 pub fn new(memory: memory::Manager) -> CPU {
@@ -48,6 +54,7 @@ pub fn new(memory: memory::Manager) -> CPU {
         sp: 0xFF,
         pc: 0,
         p: flags::new(),
+        dec_arith_on: true,
     }
 }
 
@@ -58,7 +65,7 @@ impl CPU {
         // Disable interrupts at startup.  The programmer should re-enable once they have completed
         // initializing the system.
         self.p.set(flags::Flag::I);
-        8
+        0
     }
 
     pub fn tick(&mut self) -> u32 {
@@ -69,6 +76,60 @@ impl CPU {
         } else {
             self.execute_next_instruction()
         }
+    }
+
+    pub fn load_program(&mut self, program: &[u8]) {
+        for (ix, byte) in program.iter().enumerate() {
+            self.memory.write(ix as u16, *byte);
+        }
+    }
+
+    pub fn disable_bcd(&mut self) {
+        self.dec_arith_on = false;
+    }
+
+    pub fn enable_bcd(&mut self) {
+        self.dec_arith_on = true;
+    }
+
+    fn peek_next_instruction(&mut self) -> (u8, Option<u8>, Option<u8>) {
+        // Note since addressing modes modify the PC themselves we have to hack a bit here
+        // to figure out which bytes form the next instruction.
+        // Should probably refactor addressing modes so we can just query how many bytes it is.
+        let saved_pc = self.pc;
+        let opcode = self.memory.read(self.pc);
+        let (_, addressing_mode, _) = CPU::decode_instruction(opcode);
+        let (_, _) = addressing_mode(self);
+        let num_bytes = self.pc - saved_pc;
+        self.pc = saved_pc;
+
+        // Now we have the number of bytes, lets trace out the instruction.
+        let b1 = if num_bytes > 0 { Some(self.memory.read(self.pc + 1)) } else { None };
+        let b2 = if num_bytes > 1 { Some(self.memory.read(self.pc + 2)) } else { None };
+
+        (opcode, b1, b2)
+    }
+
+    pub fn trace_next_instruction<W : Write>(&mut self, mut w: W) {
+        let (opcode, b1, b2) = self.peek_next_instruction();
+
+        write!(w, "{:04X}  {:02X} ", self.pc, opcode);
+
+        let _ = match b1 {
+            Some(b) => write!(w, "{:02X} ", b),
+            None => write!(w, "   "),
+        };
+
+        let _ = match b2 {
+            Some(b) => write!(w, "{:02X}  ", b),
+            None => write!(w, "    "),
+        };
+
+        write!(w, "{:<32}", trace::format_instruction(opcode, b1.unwrap_or(0), b2.unwrap_or(0)));
+
+        // Dump registers.
+        write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.a, self.x, self.y, self.p.as_byte(), self.sp);
+
     }
 
     // Returns number of elapsed cycles.
@@ -138,7 +199,7 @@ impl CPU {
             opcodes::AND_IND_IX => (instructions::and, addressing::indirect_indexed, 5),
 
             // ASL
-            opcodes::ASL_A => (instructions::asla, addressing::immediate, 2),
+            opcodes::ASL_A => (instructions::asla, addressing::implied, 2),
             opcodes::ASL_ZPG => (instructions::asl, addressing::zero_page, 5),
             opcodes::ASL_ZPG_X => (instructions::asl, addressing::zero_page_indexed, 6),
             opcodes::ASL_ABS => (instructions::asl, addressing::absolute, 6),
@@ -164,10 +225,10 @@ impl CPU {
             opcodes::BRK => (instructions::brk, addressing::implied, 7),
 
             // CLC, CLD, CLI
-            opcodes::CLC => (instructions::clc, addressing::immediate, 2),
-            opcodes::CLD => (instructions::cld, addressing::immediate, 2),
-            opcodes::CLI => (instructions::cli, addressing::immediate, 2),
-            opcodes::CLV => (instructions::clv, addressing::immediate, 2),
+            opcodes::CLC => (instructions::clc, addressing::implied, 2),
+            opcodes::CLD => (instructions::cld, addressing::implied, 2),
+            opcodes::CLI => (instructions::cli, addressing::implied, 2),
+            opcodes::CLV => (instructions::clv, addressing::implied, 2),
 
             // CMP
             opcodes::CMP_IMM => (instructions::cmp, addressing::immediate, 2),

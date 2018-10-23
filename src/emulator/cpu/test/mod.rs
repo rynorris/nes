@@ -7,6 +7,7 @@ mod instructions_index_registers;
 mod instructions_reset_interrupt;
 mod instructions_shift_modify;
 mod instructions_stack;
+mod nestest;
 mod programs;
 mod startup_interrupts;
 
