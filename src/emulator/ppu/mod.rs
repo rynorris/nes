@@ -106,9 +106,9 @@ impl PPU {
     // Returns how many PPU cycles the tick took.
     pub fn tick(&mut self) -> u16 {
         let cycles = match self.scanline {
-            0 ... 239 | 261 => self.tick_render(),
+            0 ... 239 | 261 => self.tick_render_scanline(),
             240 => self.tick_idle_scanline(),
-            241 => self.tick_vblank(),
+            241 => self.tick_vblank_scanline(),
             _ => panic!("Scanline index should never exceed 261.  Got {}.", self.scanline),
         };
 
@@ -126,7 +126,7 @@ impl PPU {
         cycles
     }
 
-    fn tick_render(&mut self) -> u16 {
+    fn tick_render_scanline(&mut self) -> u16 {
         // Rendering stages.
         let cycles = match self.cycle {
             // Cycle 0 is an idle cycle.
@@ -161,7 +161,7 @@ impl PPU {
         341
     }
 
-    fn tick_vblank(&mut self) -> u16 {
+    fn tick_vblank_scanline(&mut self) -> u16 {
         if self.scanline == 241 && self.cycle == 1 {
             // TODO: Set VBlank flag.
         }
@@ -177,16 +177,55 @@ impl PPU {
     fn tick_render_cycle(&mut self) -> u16 {
         // If cycle 1, 9, 17, ..., 257 then reload the shift registers from the latches.
         if self.cycle % 8 == 1 {
-            self.tile_register_low &= 0x00FF;
-            self.tile_register_low |= (self.tile_latch_low as u16) << 8;
-            self.tile_register_high &= 0x00FF;
-            self.tile_register_high |= (self.tile_latch_high as u16) << 8;
-
-            self.attribute_register_1 = self.attribute_latch_1;
-            self.attribute_register_2 = self.attribute_latch_2;
+            self.reload_shift_registers();
         }
 
-        // Memory accesses for next tile data.
+        self.fetch_tile_data();
+
+        // Actually render and emit one pixel.
+        let pixel = self.render_pixel();
+        self.output.emit(pixel);
+
+        // Finally shift all the registers.
+        self.shift_registers();
+        1
+    }
+
+    fn tick_sprite_fetch_cycle(&mut self) -> u16 {
+        1
+    }
+
+    fn tick_prefetch_tiles_cycle(&mut self) -> u16 {
+        self.fetch_tile_data();
+        1
+    }
+
+    fn tick_unknown_fetch(&mut self) -> u16 {
+        1
+    }
+
+    // --- FETCHING
+    // Put all the memory fetching logic in one place.
+
+    // Reload shift registers from their associated latches.
+    fn reload_shift_registers(&mut self) {
+        self.tile_register_low &= 0x00FF;
+        self.tile_register_low |= (self.tile_latch_low as u16) << 8;
+        self.tile_register_high &= 0x00FF;
+        self.tile_register_high |= (self.tile_latch_high as u16) << 8;
+
+        self.attribute_register_1 = self.attribute_latch_1;
+        self.attribute_register_2 = self.attribute_latch_2;
+    }
+
+    // Shift the registers.
+    fn shift_registers(&mut self) {
+        self.tile_register_low >>= 1;
+        self.tile_register_high >>= 1;
+    }
+
+    // Memory accesses for next tile data.
+    fn fetch_tile_data(&mut self) {
         // We fetch 4 bytes in turn (each fetch takes 2 cycles):
         // These reads begin on cycle 1.
         // TODO: Fill in attribute table loading.
@@ -215,24 +254,6 @@ impl PPU {
             // Do nothing on inbetween cycles.
             _ => (),
         };
-
-        // Actually render one pixel.
-        let pixel = self.render_pixel();
-        self.output.emit(pixel);
-
-        1
-    }
-
-    fn tick_sprite_fetch_cycle(&mut self) -> u16 {
-        1
-    }
-
-    fn tick_prefetch_tiles_cycle(&mut self) -> u16 {
-        1
-    }
-
-    fn tick_unknown_fetch(&mut self) -> u16 {
-        1
     }
 
     // --- RENDERING
