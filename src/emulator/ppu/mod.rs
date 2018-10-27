@@ -162,6 +162,31 @@ impl PPU {
     }
 
     fn tick_render_cycle(&mut self) -> u16 {
+        // Memory accesses for next tile data.
+        // We fetch 4 bytes in turn (each fetch takes 2 cycles):
+        // These reads begin on cycle 1.
+        // TODO: Fill these in.
+        match self.cycle % 8 {
+            // 1. Nametable byte.
+            1 => (),
+
+            // 2. Attribute table byte.
+            3 => (),
+
+            // 3. Tile bitmap low.
+            5 => (),
+
+            // 4. Tile bitmap high.
+            7 => (),
+
+            // Do nothing on inbetween cycles.
+            _ => (),
+        };
+
+        // Actually render one pixel.
+        let pixel = self.render_pixel();
+        self.output.emit(pixel);
+
         1
     }
 
@@ -175,6 +200,16 @@ impl PPU {
 
     fn tick_unknown_fetch(&mut self) -> u16 {
         1
+    }
+
+    // --- RENDERING
+    // Put all rendering logic in one place.
+    fn render_pixel(&self) -> Pixel {
+        Pixel{
+            r: 0,
+            g: 0,
+            b: 0,
+        }
     }
 
     // --- SCROLLING
