@@ -84,6 +84,9 @@ pub struct PPU {
 
     // Each scanline takes 341 cycles to render.
     cycle: u16,
+
+    // Rendering can be disabled, which changes the operation of the PPU.
+    rendering_is_enabled: bool,
 }
 
 impl PPU {
@@ -153,6 +156,14 @@ impl PPU {
     }
 
     fn tick_render_cycle(&mut self) -> u16 {
+        // For simplicity, run 8 cycles at once to render a whole tile.
+        // We fetch 4 bytes (each fetch takes 2 cycles):
+        //   1. Nametable byte.
+        //   2. Attribute table byte.
+        //   3. Tile bitmap low.
+        //   4. Tile bitmap high.
+
+        // On dot 256 of each scanline, the PPU increments 
         1
     }
 
@@ -166,5 +177,58 @@ impl PPU {
 
     fn tick_unknown_fetch(&mut self) -> u16 {
         1
+    }
+
+    // During rendering the VRAM address v is laid out like so:
+    // yyy NN YYYYY XXXXX
+    // ||| || ||||| +++++-- coarse X scroll
+    // ||| || +++++-------- coarse Y scroll
+    // ||| ++-------------- nametable select
+    // +++----------------- fine Y scroll
+    //
+    // Here are some convenience methods to pull out these values.
+    fn fine_y_scroll(&self) -> u8 {
+        ((self.v >> 12) & 0b111) as u8
+    }
+
+    fn nametable_select(&self) -> u8 {
+        ((self.v >> 10) & 0b11) as u8
+    }
+
+    fn coarse_y_scroll(&self) -> u8 {
+        ((self.v >> 5) & 0b11111) as u8
+    }
+
+    fn coarse_x_scroll(&self) -> u8 {
+        (self.v & 0b11111) as u8
+    }
+
+    // Scrolling is complex, so split out the logic here.
+    fn increment_coarse_x(&mut self) {
+        if self.coarse_x_scroll() == 31 {
+            self.v &= !0x001F;  // Coarse X = 0.
+            self.v ^= 0x0400;  // Switch horizontal nametable.
+        } else {
+            self.v += 1;  // Increment coarse X.
+        }
+    }
+
+    fn increment_y(&mut self) {
+        if self.fine_y_scroll() < 7 {
+            self.v += 0x100;  // Increment fine Y.
+        } else {
+            self.v &= !0x700;  // Fine Y = 0.
+            let mut coarse_y = self.coarse_y_scroll();
+            if coarse_y == 29 {
+                coarse_y = 0;
+                self.v ^= 0x0800;  // Switch vertical nametable.
+            } else if coarse_y == 31 {
+                coarse_y = 0;
+            } else {
+                coarse_y += 1;
+            }
+
+            self.v = (self.v & !0x03E0) | ((coarse_y as u16) << 5);  // Put coarse_y back into v.
+        }
     }
 }
