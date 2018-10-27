@@ -1,6 +1,7 @@
 
 
 use emulator::memory;
+use emulator::memory::Reader;
 
 pub struct Pixel {
     r: u8,
@@ -87,6 +88,14 @@ pub struct PPU {
 
     // Rendering can be disabled, which changes the operation of the PPU.
     rendering_is_enabled: bool,
+
+    // -- Internal State --
+
+    // Byte fetched from nametable indicating which tile to fetch from pattern table.
+    tmp_pattern_coords: u8,
+
+    // Which half of pattern tables to use.  0 = 'left', 1 = 'right'.
+    pattern_table_side: u8,
 }
 
 impl PPU {
@@ -168,7 +177,10 @@ impl PPU {
         // TODO: Fill these in.
         match self.cycle % 8 {
             // 1. Nametable byte.
-            1 => (),
+            1 => {
+                let addr = self.tile_address();
+                self.tmp_pattern_coords = self.memory.read(addr);
+            },
 
             // 2. Attribute table byte.
             3 => (),
@@ -308,5 +320,19 @@ impl PPU {
     fn attribute_address(&self) -> u16 {
         // This formula copied from nesdev wiki.  I should try to understand it later.
         0x23C0 | self.nametable_select() | ((self.v >> 4) & 0x38) | ((self.v >> 2) & 0x07)
+    }
+
+    fn pattern_address_lower(&self) -> u16 {
+        ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
+            | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
+            | 0b0000  // Lower bit plane.
+            | self.fine_y_scroll()  // Fine Y offset.
+    }
+
+    fn pattern_address_upper(&self) -> u16 {
+        ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
+            | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
+            | 0b1000  // Upper bit plane.
+            | self.fine_y_scroll()  // Fine Y offset.
     }
 }
