@@ -187,20 +187,20 @@ impl PPU {
     // +++----------------- fine Y scroll
     //
     // Here are some convenience methods to pull out these values.
-    fn fine_y_scroll(&self) -> u8 {
-        ((self.v >> 12) & 0b111) as u8
+    fn fine_y_scroll(&self) -> u16 {
+        ((self.v >> 12) & 0b111) as u16
     }
 
-    fn nametable_select(&self) -> u8 {
-        ((self.v >> 10) & 0b11) as u8
+    fn nametable_select(&self) -> u16 {
+        ((self.v >> 10) & 0b11) as u16
     }
 
-    fn coarse_y_scroll(&self) -> u8 {
-        ((self.v >> 5) & 0b11111) as u8
+    fn coarse_y_scroll(&self) -> u16 {
+        ((self.v >> 5) & 0b11111) as u16
     }
 
-    fn coarse_x_scroll(&self) -> u8 {
-        (self.v & 0b11111) as u8
+    fn coarse_x_scroll(&self) -> u16 {
+        (self.v & 0b11111) as u16
     }
 
     // Scrolling is complex, so split out the logic here.
@@ -230,5 +230,15 @@ impl PPU {
 
             self.v = (self.v & !0x03E0) | ((coarse_y as u16) << 5);  // Put coarse_y back into v.
         }
+    }
+
+    // And then methods to load the tile and attribute addresses to load next.
+    fn tile_address(&self) -> u16 {
+        0x2000 | (self.v & 0x0FFF)
+    }
+
+    fn attribute_address(&self) -> u16 {
+        // This formula copied from nesdev wiki.  I should try to understand it later.
+        0x23C0 | self.nametable_select() | ((self.v >> 4) & 0x38) | ((self.v >> 2) & 0x07)
     }
 }
