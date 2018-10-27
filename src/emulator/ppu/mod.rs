@@ -2,7 +2,19 @@
 
 use emulator::memory;
 
+pub struct Pixel {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+pub trait VideoOut {
+    fn emit(&mut self, p: Pixel);
+}
+
 pub struct PPU {
+    // Device to output rendered pixels to.
+    output: Box<VideoOut>,
 
     // PPU memory is laid out like so:
     // $0000-$0FFF = pattern table 0
@@ -63,6 +75,79 @@ pub struct PPU {
     // Eight latches containing the attribute bytes for the 8 sprites.
 
     // Eight counters containing the X positions for the 8 sprites.
+
+    // --- Counters for tracking the current rendering stage.
+
+    // There are 262 scanlines in total. 0-239 are visible, 240-260 occur durng vblank, and 261 is
+    // idle.
+    scanline: u16,
+
+    // Each scanline takes 341 cycles to render.
+    cycle: u16,
 }
 
+impl PPU {
+    pub fn tick(&mut self) {
+        match self.scanline {
+            0 ... 239 | 261 => self.tick_render(),
+            240 => self.tick_idle_scanline(),
+            241 => self.tick_vblank(),
+            _ => panic!("Scanline index should never exceed 261.  Got {}.", self.scanline),
+        }
 
+        self.cycle = (self.cycle + 1) % 341;
+        if self.cycle == 0 {
+            self.scanline = (self.scanline + 1) % 262;
+        }
+    }
+
+    fn tick_render(&mut self) {
+        match self.cycle {
+            // Cycle 0 is an idle cycle.
+            0 => self.tick_idle_cycle(),
+
+            // The data for each tile is fetched durnig this phase.
+            // This where the actual pixels for the scanline are output.
+            1 ... 256 => self.tick_render_cycle(),
+
+            // The tile data for the sprites on the next scanline are fetched during this phase.
+            257 ... 320 => self.tick_sprite_fetch_cycle(),
+
+            // This is where the first two tiles of the next scanline are fetched and loaded into
+            // the shift registers.
+            321 ... 336 => self.tick_prefetch_tiles_cycle(),
+
+            // Finally, here two bytes are fetched, but the purpose is unknown.
+            337 ... 340 => self.tick_unknown_fetch(),
+
+            _ => panic!("PPU cycle index should never exceed 341.  Got {}.", self.cycle),
+        }
+    }
+
+    fn tick_idle_scanline(&mut self) {
+        // PPU does nothing on the idle scanline.
+    }
+
+    fn tick_vblank(&mut self) {
+        if self.scanline == 241 && self.cycle == 1 {
+            // TODO: Set VBlank flag.
+        }
+        // Otherwise idle.
+    }
+
+    fn tick_idle_cycle(&mut self) {
+        // PPU does nothing during idle cycle.
+    }
+
+    fn tick_render_cycle(&mut self) {
+    }
+
+    fn tick_sprite_fetch_cycle(&mut self) {
+    }
+
+    fn tick_prefetch_tiles_cycle(&mut self) {
+    }
+
+    fn tick_unknown_fetch(&mut self) {
+    }
+}

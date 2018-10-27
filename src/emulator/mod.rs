@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 pub mod cpu;
 pub mod memory;
+pub mod ppu;
 pub mod util;
 
 pub struct MOS6500 {
