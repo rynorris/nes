@@ -87,21 +87,30 @@ pub struct PPU {
 }
 
 impl PPU {
-    pub fn tick(&mut self) {
-        match self.scanline {
+    // Returns how many PPU cycles the tick took.
+    pub fn tick(&mut self) -> u16 {
+        let cycles = match self.scanline {
             0 ... 239 | 261 => self.tick_render(),
             240 => self.tick_idle_scanline(),
             241 => self.tick_vblank(),
             _ => panic!("Scanline index should never exceed 261.  Got {}.", self.scanline),
+        };
+
+        self.cycle = self.cycle + cycles;
+
+        if self.cycle > 341 {
+            panic!("Cycle index should never exceed 341.  Got: {}.", self.cycle);
         }
 
-        self.cycle = (self.cycle + 1) % 341;
-        if self.cycle == 0 {
+        if self.cycle == 341 {
+            self.cycle = 0;
             self.scanline = (self.scanline + 1) % 262;
         }
+
+        cycles
     }
 
-    fn tick_render(&mut self) {
+    fn tick_render(&mut self) -> u16 {
         match self.cycle {
             // Cycle 0 is an idle cycle.
             0 => self.tick_idle_cycle(),
@@ -124,30 +133,38 @@ impl PPU {
         }
     }
 
-    fn tick_idle_scanline(&mut self) {
+    fn tick_idle_scanline(&mut self) -> u16 {
         // PPU does nothing on the idle scanline.
+        // Just idle for 341 cycles.
+        341
     }
 
-    fn tick_vblank(&mut self) {
+    fn tick_vblank(&mut self) -> u16 {
         if self.scanline == 241 && self.cycle == 1 {
             // TODO: Set VBlank flag.
         }
         // Otherwise idle.
+        1
     }
 
-    fn tick_idle_cycle(&mut self) {
+    fn tick_idle_cycle(&mut self) -> u16 {
         // PPU does nothing during idle cycle.
+        1
     }
 
-    fn tick_render_cycle(&mut self) {
+    fn tick_render_cycle(&mut self) -> u16 {
+        1
     }
 
-    fn tick_sprite_fetch_cycle(&mut self) {
+    fn tick_sprite_fetch_cycle(&mut self) -> u16 {
+        1
     }
 
-    fn tick_prefetch_tiles_cycle(&mut self) {
+    fn tick_prefetch_tiles_cycle(&mut self) -> u16 {
+        1
     }
 
-    fn tick_unknown_fetch(&mut self) {
+    fn tick_unknown_fetch(&mut self) -> u16 {
+        1
     }
 }
