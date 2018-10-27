@@ -3,14 +3,34 @@
 use emulator::memory;
 use emulator::memory::Reader;
 
-pub struct Pixel {
-    r: u8,
-    g: u8,
-    b: u8,
+// Colours represented as a single byte:
+// 76543210
+// ||||||||
+// ||||++++- Hue (phase, determines NTSC/PAL chroma)
+// ||++----- Value (voltage, determines NTSC/PAL luma)
+// ++------- Unimplemented, reads back as 0
+pub struct Colour {
+    byte: u8,
+}
+
+impl Colour {
+    pub fn hue(&self) -> u8 {
+        self.byte & 0b1111
+    }
+
+    pub fn brightness(&self) -> u8 {
+        (self.byte >> 4) & 0b11
+    }
+}
+
+pub struct Palette {
+    c1: Colour,
+    c2: Colour,
+    c3: Colour,
 }
 
 pub trait VideoOut {
-    fn emit(&mut self, p: Pixel);
+    fn emit(&mut self, c: Colour);
 }
 
 pub struct PPU {
@@ -183,8 +203,11 @@ impl PPU {
         self.fetch_tile_data();
 
         // Actually render and emit one pixel.
-        let pixel = self.render_pixel();
-        self.output.emit(pixel);
+        // Unless this is scanline 261, which is just a dummy scanline.
+        if self.scanline != 261 {
+            let pixel = self.render_pixel();
+            self.output.emit(pixel);
+        }
 
         // Finally shift all the registers.
         self.shift_registers();
@@ -192,6 +215,7 @@ impl PPU {
     }
 
     fn tick_sprite_fetch_cycle(&mut self) -> u16 {
+        // TODO: Implement sprites.
         1
     }
 
@@ -201,6 +225,10 @@ impl PPU {
     }
 
     fn tick_unknown_fetch(&mut self) -> u16 {
+        // These cycles just read the next nametable byte for no reason.
+        // This is used by one mapper to detect hblank, so have to include it.
+        let addr = self.tile_address();
+        self.tmp_pattern_coords = self.memory.read(addr);
         1
     }
 
@@ -258,11 +286,25 @@ impl PPU {
 
     // --- RENDERING
     // Put all rendering logic in one place.
-    fn render_pixel(&self) -> Pixel {
-        Pixel{
-            r: 0,
-            g: 0,
-            b: 0,
+    fn render_pixel(&self) -> Colour {
+        // TODO: Implement palettes properly.
+        let palette = Palette {
+            c1: Colour { byte: 0x00 },
+            c2: Colour { byte: 0x0F },
+            c3: Colour { byte: 0xFF },
+        };
+
+        let bg_low_bit = (self.tile_register_low >> self.fine_x) & 1;
+        let bg_high_bit = (self.tile_register_high >> self.fine_x) & 1;
+
+        let colour_index = (bg_high_bit << 1) & bg_low_bit;
+
+        match colour_index {
+            0 => Colour { byte: 0x00 },
+            1 => palette.c1,
+            2 => palette.c2,
+            3 => palette.c3,
+            _ => panic!("Got an unexpected colour index: {}", colour_index)
         }
     }
 
