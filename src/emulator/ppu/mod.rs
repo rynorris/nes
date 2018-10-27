@@ -114,7 +114,8 @@ impl PPU {
     }
 
     fn tick_render(&mut self) -> u16 {
-        match self.cycle {
+        // Rendering stages.
+        let cycles = match self.cycle {
             // Cycle 0 is an idle cycle.
             0 => self.tick_idle_cycle(),
 
@@ -133,7 +134,12 @@ impl PPU {
             337 ... 340 => self.tick_unknown_fetch(),
 
             _ => panic!("PPU cycle index should never exceed 341.  Got {}.", self.cycle),
-        }
+        };
+
+        // Scrolling.
+        self.handle_scrolling();
+
+        cycles
     }
 
     fn tick_idle_scanline(&mut self) -> u16 {
@@ -156,14 +162,6 @@ impl PPU {
     }
 
     fn tick_render_cycle(&mut self) -> u16 {
-        // For simplicity, run 8 cycles at once to render a whole tile.
-        // We fetch 4 bytes (each fetch takes 2 cycles):
-        //   1. Nametable byte.
-        //   2. Attribute table byte.
-        //   3. Tile bitmap low.
-        //   4. Tile bitmap high.
-
-        // On dot 256 of each scanline, the PPU increments 
         1
     }
 
@@ -177,6 +175,41 @@ impl PPU {
 
     fn tick_unknown_fetch(&mut self) -> u16 {
         1
+    }
+
+    // --- SCROLLING
+    // Put all scrolling logic in one place.
+    fn handle_scrolling(&mut self) {
+        // No scrolling happens if rendering is disabled.
+        if !self.rendering_is_enabled {
+            return;
+        }
+
+        // If rendering is enabled, on dot 256 of each scanline, the PPU increments y position.
+        if self.cycle == 256 {
+            self.increment_y();
+        }
+
+        // If rendering is enabled, on dot 257 of each scanline, copy all horizontal bits from t to v.
+        if self.cycle == 257 {
+            let horizontal_bitmask = 0b0000100_00011111;
+            self.v = self.v & !horizontal_bitmask;
+            self.v = self.v | (self.t & horizontal_bitmask);
+        }
+
+        // If rendering is enabled, between dots 280 to 304 of the pre-render scanline, the PPU repeatedly copies the
+        // vertical bits from t to v.
+        if self.scanline == 261 && self.cycle >= 280 && self.cycle <= 304 {
+            let vertical_bitmask = 0b1111011_11100000;
+            self.v = self.v & !vertical_bitmask;
+            self.v = self.v | (self.t & vertical_bitmask);
+        }
+
+        // Between dot 328 of a scanline, and 256 of the next scanline, x scroll is incremented
+        // on every multiple of 8 dots except 0.  i.e. 328, 336, 8, 16, ..., 256.
+        if ((self.cycle > 0 && self.cycle <= 256) || self.cycle >= 328) && (self.cycle % 8 == 0) {
+            self.increment_coarse_x();
+        }
     }
 
     // During rendering the VRAM address v is laid out like so:
