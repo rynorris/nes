@@ -46,8 +46,10 @@ pub struct PPU {
     // Two 16-bit shift registers containing bitmap data for 2 tiles.
     // Every 8 cycles the data for the next tile is loaded into the upper 8 bits of the register,
     // meanwhile the pixel to render is fetched from the lower 8 bits.
-    tile_register_1: u16,
-    tile_register_2: u16,
+    tile_register_low: u16,
+    tile_register_high: u16,
+    tile_latch_low: u8,
+    tile_latch_high: u8,
 
     // Two 8-bit shift registers containing the palette attributes for the lower 8 pixels of the
     // 16-bit register.
@@ -55,6 +57,8 @@ pub struct PPU {
     // Every 8 cycles the latch is loaded with the attribute for the next tile.
     attribute_register_1: u8,
     attribute_register_2: u8,
+    attribute_latch_1: u8,
+    attribute_latch_2: u8,
 
     // -- Sprite State --
 
@@ -171,10 +175,21 @@ impl PPU {
     }
 
     fn tick_render_cycle(&mut self) -> u16 {
+        // If cycle 1, 9, 17, ..., 257 then reload the shift registers from the latches.
+        if self.cycle % 8 == 1 {
+            self.tile_register_low &= 0x00FF;
+            self.tile_register_low |= (self.tile_latch_low as u16) << 8;
+            self.tile_register_high &= 0x00FF;
+            self.tile_register_high |= (self.tile_latch_high as u16) << 8;
+
+            self.attribute_register_1 = self.attribute_latch_1;
+            self.attribute_register_2 = self.attribute_latch_2;
+        }
+
         // Memory accesses for next tile data.
         // We fetch 4 bytes in turn (each fetch takes 2 cycles):
         // These reads begin on cycle 1.
-        // TODO: Fill these in.
+        // TODO: Fill in attribute table loading.
         match self.cycle % 8 {
             // 1. Nametable byte.
             1 => {
@@ -186,10 +201,16 @@ impl PPU {
             3 => (),
 
             // 3. Tile bitmap low.
-            5 => (),
+            5 => {
+                let addr = self.pattern_address_low();
+                self.tile_latch_low = self.memory.read(addr);
+            },
 
             // 4. Tile bitmap high.
-            7 => (),
+            7 => {
+                let addr = self.pattern_address_high();
+                self.tile_latch_high = self.memory.read(addr);
+            },
 
             // Do nothing on inbetween cycles.
             _ => (),
@@ -322,14 +343,14 @@ impl PPU {
         0x23C0 | self.nametable_select() | ((self.v >> 4) & 0x38) | ((self.v >> 2) & 0x07)
     }
 
-    fn pattern_address_lower(&self) -> u16 {
+    fn pattern_address_low(&self) -> u16 {
         ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b0000  // Lower bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
     }
 
-    fn pattern_address_upper(&self) -> u16 {
+    fn pattern_address_high(&self) -> u16 {
         ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b1000  // Upper bit plane.
