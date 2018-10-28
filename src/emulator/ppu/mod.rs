@@ -182,6 +182,11 @@ impl PPU {
         // Scrolling.
         self.handle_scrolling();
 
+        // On dot 1 of the pre-render scanline, clear vblank flag.
+        if self.scanline == 261 && self.cycle == 1 {
+            self.ppustatus &= 0b0111_1111;
+        }
+
         cycles
     }
 
@@ -193,7 +198,8 @@ impl PPU {
 
     fn tick_vblank_scanline(&mut self) -> u16 {
         if self.scanline == 241 && self.cycle == 1 {
-            // TODO: Set VBlank flag.
+            // Set VBlank flag.
+            self.ppustatus |= 0b1000_0000;
         }
         // Otherwise idle.
         1

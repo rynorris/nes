@@ -27,7 +27,13 @@ impl Reader for PPU {
             // PPUSTATUS
             // Only top 3 bits contain data.
             // TODO: Bottom 5 bits should be filled from internal latch.
-            2 => self.ppustatus & 0b1110_0000,
+            2 => {
+                let byte = self.ppustatus & 0b1110_0000;
+
+                // After reading PPUSTATUS, vblank flag is cleared.
+                self.ppustatus &= 0b0111_1111;
+                byte
+            },
 
             // OAMADDR - write-only
             3 => 0,
