@@ -1,5 +1,6 @@
 mod registers;
 
+use emulator::components::latch;
 use emulator::memory;
 use emulator::memory::Reader;
 
@@ -96,8 +97,8 @@ pub struct PPU {
     //            pre-render line.
     ppustatus: u8,
     oamaddr: u8,
-    ppuscroll_latch: bool,
-    ppuaddr_latch: bool,
+    ppuscroll_latch: latch::Latch,
+    ppuaddr_latch: latch::Latch,
 
     // PPU memory is laid out like so:
     // $0000-$0FFF = pattern table 0
@@ -185,8 +186,8 @@ pub fn new(output: Box<VideoOut>) -> PPU {
         ppumask: 0,
         ppustatus: 0,
         oamaddr: 0,
-        ppuscroll_latch: false,
-        ppuaddr_latch: false,
+        ppuscroll_latch: latch::new(),
+        ppuaddr_latch: latch::new(),
         memory: memory::new(),
         v: 0,
         t: 0,

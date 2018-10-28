@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+pub mod components;
 pub mod cpu;
 pub mod memory;
 pub mod ppu;
