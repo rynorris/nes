@@ -122,9 +122,6 @@ pub struct PPU {
     // Fine X Scroll.
     fine_x: u8,
 
-    // First/second write toggle.
-    is_first_write: bool,
-
     // Two 16-bit shift registers containing bitmap data for 2 tiles.
     // Every 8 cycles the data for the next tile is loaded into the upper 8 bits of the register,
     // meanwhile the pixel to render is fetched from the lower 8 bits.
@@ -179,6 +176,36 @@ pub struct PPU {
 
     // Which half of pattern tables to use.  0 = 'left', 1 = 'right'.
     pattern_table_side: u8,
+}
+
+pub fn new(output: Box<VideoOut>) -> PPU {
+    PPU {
+        output: output,
+        ppuctrl: 0,
+        ppumask: 0,
+        ppustatus: 0,
+        oamaddr: 0,
+        ppuscroll_latch: false,
+        ppuaddr_latch: false,
+        memory: memory::new(),
+        v: 0,
+        t: 0,
+        fine_x: 0,
+        tile_register_low: 0,
+        tile_register_high: 0,
+        tile_latch_low: 0,
+        tile_latch_high: 0,
+        attribute_register_1: 0,
+        attribute_register_2: 0,
+        attribute_latch_1: 0,
+        attribute_latch_2: 0,
+        oam: memory::new(),
+        secondary_oam: memory::new(),
+        scanline: 261,
+        cycle:  0,
+        tmp_pattern_coords: 0,
+        pattern_table_side: 0,
+    }
 }
 
 impl PPU {

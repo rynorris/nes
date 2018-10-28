@@ -4,17 +4,17 @@ pub mod memory;
 pub mod ppu;
 pub mod util;
 
-pub struct MOS6500 {
+pub struct NES {
     cpu: cpu::CPU,
 }
 
-pub fn new() -> MOS6500 {
+pub fn new() -> NES {
     let memory = memory::new();
     let cpu = cpu::new(memory);
-    MOS6500 {
+    NES {
         cpu,
     }
 }
 
-impl MOS6500 {
+impl NES {
 }
