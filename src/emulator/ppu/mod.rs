@@ -42,10 +42,8 @@ pub struct PPU {
     ppumask: u8,
     ppustatus: u8,
     oamaddr: u8,
-    oamdata: u8,
     ppuscroll_latch: bool,
     ppuaddr_latch: bool,
-    ppudata: u8,
 
     // PPU memory is laid out like so:
     // $0000-$0FFF = pattern table 0
@@ -119,9 +117,6 @@ pub struct PPU {
 
     // Each scanline takes 341 cycles to render.
     cycle: u16,
-
-    // Rendering can be disabled, which changes the operation of the PPU.
-    rendering_is_enabled: bool,
 
     // -- Internal State --
 
@@ -328,7 +323,7 @@ impl PPU {
     // Put all scrolling logic in one place.
     fn handle_scrolling(&mut self) {
         // No scrolling happens if rendering is disabled.
-        if !self.rendering_is_enabled {
+        if !self.rendering_is_enabled() {
             return;
         }
 
@@ -437,11 +432,15 @@ impl PPU {
     }
 
     // Utility methods to query internal state.
+    fn rendering_is_enabled(&self) -> bool {
+        self.ppumask & 0b0001_1000 != 0
+    }
+
     fn is_vblanking(&self) -> bool {
         self.scanline >= 241
     }
 
     fn is_rendering(&self) -> bool {
-        !self.is_vblanking() && self.rendering_is_enabled
+        !self.is_vblanking() && self.rendering_is_enabled()
     }
 }
