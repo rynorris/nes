@@ -340,7 +340,7 @@ impl CPU {
         }
     }
 
-    fn load_memory(&self, address: u16) -> u8 {
+    fn load_memory(&mut self, address: u16) -> u8 {
         self.memory.read(address)
     }
 

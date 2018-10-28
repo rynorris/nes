@@ -1,4 +1,4 @@
-
+mod registers;
 
 use emulator::memory;
 use emulator::memory::Reader;
@@ -36,6 +36,16 @@ pub trait VideoOut {
 pub struct PPU {
     // Device to output rendered pixels to.
     output: Box<VideoOut>,
+
+    // Registers.
+    ppuctrl: u8,
+    ppumask: u8,
+    ppustatus: u8,
+    oamaddr: u8,
+    oamdata: u8,
+    ppuscroll_latch: bool,
+    ppuaddr_latch: bool,
+    ppudata: u8,
 
     // PPU memory is laid out like so:
     // $0000-$0FFF = pattern table 0
@@ -418,5 +428,14 @@ impl PPU {
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b1000  // Upper bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
+    }
+
+    // Utility methods to query internal state.
+    fn is_vblanking(&self) -> bool {
+        self.scanline >= 241
+    }
+
+    fn is_rendering(&self) -> bool {
+        !self.is_vblanking() && self.rendering_is_enabled
     }
 }
