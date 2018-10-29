@@ -137,37 +137,38 @@ pub struct PPU {
     pattern_table_side: u8,
 }
 
-pub fn new(output: Box<VideoOut>) -> PPU {
-    PPU {
-        output: output,
-        ppuctrl: BitField::new(),
-        ppumask: BitField::new(),
-        ppustatus: BitField::new(),
-        oamaddr: 0,
-        ppuscroll_latch: latch::new(),
-        ppuaddr_latch: latch::new(),
-        memory: memory::new(),
-        v: 0,
-        t: 0,
-        fine_x: 0,
-        tile_register_low: 0,
-        tile_register_high: 0,
-        tile_latch_low: 0,
-        tile_latch_high: 0,
-        attribute_register_1: 0,
-        attribute_register_2: 0,
-        attribute_latch_1: 0,
-        attribute_latch_2: 0,
-        oam: memory::new(),
-        secondary_oam: memory::new(),
-        scanline: 261,
-        cycle:  0,
-        tmp_pattern_coords: 0,
-        pattern_table_side: 0,
-    }
-}
 
 impl PPU {
+    pub fn new(output: Box<VideoOut>) -> PPU {
+        PPU {
+            output: output,
+            ppuctrl: BitField::new(),
+            ppumask: BitField::new(),
+            ppustatus: BitField::new(),
+            oamaddr: 0,
+            ppuscroll_latch: latch::new(),
+            ppuaddr_latch: latch::new(),
+            memory: memory::new(),
+            v: 0,
+            t: 0,
+            fine_x: 0,
+            tile_register_low: 0,
+            tile_register_high: 0,
+            tile_latch_low: 0,
+            tile_latch_high: 0,
+            attribute_register_1: 0,
+            attribute_register_2: 0,
+            attribute_latch_1: 0,
+            attribute_latch_2: 0,
+            oam: memory::new(),
+            secondary_oam: memory::new(),
+            scanline: 261,
+            cycle:  0,
+            tmp_pattern_coords: 0,
+            pattern_table_side: 0,
+        }
+    }
+
     // Returns how many PPU cycles the tick took.
     pub fn tick(&mut self) -> u16 {
         let cycles = match self.scanline {
