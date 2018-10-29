@@ -1,6 +1,9 @@
 mod flags;
 mod registers;
 
+#[cfg(test)]
+mod test;
+
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
 use emulator::memory;
@@ -174,7 +177,7 @@ impl PPU {
         let cycles = match self.scanline {
             0 ... 239 | 261 => self.tick_render_scanline(),
             240 => self.tick_idle_scanline(),
-            241 => self.tick_vblank_scanline(),
+            241 ... 260 => self.tick_vblank_scanline(),
             _ => panic!("Scanline index should never exceed 261.  Got {}.", self.scanline),
         };
 
@@ -341,15 +344,15 @@ impl PPU {
     fn render_pixel(&self) -> Colour {
         // TODO: Implement palettes properly.
         let palette = Palette {
-            c1: Colour { byte: 0x00 },
-            c2: Colour { byte: 0x0F },
+            c1: Colour { byte: 0x0F },
+            c2: Colour { byte: 0xF0 },
             c3: Colour { byte: 0xFF },
         };
 
         let bg_low_bit = (self.tile_register_low >> self.fine_x) & 1;
         let bg_high_bit = (self.tile_register_high >> self.fine_x) & 1;
 
-        let colour_index = (bg_high_bit << 1) & bg_low_bit;
+        let colour_index = (bg_high_bit << 1) | bg_low_bit;
 
         match colour_index {
             0 => Colour { byte: 0x00 },
@@ -431,9 +434,9 @@ impl PPU {
 
     fn increment_y(&mut self) {
         if self.fine_y_scroll() < 7 {
-            self.v += 0x100;  // Increment fine Y.
+            self.v += 0x1000;  // Increment fine Y.
         } else {
-            self.v &= !0x700;  // Fine Y = 0.
+            self.v &= !0x7000;  // Fine Y = 0.
             let mut coarse_y = self.coarse_y_scroll();
             if coarse_y == 29 {
                 coarse_y = 0;

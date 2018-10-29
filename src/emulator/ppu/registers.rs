@@ -19,7 +19,7 @@ impl Reader for PPU {
         // There are only 8 registers, mirrorred every 8 bytes, so we only care about the 3 low
         // bits of the address.
         // TODO: Reads of write-only registers should return the contents of an internal latch.
-        match address & 0xb111 {
+        match address % 8 {
             // PPUCTRL - write-only
             0 => 0,
 
@@ -77,7 +77,7 @@ impl Reader for PPU {
 
 impl Writer for PPU {
     fn write(&mut self, address: u16, byte: u8) {
-        match address & 0xb111 {
+        match address % 8 {
             // PPUCTRL
             0 => self.ppuctrl.load_byte(byte),
 
