@@ -6,6 +6,7 @@ mod opcodes;
 #[cfg(test)]
 mod test;
 
+use emulator::components::bitfield::BitField;
 use emulator::memory;
 use emulator::memory::Reader;
 use emulator::memory::Writer;
@@ -15,6 +16,22 @@ use emulator::util;
 pub const START_VECTOR: u16 = 0xFFFC;
 pub const IRQ_VECTOR: u16= 0xFFFE;
 pub const NMI_VECTOR: u16= 0xFFFA;
+
+pub enum Flag {
+    N = 1 << 7, // Negative
+    V = 1 << 6, // Overflow
+    B = 1 << 4, // Break Flag
+    D = 1 << 3, // BCD Mode
+    I = 1 << 2, // Interrupt Disable
+    Z = 1 << 1, // Zero
+    C = 1, // Carry
+}
+
+impl Into<u8> for Flag {
+    fn into(self) -> u8 {
+        self as u8
+    }
+}
 
 pub struct CPU {
     // Connection to main memory.
@@ -36,7 +53,7 @@ pub struct CPU {
     pc: u16,
 
     // Processor Flags NV_BDIZC
-    p: flags::ProcessorFlags,
+    p: BitField,
 }
 
 pub fn new(memory: memory::Manager) -> CPU {
@@ -47,7 +64,7 @@ pub fn new(memory: memory::Manager) -> CPU {
         y: 0,
         sp: 0xFF,
         pc: 0,
-        p: flags::new(),
+        p: BitField::new(),
     }
 }
 
