@@ -1,4 +1,5 @@
 use emulator::components::latch;
+use emulator::ppu::flags;
 use emulator::ppu::PPU;
 use emulator::memory::Reader;
 use emulator::memory::Writer;
@@ -8,7 +9,7 @@ impl PPU {
         // Increment controlled by bit 2 of PPUCTRL.
         // 0 -> increment by 1
         // 1 -> incrmement by 32
-        (((self.ppuctrl & 0b100) >> 2) * 32) as u16
+        if self.ppuctrl.is_set(flags::PPUCTRL::I) { 32 } else { 1 }
     }
 }
 
@@ -29,10 +30,10 @@ impl Reader for PPU {
             // Only top 3 bits contain data.
             // TODO: Bottom 5 bits should be filled from internal latch.
             2 => {
-                let byte = self.ppustatus & 0b1110_0000;
+                let byte = self.ppustatus.as_byte() & 0b1110_0000;
 
                 // After reading PPUSTATUS, vblank flag is cleared.
-                self.ppustatus &= 0b0111_1111;
+                self.ppustatus.clear(flags::PPUSTATUS::V);
                 byte
             },
 
@@ -78,10 +79,10 @@ impl Writer for PPU {
     fn write(&mut self, address: u16, byte: u8) {
         match address & 0xb111 {
             // PPUCTRL
-            0 => self.ppuctrl = byte,
+            0 => self.ppuctrl.load_byte(byte),
 
             // PPUMASK
-            1 => self.ppumask = byte,
+            1 => self.ppumask.load_byte(byte),
 
             // PPUSTATUS - read-only
             2 => (),
