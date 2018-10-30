@@ -66,7 +66,7 @@ impl Reader for PPU {
 
                 // Amount to increment by is determined by PPUCTRL.
                 let inc = self.ppuaddr_increment();
-                self.v.wrapping_add(inc);
+                self.v = self.v.wrapping_add(inc);
                 byte
             },
 
@@ -97,7 +97,7 @@ impl Writer for PPU {
                 if !self.is_rendering() {
                     let addr = self.oamaddr as u16;
                     self.oam.write(addr, byte);
-                    self.oamaddr.wrapping_add(1);
+                    self.oamaddr = self.oamaddr.wrapping_add(1);
                 }
             },
 
@@ -161,7 +161,7 @@ impl Writer for PPU {
 
                 // Amount to increment by is determined by PPUCTRL.
                 let inc = self.ppuaddr_increment();
-                self.v.wrapping_add(inc);
+                self.v = self.v.wrapping_add(inc);
             },
 
             _ => panic!("Unexpected PPU register address: {}", address),
