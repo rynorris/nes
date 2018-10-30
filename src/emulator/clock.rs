@@ -12,12 +12,12 @@ pub trait Ticker {
 }
 
 pub struct ScaledTicker {
-    delegate: Rc<RefCell<Ticker>>,
+    delegate: Rc<RefCell<dyn Ticker>>,
     factor: u32,
 }
 
 impl ScaledTicker {
-    pub fn new(delegate: Rc<RefCell<Ticker>>, factor: u32) -> ScaledTicker {
+    pub fn new(delegate: Rc<RefCell<dyn Ticker>>, factor: u32) -> ScaledTicker {
         ScaledTicker { delegate, factor }
     }
 }
@@ -33,7 +33,7 @@ pub struct Clock {
     elapsed_cycles: u64,
     pause_threshold_ns: u64,
     started_instant: Instant,
-    tickers: Vec<Rc<RefCell<Ticker>>>,
+    tickers: Vec<Rc<RefCell<dyn Ticker>>>,
     turn_order: BinaryHeap<TickNode>,
 }
 
