@@ -302,10 +302,10 @@ impl PPU {
 
     // Reload shift registers from their associated latches.
     fn reload_shift_registers(&mut self) {
-        self.tile_register_low &= 0x00FF;
-        self.tile_register_low |= (self.tile_latch_low as u16) << 8;
-        self.tile_register_high &= 0x00FF;
-        self.tile_register_high |= (self.tile_latch_high as u16) << 8;
+        self.tile_register_low &= 0xFF00;
+        self.tile_register_low |= self.tile_latch_low as u16;
+        self.tile_register_high &= 0xFF00;
+        self.tile_register_high |= self.tile_latch_high as u16;
 
         self.attribute_register_1 = self.attribute_latch_1;
         self.attribute_register_2 = self.attribute_latch_2;
@@ -313,8 +313,8 @@ impl PPU {
 
     // Shift the registers.
     fn shift_registers(&mut self) {
-        self.tile_register_low >>= 1;
-        self.tile_register_high >>= 1;
+        self.tile_register_low <<= 1;
+        self.tile_register_high <<= 1;
     }
 
     // Memory accesses for next tile data.
@@ -359,8 +359,8 @@ impl PPU {
             c3: Colour { byte: 0x2C },
         };
 
-        let bg_low_bit = (self.tile_register_low >> self.fine_x) & 1;
-        let bg_high_bit = (self.tile_register_high >> self.fine_x) & 1;
+        let bg_low_bit = (self.tile_register_low >> (15 - self.fine_x)) & 1;
+        let bg_high_bit = (self.tile_register_high >> (15 - self.fine_x)) & 1;
 
         let colour_index = (bg_high_bit << 1) | bg_low_bit;
 
