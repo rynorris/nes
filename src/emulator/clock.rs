@@ -8,7 +8,24 @@ use std::vec::Vec;
 
 pub trait Ticker {
     // Returns how many master clock cycles while ticking.
-    fn tick(&mut self) -> u16;
+    fn tick(&mut self) -> u32;
+}
+
+pub struct ScaledTicker {
+    delegate: Rc<RefCell<Ticker>>,
+    factor: u32,
+}
+
+impl ScaledTicker {
+    pub fn new(delegate: Rc<RefCell<Ticker>>, factor: u32) -> ScaledTicker {
+        ScaledTicker { delegate, factor }
+    }
+}
+
+impl Ticker for ScaledTicker {
+    fn tick(&mut self) -> u32 {
+        self.delegate.borrow_mut().tick() * self.factor
+    }
 }
 
 pub struct Clock {
@@ -89,12 +106,12 @@ mod test {
     use emulator::clock::{Clock, Ticker};
 
     struct DummyTicker {
-        tick_cycles: u16,
+        tick_cycles: u32,
         value: u16,
     }
 
     impl DummyTicker {
-        fn new(tick_cycles: u16) -> DummyTicker {
+        fn new(tick_cycles: u32) -> DummyTicker {
             DummyTicker {
                 tick_cycles,
                 value: 0,
@@ -103,7 +120,7 @@ mod test {
     }
 
     impl Ticker for DummyTicker {
-        fn tick(&mut self) -> u16 {
+        fn tick(&mut self) -> u32 {
             self.value += 1;
             self.tick_cycles
         }

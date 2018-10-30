@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 
+use emulator::clock::Ticker;
 use emulator::cpu;
 use emulator::memory;
 

@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 
+use mos_6500::emulator::clock::Ticker;
 use mos_6500::emulator::cpu;
 use mos_6500::emulator::memory;
 
