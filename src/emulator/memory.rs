@@ -18,7 +18,7 @@ pub struct Manager {
 }
 
 pub fn new() -> Manager {
-    let ram = Box::new(new_ram());
+    let ram = Box::new(RAM::new());
     let module = Module{
         delegate: ram,
         start_addr: 0,
@@ -55,7 +55,7 @@ impl Manager {
 
         let module = Module{ delegate, start_addr, end_addr };
 
-        self.modules.push_back(module)
+        self.modules.push_front(module)
     }
 
     fn find_module(&mut self, addr: u16) -> Option<&mut Module> {
@@ -72,12 +72,6 @@ struct Module {
     delegate: Box<ReadWriter>,
     start_addr: u16,
     end_addr: u16,
-}
-
-pub fn new_ram() -> RAM {
-    RAM{
-        memory: [0; ADDRESS_SPACE],
-    }
 }
 
 pub struct RAM {
@@ -97,6 +91,12 @@ impl Writer for RAM {
 }
 
 impl RAM {
+    pub fn new() -> RAM {
+        RAM{
+            memory: [0; ADDRESS_SPACE],
+        }
+    }
+
     pub fn debug_print(&self, start_addr: u16, num_bytes: u16) {
         let end_addr = start_addr + num_bytes;
         println!("RAM [{:?}..{:?}]: {:?}", start_addr, end_addr, &self.memory[(start_addr as usize) .. (end_addr as usize)]);
