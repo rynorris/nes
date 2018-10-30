@@ -27,6 +27,10 @@ impl Colour {
     pub fn brightness(&self) -> u8 {
         (self.byte >> 4) & 0b11
     }
+
+    pub fn as_byte(&self) -> u8 {
+        self.byte
+    }
 }
 
 pub struct Palette {
@@ -344,9 +348,9 @@ impl PPU {
     fn render_pixel(&self) -> Colour {
         // TODO: Implement palettes properly.
         let palette = Palette {
-            c1: Colour { byte: 0x0F },
-            c2: Colour { byte: 0xF0 },
-            c3: Colour { byte: 0xFF },
+            c1: Colour { byte: 0x05 },
+            c2: Colour { byte: 0x1A },
+            c3: Colour { byte: 0x2C },
         };
 
         let bg_low_bit = (self.tile_register_low >> self.fine_x) & 1;
@@ -355,7 +359,7 @@ impl PPU {
         let colour_index = (bg_high_bit << 1) | bg_low_bit;
 
         match colour_index {
-            0 => Colour { byte: 0x00 },
+            0 => Colour { byte: 0x0F },
             1 => palette.c1,
             2 => palette.c2,
             3 => palette.c3,

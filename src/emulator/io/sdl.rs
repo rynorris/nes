@@ -5,6 +5,7 @@ use self::sdl2::rect;
 use self::sdl2::render;
 use self::sdl2::video;
 
+use emulator::io::palette::PALETTE;
 use emulator::ppu;
 
 const SCALE: u8 = 4;
@@ -89,6 +90,7 @@ impl Graphics {
     }
 
     fn convert_colour(c: ppu::Colour) -> pixels::Color {
-        pixels::Color::RGB(c.brightness() << 5, c.hue() << 3, c.hue() << 3)
+        let (r, g, b) = PALETTE[c.as_byte() as usize];
+        pixels::Color::RGB(r, g, b)
     }
 }
