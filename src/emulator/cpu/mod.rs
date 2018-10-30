@@ -9,6 +9,7 @@ mod test;
 
 use std::io::Write;
 
+use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::memory;
 use emulator::memory::Reader;
@@ -75,6 +76,18 @@ pub fn new(memory: memory::Manager) -> CPU {
     }
 }
 
+impl clock::Ticker for CPU {
+    fn tick(&mut self) -> u32 {
+        return if self.should_non_maskable_interrupt() {
+            self.non_maskable_interrupt()
+        } else if self.should_interrupt() {
+            self.interrupt()
+        } else {
+            self.execute_next_instruction()
+        }
+    }
+}
+
 impl CPU {
     pub fn startup_sequence(&mut self) -> u32 {
         self.load_vector_to_pc(START_VECTOR);
@@ -83,16 +96,6 @@ impl CPU {
         // initializing the system.
         self.p.set(flags::Flag::I);
         0
-    }
-
-    pub fn tick(&mut self) -> u32 {
-        return if self.should_non_maskable_interrupt() {
-            self.non_maskable_interrupt()
-        } else if self.should_interrupt() {
-            self.interrupt()
-        } else {
-            self.execute_next_instruction()
-        }
     }
 
     pub fn load_program(&mut self, program: &[u8]) {
