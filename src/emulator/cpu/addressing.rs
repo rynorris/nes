@@ -6,11 +6,16 @@ use emulator::util;
 // After finding the address, the function should leave the PC pointing at the next opcode.
 pub type AddressingMode = fn (cpu: &mut cpu::CPU) -> (u16, u32);
 
+fn load_memory_from_pc(cpu: &mut cpu::CPU) -> u8 {
+    let addr = cpu.pc;
+    cpu.load_memory(addr)
+}
+
 // Implied: no operand.
 // Due to a quirk in the nature of the processor, even when doing implied addressing, 
 // the CPU will read the next byte of memory and then discard it.
 pub fn implied(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let _ = cpu.load_memory(cpu.pc);
+    let _ = load_memory_from_pc(cpu);
     (0, 0)
 }
 
@@ -23,15 +28,16 @@ pub fn immediate(cpu: &mut cpu::CPU) -> (u16, u32) {
 
 // Absolute: two byte operand indicates memory address.
 pub fn absolute(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let low_byte = cpu.load_memory(cpu.pc);
-    let high_byte = cpu.load_memory(cpu.pc + 1);
-    cpu.pc += 2;
+    let low_byte = load_memory_from_pc(cpu);
+    cpu.pc += 1;
+    let high_byte = load_memory_from_pc(cpu);
+    cpu.pc += 1;
     (util::combine_bytes(high_byte, low_byte), 0)
 }
 
 // Zero page: one byte operand indicates address in page 0 of memory.
 pub fn zero_page(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let low_byte = cpu.load_memory(cpu.pc);
+    let low_byte = load_memory_from_pc(cpu);
     cpu.pc += 1;
     (low_byte as u16, 0)
 }
@@ -39,11 +45,11 @@ pub fn zero_page(cpu: &mut cpu::CPU) -> (u16, u32) {
 // Relative: one byte operand indicates address relative to PC.
 // Only used by branch instructions.
 pub fn relative(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let offset: u8 = cpu.load_memory(cpu.pc);
+    let offset: u8 = load_memory_from_pc(cpu);
     cpu.pc += 1;
 
     // Quirk in CPU means we unnecessarily read this memory.
-    let _ = cpu.load_memory(cpu.pc);
+    let _ = load_memory_from_pc(cpu);
 
     // Signed addition.
     // TODO: Find out if wrapping is the correct behaviour.
@@ -66,9 +72,10 @@ pub fn relative(cpu: &mut cpu::CPU) -> (u16, u32) {
 // Absolute indexed: same as absolute addressing, but adds an index register to the
 // address.
 fn absolute_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
-    let bal = cpu.load_memory(cpu.pc);
-    let bah = cpu.load_memory(cpu.pc + 1);
-    cpu.pc += 2;
+    let bal = load_memory_from_pc(cpu);
+    cpu.pc += 1;
+    let bah = load_memory_from_pc(cpu);
+    cpu.pc += 1;
 
     let (adl, carry) = bal.overflowing_add(offset);
     if carry {
@@ -96,7 +103,7 @@ pub fn absolute_indexed_y(cpu: &mut cpu::CPU) -> (u16, u32) {
 // Only supported for index X except for LDX and STX.
 // If the resulting value is greated than 255, the address wraps within page 0.
 fn zero_page_indexed_load(cpu: &mut cpu::CPU, offset: u8) -> (u16, u32) {
-    let low_byte = cpu.load_memory(cpu.pc);
+    let low_byte = load_memory_from_pc(cpu);
     cpu.pc += 1;
 
     // Quirk in CPU means we unnecessarily read this memory.
@@ -143,7 +150,7 @@ fn load_addr_within_page(cpu: &mut cpu::CPU, addr: u16) -> u16 {
 }
 
 pub fn indexed_indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let bal = cpu.load_memory(cpu.pc);
+    let bal = load_memory_from_pc(cpu);
     cpu.pc += 1;
 
     // Quirk in CPU means we unnecessarily read this memory.
@@ -156,7 +163,7 @@ pub fn indexed_indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
 }
 
 pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let ial = cpu.load_memory(cpu.pc);
+    let ial = load_memory_from_pc(cpu);
     cpu.pc += 1;
     let bal = load_byte_from_page_zero(cpu, ial as u16);
     let bah = load_byte_from_page_zero(cpu, (ial as u16) + 1);
@@ -174,9 +181,9 @@ pub fn indirect_indexed(cpu: &mut cpu::CPU) -> (u16, u32) {
 }
 
 pub fn indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
-    let ial = cpu.load_memory(cpu.pc);
+    let ial = load_memory_from_pc(cpu);
     cpu.pc += 1;
-    let iah = cpu.load_memory(cpu.pc);
+    let iah = load_memory_from_pc(cpu);
     cpu.pc += 1;
     
     let addr = util::combine_bytes(iah, ial);

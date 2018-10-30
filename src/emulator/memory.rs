@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 const ADDRESS_SPACE: usize = 65536;
 
 pub trait Reader {
-    fn read(&self, address: u16) -> u8;
+    fn read(&mut self, address: u16) -> u8;
 }
 
 pub trait Writer {
@@ -34,7 +34,7 @@ pub fn new() -> Manager {
 }
 
 impl Reader for Manager {
-    fn read(&self, address: u16) -> u8 {
+    fn read(&mut self, address: u16) -> u8 {
         let module = self.find_module(address).unwrap();
         let relative_address = address - module.start_addr;
         return module.delegate.read(relative_address);
@@ -43,7 +43,7 @@ impl Reader for Manager {
 
 impl Writer for Manager {
     fn write(&mut self, address: u16, byte: u8) {
-        let module = self.find_module_mut(address).unwrap();
+        let module = self.find_module(address).unwrap();
         let relative_address = address - module.start_addr;
         return module.delegate.write(relative_address, byte);
     }
@@ -58,16 +58,7 @@ impl Manager {
         self.modules.push_back(module)
     }
 
-    fn find_module(&self, addr: u16) -> Option<&Module> {
-        for module in self.modules.iter() {
-            if module.start_addr <= addr && module.end_addr >= addr {
-                return Some(module);
-            }
-        }
-        return None;
-    }
-
-    fn find_module_mut(&mut self, addr: u16) -> Option<&mut Module> {
+    fn find_module(&mut self, addr: u16) -> Option<&mut Module> {
         for module in self.modules.iter_mut() {
             if module.start_addr <= addr && module.end_addr >= addr {
                 return Some(module);
@@ -94,7 +85,7 @@ pub struct RAM {
 }
 
 impl Reader for RAM {
-    fn read(&self, address: u16) -> u8 {
+    fn read(&mut self, address: u16) -> u8 {
         self.memory[address as usize]
     }
 }
