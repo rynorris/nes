@@ -9,11 +9,13 @@ fn test_rti() {
     // Push PCH, PCL, P.
     cpu.stack_push(0xBE);
     cpu.stack_push(0xEF);
-    cpu.stack_push(0x34);
+    cpu.stack_push(0b0011_1010);
     load_program(&mut cpu, &[0x40]);
     let cycles = run_instructions(&mut cpu, 1);
     assert_eq!(cpu.pc, 0xBEEF);
-    assert_eq!(cpu.p.as_byte(), 0x34);
+
+    // Bits 3 and 4 should be ignored when loading status register from stack.
+    assert_eq!(cpu.p.as_byte(), 0b0000_1010);
     assert_eq!(cycles, 6);
 }
 

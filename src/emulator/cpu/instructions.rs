@@ -19,6 +19,12 @@ fn update_negative_flag(cpu: &mut cpu::CPU, result: u8) {
     }
 }
 
+fn load_status_from_stack(cpu: &mut cpu::CPU) {
+    let bits_from_stack = cpu.stack_pop() & 0b1100_1111;
+    let bits_from_register = cpu.p.as_byte() & 0b0011_0000;
+    cpu.p.load_byte(bits_from_stack | bits_from_register);
+}
+
 /* 2.1 The Accumulator */
 
 // LDA: Load Accumulator with Memory
@@ -36,10 +42,13 @@ pub fn lda(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 // STA: Store Accumulator in Memory
 // M -> A
 pub fn sta(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.a;
     cpu.store_memory(addr, byte);
-    addr_cycles
+    // STA doesn't incur the extra "oops" cycle.
+    // Or more correctly, it always does, but it's taken into account by the
+    // instruction timings already, so we ignore it here.
+    0
 }
 
 /* 2.2 The Arithmetic Unit */
@@ -51,7 +60,7 @@ pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let mem = cpu.load_memory(addr);
 
     let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
-    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) {
+    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) && cpu.dec_arith_on {
         // BCD arithmetic.
         let hex_a = util::bcd_to_hex(cpu.a);
         let hex_mem = util::bcd_to_hex(mem);
@@ -104,7 +113,7 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let mem = cpu.load_memory(addr);
 
     let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
-    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) {
+    let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) && cpu.dec_arith_on {
         // BCD arithmetic.
         let hex_a = util::bcd_to_hex(cpu.a);
         let hex_mem = util::bcd_to_hex(mem);
@@ -572,15 +581,16 @@ pub fn tsx(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 // Pv
 pub fn php(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     let byte = cpu.p.as_byte();
-    cpu.stack_push(byte);
+    // Set the B flag to the value we push, but do not modify the status register.
+    cpu.stack_push(byte | (cpu::flags::Flag::B as u8));
     0
 }
 
 // PLP: Pull Processor Status from Stack
 // P^
+// Make sure to ignore bits 4 and 5 since these are unused.
 pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
-    let byte = cpu.stack_pop();
-    cpu.p.load_byte(byte);
+    load_status_from_stack(cpu);
     0
 }
 
@@ -589,8 +599,7 @@ pub fn plp(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 // RTI: Return from Interrupt
 // ^P ^PC
 pub fn rti(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
-    let byte = cpu.stack_pop();
-    cpu.p.load_byte(byte);
+    load_status_from_stack(cpu);
 
     let pcl = cpu.stack_pop();
     let pch = cpu.stack_pop();
@@ -608,10 +617,11 @@ pub fn brk(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.stack_push(pch);
     cpu.stack_push(pcl + 1);
 
-    // Enable break flag before storing P.
     cpu.p.set(cpu::flags::Flag::B);
     let byte = cpu.p.as_byte();
-    cpu.stack_push(byte);
+    //
+    // Set the B flag to the value we push, but do not modify the status register.
+    cpu.stack_push(byte | (cpu::flags::Flag::B as u8));
 
     // Load interrupt vector.
     let pcl = cpu.load_memory(0xFFFE);

@@ -138,6 +138,25 @@ fn test_adc_bcd_no_carry() {
 }
 
 #[test]
+fn test_adc_bcd_disabled() {
+    let mut cpu = new_cpu();
+    cpu.disable_bcd();
+    // 79 + 12 = 91
+    cpu.a = 0b0111_1001;
+    cpu.p.set(cpu::flags::Flag::D);
+    let cycles = run_program(&mut cpu, &[0x69, 0b0001_0010]);
+    assert_eq!(cpu.a, 0b1000_1011);
+    assert_eq!(cycles, 2);
+
+    // And test we can re-enable it.
+    cpu.enable_bcd();
+    cpu.a = 0b0111_1001;
+    let cycles2 = run_program(&mut cpu, &[0x69, 0b0001_0010]);
+    assert_eq!(cpu.a, 0b1001_0001);
+    assert_eq!(cycles2, 2);
+}
+
+#[test]
 fn test_adc_bcd_with_carry() {
     let mut cpu = new_cpu();
     // 79 + 42 = 121
