@@ -103,17 +103,15 @@ mod test {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    use emulator::clock::{Clock, Ticker};
+    use emulator::clock::{Clock, ScaledTicker, Ticker};
 
     struct DummyTicker {
-        tick_cycles: u32,
         value: u16,
     }
 
     impl DummyTicker {
-        fn new(tick_cycles: u32) -> DummyTicker {
+        fn new() -> DummyTicker {
             DummyTicker {
-                tick_cycles,
                 value: 0,
             }
         }
@@ -122,14 +120,14 @@ mod test {
     impl Ticker for DummyTicker {
         fn tick(&mut self) -> u32 {
             self.value += 1;
-            self.tick_cycles
+            1
         }
     }
 
     #[test]
     fn test_single_ticker() {
         let mut clock = Clock::new(0, 1);
-        let ticker = Rc::new(RefCell::new(DummyTicker::new(1)));
+        let ticker = Rc::new(RefCell::new(DummyTicker::new()));
         clock.manage(ticker.clone());
 
         clock.tick();
@@ -141,12 +139,14 @@ mod test {
     }
 
     #[test]
-    fn test_tickers_with_different_periods() {
+    fn test_scaled_ticker() {
         let mut clock = Clock::new(0, 1);
-        let ticker1 = Rc::new(RefCell::new(DummyTicker::new(1)));
-        let ticker3 = Rc::new(RefCell::new(DummyTicker::new(3)));
+        let ticker1 = Rc::new(RefCell::new(DummyTicker::new()));
+        let ticker3 = Rc::new(RefCell::new(DummyTicker::new()));
+        let scaled_ticker3 = Rc::new(RefCell::new(ScaledTicker::new(ticker3.clone(), 3)));
+
         clock.manage(ticker1.clone());
-        clock.manage(ticker3.clone());
+        clock.manage(scaled_ticker3.clone());
 
         // Tick twice first since the initial order is undefined.
         clock.tick();
