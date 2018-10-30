@@ -68,7 +68,7 @@ pub struct CPU {
 
 pub fn new(memory: memory::Manager) -> CPU {
     let mut p = BitField::new();
-    p.load_byte(0x34);
+    p.load_byte(0x00);
     CPU {
         memory,
         a: 0,
@@ -98,7 +98,6 @@ impl clock::Ticker for CPU {
 impl CPU {
     pub fn startup_sequence(&mut self) -> u32 {
         self.load_vector_to_pc(START_VECTOR);
-        self.pc += 4;
 
         // Disable interrupts at startup.  The programmer should re-enable once they have completed
         // initializing the system.

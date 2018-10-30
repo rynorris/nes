@@ -1,13 +1,15 @@
 mod background;
 mod data;
 
+use emulator::memory;
 use emulator::memory::Writer;
 use emulator::ppu::Colour;
 use emulator::ppu::PPU;
 use emulator::ppu::VideoOut;
 
 fn new_ppu(output: Box<VideoOut>) -> PPU {
-    PPU::new(output)
+    let manager = memory::new();
+    PPU::new(manager, output)
 }
 
 fn load_data_into_vram(ppu: &mut PPU, addr: u16, bytes: &[u8]) {

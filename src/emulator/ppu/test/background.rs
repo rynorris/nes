@@ -1,3 +1,4 @@
+use emulator::clock::Ticker;
 use emulator::memory::Writer;
 use emulator::ppu::test::data;
 use emulator::ppu::test::load_data_into_vram;
