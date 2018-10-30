@@ -136,9 +136,9 @@ impl Writer for PPU {
                         // First write is the high byte.
                         // Addresses above 0x3FFF are mirrored down, so clear the top two bits
                         // always.
-                        self.v &= 0xFF00;
-                        self.v |= (byte as u16) << 8;
-                        self.v &= 0x3FFF;
+                        self.t &= 0x00FF;
+                        self.t |= (byte as u16) << 8;
+                        self.t &= 0x3FFF;
                     },
                     latch::State::ON => {
                         // Second write is the low byte.

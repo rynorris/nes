@@ -61,24 +61,31 @@ pub struct CPU {
 
     // Decimal arithmetic enabled?
     dec_arith_on: bool,
+
+    // NMI triggered?
+    nmi_flip_flop: bool,
 }
 
 pub fn new(memory: memory::Manager) -> CPU {
+    let mut p = BitField::new();
+    p.load_byte(0x34);
     CPU {
         memory,
         a: 0,
         x: 0,
         y: 0,
-        sp: 0xFF,
+        sp: 0xFD,
         pc: 0,
-        p: BitField::new(),
+        p,
         dec_arith_on: true,
+        nmi_flip_flop: false,
     }
 }
 
 impl clock::Ticker for CPU {
     fn tick(&mut self) -> u32 {
         return if self.should_non_maskable_interrupt() {
+            self.nmi_flip_flop = false;
             self.non_maskable_interrupt()
         } else if self.should_interrupt() {
             self.interrupt()
@@ -91,6 +98,7 @@ impl clock::Ticker for CPU {
 impl CPU {
     pub fn startup_sequence(&mut self) -> u32 {
         self.load_vector_to_pc(START_VECTOR);
+        self.pc += 4;
 
         // Disable interrupts at startup.  The programmer should re-enable once they have completed
         // initializing the system.
@@ -110,6 +118,10 @@ impl CPU {
 
     pub fn enable_bcd(&mut self) {
         self.dec_arith_on = true;
+    }
+
+    pub fn trigger_nmi(&mut self) {
+        self.nmi_flip_flop = true;
     }
 
     fn peek_next_instruction(&mut self) -> (u8, Option<u8>, Option<u8>) {
@@ -192,7 +204,7 @@ impl CPU {
     }
 
     fn should_non_maskable_interrupt(&self) -> bool {
-        false
+        self.nmi_flip_flop
     }
 
     fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode, u32) {
@@ -431,12 +443,12 @@ impl CPU {
 
     fn stack_push(&mut self, byte: u8) {
         let addr = 0x0100 | (self.sp as u16);
-        self.sp -= 1;
+        self.sp = self.sp.wrapping_sub(1);
         self.store_memory(addr, byte);
     }
 
     fn stack_pop(&mut self) -> u8 {
-        self.sp += 1;
+        self.sp = self.sp.wrapping_add(1);
         let addr = 0x0100 | (self.sp as u16);
         self.load_memory(addr)
     }

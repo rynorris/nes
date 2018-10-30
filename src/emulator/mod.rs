@@ -27,7 +27,9 @@ const PAUSE_THRESHOLD_NS: u64 = 5_000_000;
 
 pub struct NES {
     clock: clock::Clock,
-    cpu: Rc<RefCell<cpu::CPU>>,
+    pub cpu: Rc<RefCell<cpu::CPU>>,
+    ppu: Rc<RefCell<ppu::PPU>>,
+    nmi_pin: bool,
 }
 
 impl NES {
@@ -36,39 +38,73 @@ impl NES {
         let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_NS, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
-        let memory = NES::load(rom);
-        let mut manager = memory::new();
-        manager.mount(Box::new(memory), 0x8000, 0xFFFF);
+        let (cpu_memory, ppu_memory) = NES::load(rom);
+        cpu_memory.debug_print(0xFFF0, 16);
 
-        // Create CPU.
-        let cpu = Rc::new(RefCell::new(cpu::new(manager)));
+        let mut manager = memory::new();
+        manager.mount(Rc::new(RefCell::new(cpu_memory)), 0x8000, 0xFFFF);
+        manager.debug_print(0xFFF0, 16);
 
         // Create graphics output module and PPU.
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
-        let ppu = ppu::PPU::new(Box::new(output));
+        let mut ppu_manager = memory::new();
+        ppu_manager.mount(Rc::new(RefCell::new(ppu_memory)), 0x0000, 0x1FFF);
+        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_manager, Box::new(output))));
+
+        // Mount PPU registers on main memory.
+        manager.mount(ppu.clone(), 0x2000, 0x3FFF);
+        
+        // Create CPU.
+        let cpu = Rc::new(RefCell::new(cpu::new(manager)));
+        cpu.borrow_mut().disable_bcd();
+        cpu.borrow_mut().startup_sequence();
 
         // Wire up the clock timings.
         let cpu_ticker = clock::ScaledTicker::new(cpu.clone(), NES_CPU_CLOCK_FACTOR);
+        let ppu_ticker = clock::ScaledTicker::new(ppu.clone(), NES_PPU_CLOCK_FACTOR);
         clock.manage(Rc::new(RefCell::new(cpu_ticker)));
+        clock.manage(Rc::new(RefCell::new(ppu_ticker)));
 
         NES {
             clock,
             cpu,
+            ppu,
+            nmi_pin: false,
         }
     }
 
     pub fn tick(&mut self) {
         self.clock.tick();
+        if self.ppu.borrow().nmi_triggered() {
+            if self.nmi_pin == false {
+                self.cpu.borrow_mut().trigger_nmi();
+                self.nmi_pin = true;
+            }
+        } else {
+            self.nmi_pin = false;
+        }
+
     }
 
-    pub fn load(rom: ines::ROM) -> impl memory::ReadWriter {
-        let mut memory = memory::new();
+    pub fn load(rom: ines::ROM) -> (memory::RAM, memory::RAM) {
+        let mut cpu_memory = memory::RAM::new();
         rom.prg_rom()
             .iter()
             .enumerate()
-            .for_each(|(ix, byte)| memory.write(0x8000 + (ix as u16), *byte));
+            .for_each(|(ix, byte)| {
+                cpu_memory.write(0x8000 + (ix as u16), *byte);
+                cpu_memory.write(0xC000 + (ix as u16), *byte);
+            });
 
-        memory
+        let mut ppu_memory = memory::RAM::new();
+        rom.chr_rom()
+            .iter()
+            .enumerate()
+            .for_each(|(ix, byte)| {
+                ppu_memory.write(0x0000 + (ix as u16), *byte);
+            });
+
+        (cpu_memory, ppu_memory)
     }
 }

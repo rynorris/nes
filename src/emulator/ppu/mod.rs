@@ -4,6 +4,7 @@ mod registers;
 #[cfg(test)]
 mod test;
 
+use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
 use emulator::memory;
@@ -139,14 +140,16 @@ pub struct PPU {
 
     // Byte fetched from nametable indicating which tile to fetch from pattern table.
     tmp_pattern_coords: u8,
-
-    // Which half of pattern tables to use.  0 = 'left', 1 = 'right'.
-    pattern_table_side: u8,
 }
 
+impl clock::Ticker for PPU {
+    fn tick(&mut self) -> u32 {
+        self.tick_internal() as u32
+    }
+}
 
 impl PPU {
-    pub fn new(output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: memory::Manager, output: Box<VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),
@@ -155,7 +158,7 @@ impl PPU {
             oamaddr: 0,
             ppuscroll_latch: latch::new(),
             ppuaddr_latch: latch::new(),
-            memory: memory::new(),
+            memory,
             v: 0,
             t: 0,
             fine_x: 0,
@@ -172,12 +175,15 @@ impl PPU {
             scanline: 261,
             cycle:  0,
             tmp_pattern_coords: 0,
-            pattern_table_side: 0,
         }
     }
 
+    pub fn nmi_triggered(&self) -> bool {
+        self.ppustatus.is_set(flags::PPUSTATUS::V) && self.ppuctrl.is_set(flags::PPUCTRL::V)
+    }
+
     // Returns how many PPU cycles the tick took.
-    pub fn tick(&mut self) -> u16 {
+    fn tick_internal(&mut self) -> u16 {
         let cycles = match self.scanline {
             0 ... 239 | 261 => self.tick_render_scanline(),
             240 => self.tick_idle_scanline(),
@@ -466,14 +472,14 @@ impl PPU {
     }
 
     fn pattern_address_low(&self) -> u16 {
-        ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
+        (if self.ppuctrl.is_set(flags::PPUCTRL::B) { 1 << 12 } else { 0 })  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b0000  // Lower bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
     }
 
     fn pattern_address_high(&self) -> u16 {
-        ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
+        (if self.ppuctrl.is_set(flags::PPUCTRL::B) { 1 << 12 } else { 0 })  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b1000  // Upper bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
