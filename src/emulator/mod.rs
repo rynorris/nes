@@ -2,6 +2,7 @@
 pub mod clock;
 pub mod components;
 pub mod cpu;
+pub mod io;
 pub mod memory;
 pub mod ppu;
 pub mod util;
