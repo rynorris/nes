@@ -62,13 +62,20 @@ pub struct Graphics {
     scanline: u32,
     dot: u32,
     screen_buffer: [u8; 256 * 240 * 3],
+    render_tile_grid: bool,
 }
 
 impl ppu::VideoOut for Graphics {
     fn emit(&mut self, c: ppu::Colour) {
-        let colour = Graphics::convert_colour(c);
         let x = self.dot;
         let y = self.scanline;
+
+        let colour = if  self.render_tile_grid && (x % 8 == 0 || y % 8 == 0) {
+            pixels::Color::RGB(255, 0, 0)
+        } else {
+            Graphics::convert_colour(c)
+        };
+
         self.screen_buffer[((x + y * 256) * 3) as usize] = colour.r;
         self.screen_buffer[((x + y * 256) * 3 + 1) as usize] = colour.g;
         self.screen_buffer[((x + y * 256) * 3 + 2) as usize] = colour.b;
@@ -90,6 +97,7 @@ impl Graphics {
             scanline: 0,
             dot: 0,
             screen_buffer: [0; 256 * 240 * 3],
+            render_tile_grid: false,
         }
     }
 

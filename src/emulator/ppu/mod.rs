@@ -285,7 +285,14 @@ impl PPU {
     }
 
     fn tick_prefetch_tiles_cycle(&mut self) -> u16 {
+        if self.cycle % 8 == 1 {
+            self.reload_shift_registers();
+        }
+
         self.fetch_tile_data();
+        
+        // Finally shift all the registers.
+        self.shift_registers();
         1
     }
 
@@ -321,7 +328,6 @@ impl PPU {
     fn fetch_tile_data(&mut self) {
         // We fetch 4 bytes in turn (each fetch takes 2 cycles):
         // These reads begin on cycle 1.
-        // TODO: Fill in attribute table loading.
         match self.cycle % 8 {
             // 1. Nametable byte.
             1 => {
@@ -330,7 +336,10 @@ impl PPU {
             },
 
             // 2. Attribute table byte.
-            3 => (),
+            3 => {
+                let addr = self.attribute_address();
+                self.attribute_latch_1 = self.memory.read(addr);
+            },
 
             // 3. Tile bitmap low.
             5 => {
@@ -351,25 +360,11 @@ impl PPU {
 
     // --- RENDERING
     // Put all rendering logic in one place.
-    fn render_pixel(&self) -> Colour {
-        // TODO: Implement palettes properly.
-        let palette = Palette {
-            c1: Colour { byte: 0x05 },
-            c2: Colour { byte: 0x1A },
-            c3: Colour { byte: 0x2C },
-        };
-
-        let bg_low_bit = (self.tile_register_low >> (15 - self.fine_x)) & 1;
-        let bg_high_bit = (self.tile_register_high >> (15 - self.fine_x)) & 1;
-
-        let colour_index = (bg_high_bit << 1) | bg_low_bit;
-
-        match colour_index {
-            0 => Colour { byte: 0x0F },
-            1 => palette.c1,
-            2 => palette.c2,
-            3 => palette.c3,
-            _ => panic!("Got an unexpected colour index: {}", colour_index)
+    fn render_pixel(&mut self) -> Colour {
+        let colour_addr = self.bg_colour_address();
+        let colour_byte = self.memory.read(colour_addr);
+        Colour {
+            byte: colour_byte,
         }
     }
 
@@ -467,8 +462,10 @@ impl PPU {
     }
 
     fn attribute_address(&self) -> u16 {
-        // This formula copied from nesdev wiki.  I should try to understand it later.
-        0x23C0 | self.nametable_select() | ((self.v >> 4) & 0x38) | ((self.v >> 2) & 0x07)
+        0x23C0  // Attribute table base.
+            | self.nametable_select()  // Select nametable.
+            | ((self.coarse_y_scroll() << 1) & 0b111000)  // Y component.
+            | ((self.coarse_x_scroll() >> 2) & 0b111)  // X component.
     }
 
     fn pattern_address_low(&self) -> u16 {
@@ -483,6 +480,22 @@ impl PPU {
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b1000  // Upper bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
+    }
+
+    fn palette_index(&self) -> u8 {
+        let shift = ((self.coarse_y_scroll() << 1) & 0b100) | (self.coarse_x_scroll() & 0b10);
+        (self.attribute_register_1 >> shift) & 0b11
+    }
+
+    fn bg_colour_address(&self) -> u16 {
+        let bg_low_bit = (self.tile_register_low >> (15 - self.fine_x)) & 1;
+        let bg_high_bit = (self.tile_register_high >> (15 - self.fine_x)) & 1;
+
+        let colour_index = (bg_high_bit << 1) | bg_low_bit;
+
+        0x3F00  // Palette memory.
+            | ((self.palette_index() << 2) as u16) // Palette select.
+            | (colour_index as u16)  // Colour select.
     }
 
     // Utility methods to query internal state.
