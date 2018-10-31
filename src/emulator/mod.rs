@@ -18,12 +18,12 @@ use self::memory::Writer;
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
 // CPU clock = 12 master clocks.
 // PPU clock = 4 master clocks.
-const NES_MASTER_CLOCK_TIME_NS: u64 = 46;
+const NES_MASTER_CLOCK_TIME_PS: u64 = 46500;
 const NES_CPU_CLOCK_FACTOR: u32 = 12;
 const NES_PPU_CLOCK_FACTOR: u32 = 4;
 
-// Pause operation if we drift more than 5ms.
-const PAUSE_THRESHOLD_NS: u64 = 5_000_000;
+// Pause operation if we drift more than 20ms.
+const PAUSE_THRESHOLD_NS: u64 = 20_000_000;
 
 pub struct NES {
     clock: clock::Clock,
@@ -35,7 +35,7 @@ pub struct NES {
 impl NES {
     pub fn new(rom: ines::ROM) -> NES {
         // Create master clock.
-        let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_NS, PAUSE_THRESHOLD_NS);
+        let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_PS, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
         let (cpu_memory, ppu_memory) = NES::load(rom);

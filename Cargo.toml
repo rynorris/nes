@@ -5,3 +5,6 @@ authors = ["Ryan Norris <rynorris@gmail.com>"]
 
 [dependencies]
 sdl2 = "0.31"
+
+[profile.release]
+debug = true

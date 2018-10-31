@@ -20,13 +20,19 @@ impl IO {
     pub fn new() -> IO {
         let sdl_context = sdl2::init().unwrap();
         let video = sdl_context.video().unwrap();
-        let window = video.window("NES", 256 * (SCALE as u32), 240 * (SCALE as u32))
+        let window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
             .position_centered()
             .opengl()
             .build()
             .unwrap();
 
-        let canvas = window.into_canvas().build().unwrap();
+        let mut canvas = window.into_canvas()
+            .accelerated()
+            .build()
+            .unwrap();
+
+        let _ = canvas.set_scale(SCALE as f32, SCALE as f32);
+        println!("Using SDL_Renderer \"{}\"", canvas.info().name);
 
         IO {
             sdl_context,
@@ -60,21 +66,21 @@ pub struct Graphics {
     io: IO,
     scanline: u16,
     dot: u16,
+    screen_buffer: [pixels::Color; 256 * 240],
 }
 
 impl ppu::VideoOut for Graphics {
     fn emit(&mut self, c: ppu::Colour) {
         let colour = Graphics::convert_colour(c);
-        let x = (self.dot as i32) * (SCALE as i32);
-        let y = (self.scanline as i32) * (SCALE as i32);
-        let rect = rect::Rect::new(x, y, SCALE as u32, SCALE as u32);
-        self.io.draw_rect(rect, colour);
+        let x = self.dot;
+        let y = self.scanline;
+        self.screen_buffer[(x + y * 256) as usize] = colour;
 
         self.dot = (self.dot + 1) % 256;
         if self.dot == 0 {
             self.scanline = (self.scanline + 1) % 240;
             if self.scanline == 0 {
-                self.io.flip();
+                self.render();
             }
         }
     }
@@ -86,7 +92,20 @@ impl Graphics {
             io,
             scanline: 0,
             dot: 0,
+            screen_buffer: [pixels::Color::RGB(0, 0, 0); 256 * 240],
         }
+    }
+
+    fn render(&mut self) {
+        for y in 0..240u16 {
+            for x in 0..256u16 {
+                let colour = self.screen_buffer[(x + y * 256) as usize];
+                let point = rect::Point::new(x as i32, y as i32);
+                self.io.draw_point(point, colour);
+            }
+        }
+
+        self.io.flip();
     }
 
     fn convert_colour(c: ppu::Colour) -> pixels::Color {
