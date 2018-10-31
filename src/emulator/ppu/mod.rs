@@ -140,6 +140,9 @@ pub struct PPU {
 
     // Byte fetched from nametable indicating which tile to fetch from pattern table.
     tmp_pattern_coords: u8,
+
+    // Byte fetched from attribute table for next tile.
+    tmp_attribute_byte: u8,
 }
 
 impl clock::Ticker for PPU {
@@ -175,6 +178,7 @@ impl PPU {
             scanline: 261,
             cycle:  0,
             tmp_pattern_coords: 0,
+            tmp_attribute_byte: 0,
         }
     }
 
@@ -280,6 +284,9 @@ impl PPU {
     }
 
     fn tick_sprite_fetch_cycle(&mut self) -> u16 {
+        if self.cycle == 257 {
+            self.reload_shift_registers();
+        }
         // TODO: Implement sprites.
         1
     }
@@ -314,14 +321,21 @@ impl PPU {
         self.tile_register_high &= 0xFF00;
         self.tile_register_high |= self.tile_latch_high as u16;
 
-        self.attribute_register_1 = self.attribute_latch_1;
-        self.attribute_register_2 = self.attribute_latch_2;
+        // Mux the correct bits and load into the bit-latches.
+        self.attribute_latch_1 = self.tmp_attribute_byte & 1;
+        self.attribute_latch_2 = (self.tmp_attribute_byte >> 1) & 1;
     }
 
     // Shift the registers.
     fn shift_registers(&mut self) {
         self.tile_register_low <<= 1;
         self.tile_register_high <<= 1;
+
+        // Attribute registers pull in bits from the latch.
+        self.attribute_register_1 <<= 1;
+        self.attribute_register_2 <<= 1;
+        self.attribute_register_1 |= self.attribute_latch_1;
+        self.attribute_register_2 |= self.attribute_latch_2;
     }
 
     // Memory accesses for next tile data.
@@ -338,7 +352,8 @@ impl PPU {
             // 2. Attribute table byte.
             3 => {
                 let addr = self.attribute_address();
-                self.attribute_latch_1 = self.memory.read(addr);
+                let shift = ((self.coarse_y_scroll() << 1) & 0b100) | (self.coarse_x_scroll() & 0b10);
+                self.tmp_attribute_byte = self.memory.read(addr) >> shift;
             },
 
             // 3. Tile bitmap low.
@@ -363,6 +378,7 @@ impl PPU {
     fn render_pixel(&mut self) -> Colour {
         let colour_addr = self.bg_colour_address();
         let colour_byte = self.memory.read(colour_addr);
+
         Colour {
             byte: colour_byte,
         }
@@ -384,8 +400,8 @@ impl PPU {
         // If rendering is enabled, on dot 257 of each scanline, copy all horizontal bits from t to v.
         if self.cycle == 257 {
             let horizontal_bitmask = 0b0000100_00011111;
-            self.v = self.v & !horizontal_bitmask;
-            self.v = self.v | (self.t & horizontal_bitmask);
+            self.v &= !horizontal_bitmask;
+            self.v |= self.t & horizontal_bitmask;
         }
 
         // If rendering is enabled, between dots 280 to 304 of the pre-render scanline, the PPU repeatedly copies the
@@ -463,7 +479,7 @@ impl PPU {
 
     fn attribute_address(&self) -> u16 {
         0x23C0  // Attribute table base.
-            | self.nametable_select()  // Select nametable.
+            | (self.v & 0x0C00)  // Select nametable.
             | ((self.coarse_y_scroll() << 1) & 0b111000)  // Y component.
             | ((self.coarse_x_scroll() >> 2) & 0b111)  // X component.
     }
@@ -483,8 +499,9 @@ impl PPU {
     }
 
     fn palette_index(&self) -> u8 {
-        let shift = ((self.coarse_y_scroll() << 1) & 0b100) | (self.coarse_x_scroll() & 0b10);
-        (self.attribute_register_1 >> shift) & 0b11
+        let low = (self.attribute_register_1 >> (7 - self.fine_x)) & 1;
+        let high = (self.attribute_register_2 >> (7 - self.fine_x)) & 1;
+        (high << 1) | low
     }
 
     fn bg_colour_address(&self) -> u16 {
