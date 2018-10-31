@@ -37,7 +37,7 @@ impl IO {
         IO {
             sdl_context,
             video,
-            canvas: canvas,
+            canvas,
         }
     }
 
@@ -45,28 +45,23 @@ impl IO {
         self.canvas.present();
     }
 
-    pub fn draw_point(&mut self, point: rect::Point, colour: pixels::Color) {
-        self.canvas.set_draw_color(colour);
-        match self.canvas.draw_point(point) {
-            Ok(_) => (),
-            Err(message) => panic!("Failed to draw pixel: {}", message),
-        }
-    }
+    pub fn draw_screen(&mut self, pixel_data: &[u8]) {
+        let texture_creator = self.canvas.texture_creator();
+        let mut texture = match texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 256, 240) {
+            Err(cause) => panic!("Failed to create texture: {}", cause),
+            Ok(t) => t,
+        };
 
-    pub fn draw_rect(&mut self, rect: rect::Rect, colour: pixels::Color) {
-        self.canvas.set_draw_color(colour);
-        match self.canvas.fill_rect(rect) {
-            Ok(_) => (),
-            Err(message) => panic!("Failed to draw rect: {}", message),
-        }
+        let _ = texture.update(None, pixel_data, 256 * 3);
+        let _ = self.canvas.copy(&texture, None, None);
     }
 }
 
 pub struct Graphics {
     io: IO,
-    scanline: u16,
-    dot: u16,
-    screen_buffer: [pixels::Color; 256 * 240],
+    scanline: u32,
+    dot: u32,
+    screen_buffer: [u8; 256 * 240 * 3],
 }
 
 impl ppu::VideoOut for Graphics {
@@ -74,7 +69,9 @@ impl ppu::VideoOut for Graphics {
         let colour = Graphics::convert_colour(c);
         let x = self.dot;
         let y = self.scanline;
-        self.screen_buffer[(x + y * 256) as usize] = colour;
+        self.screen_buffer[((x + y * 256) * 3) as usize] = colour.r;
+        self.screen_buffer[((x + y * 256) * 3 + 1) as usize] = colour.g;
+        self.screen_buffer[((x + y * 256) * 3 + 2) as usize] = colour.b;
 
         self.dot = (self.dot + 1) % 256;
         if self.dot == 0 {
@@ -92,19 +89,12 @@ impl Graphics {
             io,
             scanline: 0,
             dot: 0,
-            screen_buffer: [pixels::Color::RGB(0, 0, 0); 256 * 240],
+            screen_buffer: [0; 256 * 240 * 3],
         }
     }
 
     fn render(&mut self) {
-        for y in 0..240u16 {
-            for x in 0..256u16 {
-                let colour = self.screen_buffer[(x + y * 256) as usize];
-                let point = rect::Point::new(x as i32, y as i32);
-                self.io.draw_point(point, colour);
-            }
-        }
-
+        self.io.draw_screen(&self.screen_buffer);
         self.io.flip();
     }
 
