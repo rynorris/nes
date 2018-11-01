@@ -61,6 +61,37 @@ impl Writer for CPUMemory {
     }
 }
 
+pub struct PPUMemory {
+    chr_rom: Box<dyn ReadWriter>,
+    vram: Box<dyn ReadWriter>,
+}
+
+impl PPUMemory {
+    pub fn new(chr_rom: Box<dyn ReadWriter>, vram: Box<dyn ReadWriter>) -> PPUMemory {
+        PPUMemory { chr_rom, vram }
+    }
+
+    fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
+        match address {
+            0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address)),
+            0x2000 ... 0x3FFF => Some((&mut self.vram, address)),
+            _ => None
+        }
+    }
+}
+
+impl Reader for PPUMemory {
+    fn read(&mut self, address: u16) -> u8 {
+        self.map(address).map(|(mem, addr)| mem.read(addr)).unwrap_or(0)
+    }
+}
+
+impl Writer for PPUMemory {
+    fn write(&mut self, address: u16, byte: u8) {
+        self.map(address).map(|(mem, addr)| mem.write(addr, byte));
+    }
+}
+
 pub trait Mapper {
     fn read_chr(&mut self, address: u16) -> u8;
     fn write_chr(&mut self, address: u16, byte: u8);

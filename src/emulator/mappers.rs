@@ -1,15 +1,13 @@
 use emulator::memory;
-use emulator::memory::{Reader, Writer};
 
 pub struct NROM {
-    prg_size: u16,
-    prg_rom: memory::RAM,
-    chr_rom: memory::RAM,
+    prg_rom: Vec<u8>,
+    chr_rom: Vec<u8>,
 }
 
 impl NROM {
-    pub fn new(prg_size: u16, prg_rom: memory::RAM, chr_rom: memory::RAM) -> NROM {
-        NROM { prg_size, prg_rom, chr_rom }
+    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>) -> NROM {
+        NROM { prg_rom, chr_rom }
     }
 
     #[inline]
@@ -20,20 +18,19 @@ impl NROM {
 
 impl memory::Mapper for NROM {
     fn read_chr(&mut self, address: u16) -> u8 {
-        self.chr_rom.read(address)
+        self.chr_rom[address as usize]
     }
 
-    fn write_chr(&mut self, address: u16, byte: u8) {
-        self.chr_rom.write(address, byte)
+    fn write_chr(&mut self, _address: u16, _byte: u8) {
+        // Can't write to ROM.
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
-        let mapped_address = NROM::map_prg_address(address, self.prg_size);
-        self.prg_rom.read(mapped_address)
+        let mapped_address = NROM::map_prg_address(address, self.prg_rom.len() as u16);
+        self.prg_rom[mapped_address as usize]
     }
 
-    fn write_prg(&mut self, address: u16, byte: u8) {
-        let mapped_address = NROM::map_prg_address(address, self.prg_size);
-        self.prg_rom.write(mapped_address, byte)
+    fn write_prg(&mut self, _address: u16, _byte: u8) {
+        // Can't write to ROM.
     }
 }

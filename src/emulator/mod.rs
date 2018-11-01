@@ -13,7 +13,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::io::sdl;
-use emulator::memory::Writer;
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -44,10 +43,16 @@ impl NES {
         // Create graphics output module and PPU.
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
+
+        let ppu_memory = Box::new(memory::PPUMemory::new(
+            Box::new(memory::ChrMapper::new(mapper.clone())),
+            Box::new(memory::RAM::new()),
+        ));
+
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
-                    Box::new(memory::ChrMapper::new(mapper.clone())),
+                    ppu_memory,
                     Box::new(output))));
-        
+
         // Create CPU.
         let cpu_memory = Box::new(memory::CPUMemory::new(
             Box::new(memory::RAM::new()),
@@ -92,22 +97,9 @@ impl NES {
     }
 
     pub fn load(rom: ines::ROM) -> memory::MapperRef {
-        let mut prg_rom = memory::RAM::new();
-        rom.prg_rom()
-            .iter()
-            .enumerate()
-            .for_each(|(ix, byte)| {
-                prg_rom.write(ix as u16, *byte);
-            });
+        let prg_rom = Vec::from(rom.prg_rom());
+        let chr_rom = Vec::from(rom.chr_rom());
 
-        let mut chr_rom = memory::RAM::new();
-        rom.chr_rom()
-            .iter()
-            .enumerate()
-            .for_each(|(ix, byte)| {
-                chr_rom.write(ix as u16, *byte);
-            });
-
-        Rc::new(RefCell::new(mappers::NROM::new(rom.prg_rom().len() as u16, prg_rom, chr_rom)))
+        Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom)))
     }
 }

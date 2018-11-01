@@ -76,7 +76,7 @@ pub struct PPU {
     // $3000-$3EFF = mirrors of $2000-$2EFF
     // $3F00-$3F1F = palette RAM indexes
     // $3F20-$3FFF = mirrors of $3F00-$3F1F
-    memory: Box<ReadWriter>,
+    memory: Box<dyn ReadWriter>,
 
     // -- Background State --
 
