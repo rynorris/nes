@@ -1,7 +1,6 @@
 extern crate sdl2;
 
 use self::sdl2::pixels;
-use self::sdl2::rect;
 use self::sdl2::render;
 use self::sdl2::video;
 
@@ -14,6 +13,7 @@ pub struct IO {
     sdl_context: sdl2::Sdl,
     video: sdl2::VideoSubsystem,
     canvas: render::Canvas<video::Window>,
+    screen_texture: render::Texture,
 }
 
 impl IO {
@@ -31,6 +31,12 @@ impl IO {
             .build()
             .unwrap();
 
+        let texture_creator = canvas.texture_creator();
+        let screen_texture = match texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 256, 240) {
+            Err(cause) => panic!("Failed to create texture: {}", cause),
+            Ok(t) => t,
+        };
+
         let _ = canvas.set_scale(SCALE as f32, SCALE as f32);
         println!("Using SDL_Renderer \"{}\"", canvas.info().name);
 
@@ -38,6 +44,7 @@ impl IO {
             sdl_context,
             video,
             canvas,
+            screen_texture,
         }
     }
 
@@ -46,14 +53,8 @@ impl IO {
     }
 
     pub fn draw_screen(&mut self, pixel_data: &[u8]) {
-        let texture_creator = self.canvas.texture_creator();
-        let mut texture = match texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 256, 240) {
-            Err(cause) => panic!("Failed to create texture: {}", cause),
-            Ok(t) => t,
-        };
-
-        let _ = texture.update(None, pixel_data, 256 * 3);
-        let _ = self.canvas.copy(&texture, None, None);
+        let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
+        let _ = self.canvas.copy(&self.screen_texture, None, None);
     }
 }
 
