@@ -35,7 +35,7 @@ pub struct NES {
 impl NES {
     pub fn new(rom: ines::ROM) -> NES {
         // Create master clock.
-        let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_PS, PAUSE_THRESHOLD_NS);
+        let mut clock = clock::Clock::new(0, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
         let (cpu_memory, ppu_memory) = NES::load(rom);

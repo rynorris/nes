@@ -31,13 +31,18 @@ impl Ticker for ScaledTicker {
 }
 
 pub struct Clock {
+    // Configuration.
     cycle_duration_ps: u64,
+    pause_threshold_ns: u64,
+    started_instant: Instant,
+
+    // Timing.
     num_ticks: u64,
     elapsed_cycles: u64,
     elapsed_seconds: u64,
     cycles_this_second: u64,
-    pause_threshold_ns: u64,
-    started_instant: Instant,
+
+    // Tickers.
     tickers: Vec<Rc<RefCell<dyn Ticker>>>,
     turn_order: BinaryHeap<TickNode>,
 }
@@ -58,24 +63,12 @@ impl Clock {
     }
 
     pub fn tick(&mut self) {
-        let next_node = self.turn_order.pop();
-        match next_node {
+        match self.turn_order.peek_mut() {
             Some(mut node) => {
-                // Run this node until it's no longer next in line.
-                let mut done = false;
-                while !done {
-                    self.cycles_this_second += node.next_tick_cycle - self.elapsed_cycles;
-                    self.elapsed_cycles = node.next_tick_cycle;
-                    let cycles = self.tickers[node.ticker_ix].borrow_mut().tick();
-                    node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
-
-                    done = match self.turn_order.peek() {
-                        None => true,  // If no other tickers, exit to prevent infinite loop.
-                        Some(next_node) => next_node.next_tick_cycle < node.next_tick_cycle,
-                    };
-                }
-
-                self.turn_order.push(node);
+                self.cycles_this_second += node.next_tick_cycle - self.elapsed_cycles;
+                self.elapsed_cycles = node.next_tick_cycle;
+                let cycles = self.tickers[node.ticker_ix].borrow_mut().tick();
+                node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
             },
             None => ()
         }
