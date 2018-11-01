@@ -48,9 +48,7 @@ impl NES {
         // Create graphics output module and PPU.
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
-        let mut ppu_manager = memory::new();
-        ppu_manager.mount(Rc::new(RefCell::new(ppu_memory)), 0x0000, 0x1FFF);
-        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_manager, Box::new(output))));
+        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_memory, Box::new(output))));
 
         // Mount PPU registers on main memory.
         manager.mount(ppu.clone(), 0x2000, 0x3FFF);
