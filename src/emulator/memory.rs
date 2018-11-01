@@ -14,15 +14,13 @@ pub trait Writer {
 pub trait ReadWriter : Reader + Writer {}
 impl<T: Reader + Writer> ReadWriter for T {}
 
-pub type MemoryRef = Rc<RefCell<dyn ReadWriter>>;
-
-impl Reader for MemoryRef {
+impl <M : Reader> Reader for Rc<RefCell<M>> {
     fn read(&mut self, address: u16) -> u8 {
         self.borrow_mut().read(address)
     }
 }
 
-impl Writer for MemoryRef {
+impl <M : Writer> Writer for Rc<RefCell<M>> {
     fn write(&mut self, address: u16, byte: u8) {
         self.borrow_mut().write(address, byte);
     }

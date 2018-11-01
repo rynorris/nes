@@ -13,7 +13,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::io::sdl;
-use emulator::memory::{MemoryRef, Writer};
+use emulator::memory::Writer;
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -49,10 +49,9 @@ impl NES {
                     Box::new(output))));
         
         // Create CPU.
-        let ppu_registers: MemoryRef = ppu.clone();
         let cpu_memory = Box::new(memory::CPUMemory::new(
             Box::new(memory::RAM::new()),
-            Box::new(ppu_registers),
+            Box::new(ppu.clone()),
             Box::new(memory::RAM::new()),
             Box::new(memory::PrgMapper::new(mapper.clone()))
         ));
