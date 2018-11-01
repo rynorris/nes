@@ -45,8 +45,7 @@ impl NES {
         let output = sdl::Graphics::new(io);
 
         let ppu_memory = Box::new(memory::PPUMemory::new(
-            //Box::new(memory::ChrMapper::new(mapper.clone())),
-            Box::new(memory::RAM::new()),
+            Box::new(memory::ChrMapper::new(mapper.clone())),
             Box::new(memory::RAM::new()),
         ));
 

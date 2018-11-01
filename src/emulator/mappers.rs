@@ -177,7 +177,7 @@ impl memory::Mapper for MMC1 {
             self.load_register = 0;
             self.write_index = 0;
             self.update_offsets();
-            //println!("control: 0x{:X}, prg: 0x{:X}, chr1: 0x{:X}, chr2: 0x{:X}", self.control, self.prg_bank, self.chr_bank_1, self.chr_bank_2);
+            println!("control: 0x{:X}, prg: 0x{:X}, chr1: 0x{:X}, chr2: 0x{:X}", self.control, self.prg_bank, self.chr_bank_1, self.chr_bank_2);
         }
     }
 }
