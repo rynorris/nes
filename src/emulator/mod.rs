@@ -45,7 +45,8 @@ impl NES {
         let output = sdl::Graphics::new(io);
 
         let ppu_memory = Box::new(memory::PPUMemory::new(
-            Box::new(memory::ChrMapper::new(mapper.clone())),
+            //Box::new(memory::ChrMapper::new(mapper.clone())),
+            Box::new(memory::RAM::new()),
             Box::new(memory::RAM::new()),
         ));
 
@@ -57,6 +58,7 @@ impl NES {
         let cpu_memory = Box::new(memory::CPUMemory::new(
             Box::new(memory::RAM::new()),
             Box::new(ppu.clone()),
+            Box::new(memory::RAM::new()),
             Box::new(memory::RAM::new()),
             Box::new(memory::PrgMapper::new(mapper.clone()))
         ));
@@ -97,9 +99,13 @@ impl NES {
     }
 
     pub fn load(rom: ines::ROM) -> memory::MapperRef {
-        let prg_rom = Vec::from(rom.prg_rom());
-        let chr_rom = Vec::from(rom.chr_rom());
+        let prg_rom = rom.prg_rom().to_vec();
+        let chr_rom = rom.chr_rom().to_vec();
 
-        Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom)))
+        match rom.mapper_number() {
+            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom))),
+            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
+            _ => panic!("Unknown mapper: {}", rom.mapper_number()),
+        }
     }
 }

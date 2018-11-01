@@ -30,12 +30,13 @@ pub struct CPUMemory {
     ram: Box<dyn ReadWriter>,
     ppu_registers: Box<dyn ReadWriter>,
     apu_registers: Box<dyn ReadWriter>,
+    sram: Box<dyn ReadWriter>,
     prg_rom: Box<dyn ReadWriter>,
 }
 
 impl CPUMemory {
-    pub fn new(ram: Box<dyn ReadWriter>, ppu_registers: Box<dyn ReadWriter>, apu_registers: Box<dyn ReadWriter>, prg_rom: Box<dyn ReadWriter>) -> CPUMemory {
-        CPUMemory { ram, ppu_registers, apu_registers, prg_rom }
+    pub fn new(ram: Box<dyn ReadWriter>, ppu_registers: Box<dyn ReadWriter>, apu_registers: Box<dyn ReadWriter>, sram: Box<dyn ReadWriter>, prg_rom: Box<dyn ReadWriter>) -> CPUMemory {
+        CPUMemory { ram, ppu_registers, apu_registers, sram, prg_rom }
     }
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
@@ -43,6 +44,7 @@ impl CPUMemory {
             0x0000 ... 0x1FFF => Some((&mut self.ram, address & 0x7FF)),
             0x2000 ... 0x3FFF => Some((&mut self.ppu_registers, address & 0x7)),
             0x4000 ... 0x401F => Some((&mut self.apu_registers, address)),
+            0x6000 ... 0x7FFF => Some((&mut self.sram, address - 0x6000)),
             0x8000 ... 0xFFFF => Some((&mut self.prg_rom, address)),
             _ => None
         }
@@ -74,7 +76,7 @@ impl PPUMemory {
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         match address {
             0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address)),
-            0x2000 ... 0x3FFF => Some((&mut self.vram, address)),
+            0x2000 ... 0x3FFF => Some((&mut self.vram, address & !0x0800)),
             _ => None
         }
     }

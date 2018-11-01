@@ -427,7 +427,7 @@ impl CPU {
             opcodes::TSX => (instructions::tsx, addressing::implied, 2),
             opcodes::TXS => (instructions::txs, addressing::implied, 2),
 
-            _ => panic!("Unknown opcode: {:X}", opcode)
+            _ => panic!("Unknown opcode: {:X}", opcode),
         }
     }
 
