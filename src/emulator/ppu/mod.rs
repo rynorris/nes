@@ -4,6 +4,7 @@ mod registers;
 #[cfg(test)]
 mod test;
 
+use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
 use emulator::memory;
@@ -26,6 +27,10 @@ impl Colour {
 
     pub fn brightness(&self) -> u8 {
         (self.byte >> 4) & 0b11
+    }
+
+    pub fn as_byte(&self) -> u8 {
+        self.byte
     }
 }
 
@@ -136,13 +141,18 @@ pub struct PPU {
     // Byte fetched from nametable indicating which tile to fetch from pattern table.
     tmp_pattern_coords: u8,
 
-    // Which half of pattern tables to use.  0 = 'left', 1 = 'right'.
-    pattern_table_side: u8,
+    // Byte fetched from attribute table for next tile.
+    tmp_attribute_byte: u8,
 }
 
+impl clock::Ticker for PPU {
+    fn tick(&mut self) -> u32 {
+        self.tick_internal() as u32
+    }
+}
 
 impl PPU {
-    pub fn new(output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: memory::Manager, output: Box<VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),
@@ -151,7 +161,7 @@ impl PPU {
             oamaddr: 0,
             ppuscroll_latch: latch::new(),
             ppuaddr_latch: latch::new(),
-            memory: memory::new(),
+            memory,
             v: 0,
             t: 0,
             fine_x: 0,
@@ -168,12 +178,16 @@ impl PPU {
             scanline: 261,
             cycle:  0,
             tmp_pattern_coords: 0,
-            pattern_table_side: 0,
+            tmp_attribute_byte: 0,
         }
     }
 
+    pub fn nmi_triggered(&self) -> bool {
+        self.ppustatus.is_set(flags::PPUSTATUS::V) && self.ppuctrl.is_set(flags::PPUCTRL::V)
+    }
+
     // Returns how many PPU cycles the tick took.
-    pub fn tick(&mut self) -> u16 {
+    fn tick_internal(&mut self) -> u16 {
         let cycles = match self.scanline {
             0 ... 239 | 261 => self.tick_render_scanline(),
             240 => self.tick_idle_scanline(),
@@ -270,12 +284,22 @@ impl PPU {
     }
 
     fn tick_sprite_fetch_cycle(&mut self) -> u16 {
+        if self.cycle == 257 {
+            self.reload_shift_registers();
+        }
         // TODO: Implement sprites.
         1
     }
 
     fn tick_prefetch_tiles_cycle(&mut self) -> u16 {
+        if self.cycle % 8 == 1 {
+            self.reload_shift_registers();
+        }
+
         self.fetch_tile_data();
+        
+        // Finally shift all the registers.
+        self.shift_registers();
         1
     }
 
@@ -292,26 +316,32 @@ impl PPU {
 
     // Reload shift registers from their associated latches.
     fn reload_shift_registers(&mut self) {
-        self.tile_register_low &= 0x00FF;
-        self.tile_register_low |= (self.tile_latch_low as u16) << 8;
-        self.tile_register_high &= 0x00FF;
-        self.tile_register_high |= (self.tile_latch_high as u16) << 8;
+        self.tile_register_low &= 0xFF00;
+        self.tile_register_low |= self.tile_latch_low as u16;
+        self.tile_register_high &= 0xFF00;
+        self.tile_register_high |= self.tile_latch_high as u16;
 
-        self.attribute_register_1 = self.attribute_latch_1;
-        self.attribute_register_2 = self.attribute_latch_2;
+        // Mux the correct bits and load into the bit-latches.
+        self.attribute_latch_1 = self.tmp_attribute_byte & 1;
+        self.attribute_latch_2 = (self.tmp_attribute_byte >> 1) & 1;
     }
 
     // Shift the registers.
     fn shift_registers(&mut self) {
-        self.tile_register_low >>= 1;
-        self.tile_register_high >>= 1;
+        self.tile_register_low <<= 1;
+        self.tile_register_high <<= 1;
+
+        // Attribute registers pull in bits from the latch.
+        self.attribute_register_1 <<= 1;
+        self.attribute_register_2 <<= 1;
+        self.attribute_register_1 |= self.attribute_latch_1;
+        self.attribute_register_2 |= self.attribute_latch_2;
     }
 
     // Memory accesses for next tile data.
     fn fetch_tile_data(&mut self) {
         // We fetch 4 bytes in turn (each fetch takes 2 cycles):
         // These reads begin on cycle 1.
-        // TODO: Fill in attribute table loading.
         match self.cycle % 8 {
             // 1. Nametable byte.
             1 => {
@@ -320,7 +350,11 @@ impl PPU {
             },
 
             // 2. Attribute table byte.
-            3 => (),
+            3 => {
+                let addr = self.attribute_address();
+                let shift = ((self.coarse_y_scroll() << 1) & 0b100) | (self.coarse_x_scroll() & 0b10);
+                self.tmp_attribute_byte = self.memory.read(addr) >> shift;
+            },
 
             // 3. Tile bitmap low.
             5 => {
@@ -341,25 +375,12 @@ impl PPU {
 
     // --- RENDERING
     // Put all rendering logic in one place.
-    fn render_pixel(&self) -> Colour {
-        // TODO: Implement palettes properly.
-        let palette = Palette {
-            c1: Colour { byte: 0x0F },
-            c2: Colour { byte: 0xF0 },
-            c3: Colour { byte: 0xFF },
-        };
+    fn render_pixel(&mut self) -> Colour {
+        let colour_addr = self.bg_colour_address();
+        let colour_byte = self.memory.read(colour_addr);
 
-        let bg_low_bit = (self.tile_register_low >> self.fine_x) & 1;
-        let bg_high_bit = (self.tile_register_high >> self.fine_x) & 1;
-
-        let colour_index = (bg_high_bit << 1) | bg_low_bit;
-
-        match colour_index {
-            0 => Colour { byte: 0x00 },
-            1 => palette.c1,
-            2 => palette.c2,
-            3 => palette.c3,
-            _ => panic!("Got an unexpected colour index: {}", colour_index)
+        Colour {
+            byte: colour_byte,
         }
     }
 
@@ -379,8 +400,8 @@ impl PPU {
         // If rendering is enabled, on dot 257 of each scanline, copy all horizontal bits from t to v.
         if self.cycle == 257 {
             let horizontal_bitmask = 0b0000100_00011111;
-            self.v = self.v & !horizontal_bitmask;
-            self.v = self.v | (self.t & horizontal_bitmask);
+            self.v &= !horizontal_bitmask;
+            self.v |= self.t & horizontal_bitmask;
         }
 
         // If rendering is enabled, between dots 280 to 304 of the pre-render scanline, the PPU repeatedly copies the
@@ -457,22 +478,41 @@ impl PPU {
     }
 
     fn attribute_address(&self) -> u16 {
-        // This formula copied from nesdev wiki.  I should try to understand it later.
-        0x23C0 | self.nametable_select() | ((self.v >> 4) & 0x38) | ((self.v >> 2) & 0x07)
+        0x23C0  // Attribute table base.
+            | (self.v & 0x0C00)  // Select nametable.
+            | ((self.coarse_y_scroll() << 1) & 0b111000)  // Y component.
+            | ((self.coarse_x_scroll() >> 2) & 0b111)  // X component.
     }
 
     fn pattern_address_low(&self) -> u16 {
-        ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
+        (if self.ppuctrl.is_set(flags::PPUCTRL::B) { 1 << 12 } else { 0 })  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b0000  // Lower bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
     }
 
     fn pattern_address_high(&self) -> u16 {
-        ((self.pattern_table_side as u16) << 12)  // Left or right half of sprite table.
+        (if self.ppuctrl.is_set(flags::PPUCTRL::B) { 1 << 12 } else { 0 })  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b1000  // Upper bit plane.
             | self.fine_y_scroll()  // Fine Y offset.
+    }
+
+    fn palette_index(&self) -> u8 {
+        let low = (self.attribute_register_1 >> (7 - self.fine_x)) & 1;
+        let high = (self.attribute_register_2 >> (7 - self.fine_x)) & 1;
+        (high << 1) | low
+    }
+
+    fn bg_colour_address(&self) -> u16 {
+        let bg_low_bit = (self.tile_register_low >> (15 - self.fine_x)) & 1;
+        let bg_high_bit = (self.tile_register_high >> (15 - self.fine_x)) & 1;
+
+        let colour_index = (bg_high_bit << 1) | bg_low_bit;
+
+        0x3F00  // Palette memory.
+            | ((self.palette_index() << 2) as u16) // Palette select.
+            | (colour_index as u16)  // Colour select.
     }
 
     // Utility methods to query internal state.

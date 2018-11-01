@@ -26,6 +26,7 @@ addons:
       - gcc
       - binutils-dev
       - libiberty-dev
+      - libsdl2-dev
 
 after_success: |
   wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&

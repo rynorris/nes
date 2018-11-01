@@ -29,8 +29,9 @@ impl Ticker for ScaledTicker {
 }
 
 pub struct Clock {
-    cycle_duration_ns: u64,
+    cycle_duration_ps: u64,
     elapsed_cycles: u64,
+    elapsed_seconds: u64,
     pause_threshold_ns: u64,
     started_instant: Instant,
     tickers: Vec<Rc<RefCell<dyn Ticker>>>,
@@ -38,10 +39,11 @@ pub struct Clock {
 }
 
 impl Clock {
-    pub fn new(cycle_duration_ns: u64, pause_threshold_ns: u64) -> Clock {
+    pub fn new(cycle_duration_ps: u64, pause_threshold_ns: u64) -> Clock {
         Clock {
-            cycle_duration_ns: cycle_duration_ns,
+            cycle_duration_ps: cycle_duration_ps,
             elapsed_cycles: 0,
+            elapsed_seconds: 0,
             pause_threshold_ns: pause_threshold_ns,
             started_instant: Instant::now(),
             tickers: Vec::new(),
@@ -63,9 +65,15 @@ impl Clock {
 
         let running_time = self.started_instant.elapsed();
         let running_time_ns = running_time.as_secs() * 1_000_000_000 + (running_time.subsec_nanos() as u64);
-        let drift_ns = (self.elapsed_cycles * self.cycle_duration_ns).saturating_sub(running_time_ns);
+        let drift_ns = ((self.elapsed_cycles * self.cycle_duration_ps) / 1000).saturating_sub(running_time_ns);
         if drift_ns > self.pause_threshold_ns {
+            println!("Sleeping to fix drift: {}ns", drift_ns);
             thread::sleep(Duration::from_nanos(drift_ns));
+        }
+
+        if self.elapsed_seconds != running_time.as_secs() {
+            self.elapsed_seconds = running_time.as_secs();
+            println!("Running for {} second(s).  Executed {} master clock cycles.  Avg {}Hz.", self.elapsed_seconds, self.elapsed_cycles, self.elapsed_cycles / self.elapsed_seconds);
         }
     }
 
