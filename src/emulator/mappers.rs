@@ -12,8 +12,9 @@ impl NROM {
         NROM { prg_size, prg_rom, chr_rom }
     }
 
-    fn map_prg_address(&self, address: u16) -> u16 {
-        (address - 0x8000) % self.prg_size
+    #[inline]
+    fn map_prg_address(address: u16, prg_size: u16) -> u16 {
+        (address - 0x8000) % prg_size
     }
 }
 
@@ -27,12 +28,12 @@ impl memory::Mapper for NROM {
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
-        let mapped_address = self.map_prg_address(address);
+        let mapped_address = NROM::map_prg_address(address, self.prg_size);
         self.prg_rom.read(mapped_address)
     }
 
     fn write_prg(&mut self, address: u16, byte: u8) {
-        let mapped_address = self.map_prg_address(address);
+        let mapped_address = NROM::map_prg_address(address, self.prg_size);
         self.prg_rom.write(mapped_address, byte)
     }
 }
