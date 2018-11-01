@@ -6,10 +6,12 @@ use emulator::clock::Ticker;
 use emulator::cpu;
 use emulator::memory;
 
+use emulator::cpu::test::new_cpu;
+
 #[test]
 fn test_nestest() {
     println!("Hello, world!");
-    let mut cpu = cpu::new(memory::new());
+    let mut cpu = new_cpu();
     cpu.disable_bcd();
 
     load_rom(&mut cpu);

@@ -4,6 +4,7 @@ pub mod components;
 pub mod cpu;
 pub mod ines;
 pub mod io;
+pub mod mappers;
 pub mod memory;
 pub mod ppu;
 pub mod util;
@@ -38,23 +39,23 @@ impl NES {
         let mut clock = clock::Clock::new(0, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
-        let (cpu_memory, ppu_memory) = NES::load(rom);
-        cpu_memory.debug_print(0xFFF0, 16);
-
-        let mut manager = memory::new();
-        manager.mount(Rc::new(RefCell::new(cpu_memory)), 0x8000, 0xFFFF);
-        manager.debug_print(0xFFF0, 16);
+        let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
-        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_memory, Box::new(output))));
-
-        // Mount PPU registers on main memory.
-        manager.mount(ppu.clone(), 0x2000, 0x3FFF);
+        let ppu = Rc::new(RefCell::new(ppu::PPU::new(
+                    Rc::new(RefCell::new(memory::ChrMapper::new(mapper.clone()))),
+                    Box::new(output))));
         
         // Create CPU.
-        let cpu = Rc::new(RefCell::new(cpu::new(manager)));
+        let cpu_memory = Rc::new(RefCell::new(memory::CPUMemory::new(
+            Rc::new(RefCell::new(memory::RAM::new())),
+            ppu.clone(),
+            Rc::new(RefCell::new(memory::RAM::new())),
+            Rc::new(RefCell::new(memory::PrgMapper::new(mapper.clone()))))));
+
+        let cpu = Rc::new(RefCell::new(cpu::new(cpu_memory)));
         cpu.borrow_mut().disable_bcd();
         cpu.borrow_mut().startup_sequence();
 
@@ -89,24 +90,23 @@ impl NES {
         self.clock.elapsed_seconds()
     }
 
-    pub fn load(rom: ines::ROM) -> (memory::RAM, memory::RAM) {
-        let mut cpu_memory = memory::RAM::new();
+    pub fn load(rom: ines::ROM) -> memory::MapperRef {
+        let mut prg_rom = memory::RAM::new();
         rom.prg_rom()
             .iter()
             .enumerate()
             .for_each(|(ix, byte)| {
-                cpu_memory.write(0x8000 + (ix as u16), *byte);
-                cpu_memory.write(0xC000 + (ix as u16), *byte);
+                prg_rom.write(ix as u16, *byte);
             });
 
-        let mut ppu_memory = memory::RAM::new();
+        let mut chr_rom = memory::RAM::new();
         rom.chr_rom()
             .iter()
             .enumerate()
             .for_each(|(ix, byte)| {
-                ppu_memory.write(0x0000 + (ix as u16), *byte);
+                chr_rom.write(ix as u16, *byte);
             });
 
-        (cpu_memory, ppu_memory)
+        Rc::new(RefCell::new(mappers::NROM::new(rom.prg_rom().len() as u16, prg_rom, chr_rom)))
     }
 }
