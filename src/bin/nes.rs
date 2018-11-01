@@ -40,10 +40,12 @@ fn main() {
     let mut nes = emulator::NES::new(rom);
 
     while nes.elapsed_seconds() < seconds_to_run {
-        if trace_enabled {
-            nes.cpu.borrow_mut().trace_next_instruction(&trace_out);
-            write!(&trace_out, "\n");
+        for _ in 0 .. 10000 {
+            if trace_enabled {
+                nes.cpu.borrow_mut().trace_next_instruction(&trace_out);
+                write!(&trace_out, "\n");
+            }
+            nes.tick();
         }
-        nes.tick();
     }
 }
