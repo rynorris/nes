@@ -35,6 +35,7 @@ pub struct Clock {
     num_ticks: u64,
     elapsed_cycles: u64,
     elapsed_seconds: u64,
+    cycles_this_second: u64,
     pause_threshold_ns: u64,
     started_instant: Instant,
     tickers: Vec<Rc<RefCell<dyn Ticker>>>,
@@ -48,6 +49,7 @@ impl Clock {
             num_ticks: 0,
             elapsed_cycles: 0,
             elapsed_seconds: 0,
+            cycles_this_second: 0,
             pause_threshold_ns: pause_threshold_ns,
             started_instant: Instant::now(),
             tickers: Vec::new(),
@@ -62,6 +64,7 @@ impl Clock {
                 // Run this node until it's no longer next in line.
                 let mut done = false;
                 while !done {
+                    self.cycles_this_second += node.next_tick_cycle - self.elapsed_cycles;
                     self.elapsed_cycles = node.next_tick_cycle;
                     let cycles = self.tickers[node.ticker_ix].borrow_mut().tick();
                     node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
@@ -88,7 +91,8 @@ impl Clock {
 
             if self.elapsed_seconds != running_time.as_secs() {
                 self.elapsed_seconds = running_time.as_secs();
-                println!("Running for {} second(s).  Executed {} master clock cycles.  Avg {}Hz.", self.elapsed_seconds, self.elapsed_cycles, self.elapsed_cycles / self.elapsed_seconds);
+                println!("Running for {} second(s).  Executed {} master clock cycles total.  Avg {}Hz.  Current: {}Hz.", self.elapsed_seconds, self.elapsed_cycles, self.elapsed_cycles / self.elapsed_seconds, self.cycles_this_second);
+                self.cycles_this_second = 0;
             }
         }
 
