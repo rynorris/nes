@@ -146,6 +146,7 @@ pub struct PPU {
 }
 
 impl clock::Ticker for PPU {
+    #[inline]
     fn tick(&mut self) -> u32 {
         self.tick_internal() as u32
     }

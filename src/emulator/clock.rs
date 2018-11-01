@@ -25,12 +25,14 @@ impl ScaledTicker {
 }
 
 impl Ticker for ScaledTicker {
+    #[inline]
     fn tick(&mut self) -> u32 {
         self.delegate.tick() * self.factor
     }
 }
 
 impl <T : Ticker> Ticker for Rc<RefCell<T>> {
+    #[inline]
     fn tick(&mut self) -> u32 {
         self.borrow_mut().tick()
     }

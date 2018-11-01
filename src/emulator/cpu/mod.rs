@@ -81,6 +81,7 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
 }
 
 impl clock::Ticker for CPU {
+    #[inline]
     fn tick(&mut self) -> u32 {
         return if self.should_non_maskable_interrupt() {
             self.nmi_flip_flop = false;
