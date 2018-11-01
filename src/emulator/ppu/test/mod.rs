@@ -11,7 +11,7 @@ use emulator::ppu::PPU;
 use emulator::ppu::VideoOut;
 
 fn new_ppu(output: Box<VideoOut>) -> PPU {
-    PPU::new(Rc::new(RefCell::new(memory::RAM::new())), output)
+    PPU::new(Box::new(memory::RAM::new()), output)
 }
 
 fn load_data_into_vram(ppu: &mut PPU, addr: u16, bytes: &[u8]) {

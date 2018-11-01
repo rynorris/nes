@@ -30,9 +30,7 @@ impl Ticker for ScaledTicker {
     }
 }
 
-pub type TickerRef = Rc<RefCell<dyn Ticker>>;
-
-impl Ticker for TickerRef {
+impl <T : Ticker> Ticker for Rc<RefCell<T>> {
     fn tick(&mut self) -> u32 {
         self.borrow_mut().tick()
     }
@@ -163,7 +161,7 @@ mod test {
     fn test_single_ticker() {
         let mut clock = Clock::new(0, 1);
         let ticker = Rc::new(RefCell::new(DummyTicker::new()));
-        clock.manage(ticker.clone());
+        clock.manage(Box::new(ticker.clone()));
 
         clock.tick();
         assert_eq!(ticker.borrow().value, 1);
@@ -178,10 +176,10 @@ mod test {
         let mut clock = Clock::new(0, 1);
         let ticker1 = Rc::new(RefCell::new(DummyTicker::new()));
         let ticker3 = Rc::new(RefCell::new(DummyTicker::new()));
-        let scaled_ticker3 = Rc::new(RefCell::new(ScaledTicker::new(ticker3.clone(), 3)));
+        let scaled_ticker3 = Rc::new(RefCell::new(ScaledTicker::new(Box::new(ticker3.clone()), 3)));
 
-        clock.manage(ticker1.clone());
-        clock.manage(scaled_ticker3.clone());
+        clock.manage(Box::new(ticker1.clone()));
+        clock.manage(Box::new(scaled_ticker3.clone()));
 
         // Tick twice first since the initial order is undefined.
         clock.tick();

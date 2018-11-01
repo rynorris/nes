@@ -20,10 +20,10 @@ use emulator::memory::ReadWriter;
 
 pub const PROGRAM_ROOT: u16 = 0xF000;
 fn new_cpu() -> cpu::CPU {
-    cpu::new(Rc::new(RefCell::new(memory::RAM::new())))
+    cpu::new(Box::new(memory::RAM::new()))
 }
 
-fn load_data(memory: &mut ReadWriter, addr: u16, bytes: &[u8]) {
+fn load_data(memory: &mut Box<dyn ReadWriter>, addr: u16, bytes: &[u8]) {
     for (ix, byte) in bytes.iter().enumerate() {
         memory.write(addr + (ix as u16), *byte);
     }

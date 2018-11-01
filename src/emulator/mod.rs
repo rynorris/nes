@@ -62,8 +62,8 @@ impl NES {
         cpu.borrow_mut().startup_sequence();
 
         // Wire up the clock timings.
-        let cpu_ticker = clock::ScaledTicker::new(Box::new(cpu.clone() as clock::TickerRef), NES_CPU_CLOCK_FACTOR);
-        let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone() as clock::TickerRef), NES_PPU_CLOCK_FACTOR);
+        let cpu_ticker = clock::ScaledTicker::new(Box::new(cpu.clone()), NES_CPU_CLOCK_FACTOR);
+        let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
         clock.manage(Box::new(cpu_ticker));
         clock.manage(Box::new(ppu_ticker));
 
