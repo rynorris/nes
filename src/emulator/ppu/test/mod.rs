@@ -8,8 +8,7 @@ use emulator::ppu::PPU;
 use emulator::ppu::VideoOut;
 
 fn new_ppu(output: Box<VideoOut>) -> PPU {
-    let manager = memory::new();
-    PPU::new(manager, output)
+    PPU::new(memory::RAM::new(), output)
 }
 
 fn load_data_into_vram(ppu: &mut PPU, addr: u16, bytes: &[u8]) {

@@ -18,7 +18,7 @@ use self::memory::Writer;
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
 // CPU clock = 12 master clocks.
 // PPU clock = 4 master clocks.
-const NES_MASTER_CLOCK_TIME_PS: u64 = 46500;
+const NES_MASTER_CLOCK_TIME_PS: u64 = 1_000_000_000_000 / 21_477_272;
 const NES_CPU_CLOCK_FACTOR: u32 = 12;
 const NES_PPU_CLOCK_FACTOR: u32 = 4;
 
@@ -35,7 +35,7 @@ pub struct NES {
 impl NES {
     pub fn new(rom: ines::ROM) -> NES {
         // Create master clock.
-        let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_PS, PAUSE_THRESHOLD_NS);
+        let mut clock = clock::Clock::new(0, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
         let (cpu_memory, ppu_memory) = NES::load(rom);
@@ -48,9 +48,7 @@ impl NES {
         // Create graphics output module and PPU.
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
-        let mut ppu_manager = memory::new();
-        ppu_manager.mount(Rc::new(RefCell::new(ppu_memory)), 0x0000, 0x1FFF);
-        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_manager, Box::new(output))));
+        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_memory, Box::new(output))));
 
         // Mount PPU registers on main memory.
         manager.mount(ppu.clone(), 0x2000, 0x3FFF);
@@ -85,6 +83,10 @@ impl NES {
             self.nmi_pin = false;
         }
 
+    }
+
+    pub fn elapsed_seconds(&self) -> u64 {
+        self.clock.elapsed_seconds()
     }
 
     pub fn load(rom: ines::ROM) -> (memory::RAM, memory::RAM) {

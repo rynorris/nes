@@ -6,6 +6,8 @@ use std::time::{Duration, Instant};
 use std::thread;
 use std::vec::Vec;
 
+const DRIFT_RECONCILIATION_FREQUENCY: u64 = 1_000;
+
 pub trait Ticker {
     // Returns how many master clock cycles while ticking.
     fn tick(&mut self) -> u32;
@@ -29,11 +31,18 @@ impl Ticker for ScaledTicker {
 }
 
 pub struct Clock {
+    // Configuration.
     cycle_duration_ps: u64,
-    elapsed_cycles: u64,
-    elapsed_seconds: u64,
     pause_threshold_ns: u64,
     started_instant: Instant,
+
+    // Timing.
+    num_ticks: u64,
+    elapsed_cycles: u64,
+    elapsed_seconds: u64,
+    cycles_this_second: u64,
+
+    // Tickers.
     tickers: Vec<Rc<RefCell<dyn Ticker>>>,
     turn_order: BinaryHeap<TickNode>,
 }
@@ -42,8 +51,10 @@ impl Clock {
     pub fn new(cycle_duration_ps: u64, pause_threshold_ns: u64) -> Clock {
         Clock {
             cycle_duration_ps: cycle_duration_ps,
+            num_ticks: 0,
             elapsed_cycles: 0,
             elapsed_seconds: 0,
+            cycles_this_second: 0,
             pause_threshold_ns: pause_threshold_ns,
             started_instant: Instant::now(),
             tickers: Vec::new(),
@@ -52,29 +63,37 @@ impl Clock {
     }
 
     pub fn tick(&mut self) {
-        let next_node = self.turn_order.pop();
-        match next_node {
+        match self.turn_order.peek_mut() {
             Some(mut node) => {
+                self.cycles_this_second += node.next_tick_cycle - self.elapsed_cycles;
                 self.elapsed_cycles = node.next_tick_cycle;
                 let cycles = self.tickers[node.ticker_ix].borrow_mut().tick();
                 node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
-                self.turn_order.push(node);
             },
             None => ()
         }
 
-        let running_time = self.started_instant.elapsed();
-        let running_time_ns = running_time.as_secs() * 1_000_000_000 + (running_time.subsec_nanos() as u64);
-        let drift_ns = ((self.elapsed_cycles * self.cycle_duration_ps) / 1000).saturating_sub(running_time_ns);
-        if drift_ns > self.pause_threshold_ns {
-            println!("Sleeping to fix drift: {}ns", drift_ns);
-            thread::sleep(Duration::from_nanos(drift_ns));
+        if self.num_ticks % DRIFT_RECONCILIATION_FREQUENCY == 0 {
+            let running_time = self.started_instant.elapsed();
+            let running_time_ns = running_time.as_secs() * 1_000_000_000 + (running_time.subsec_nanos() as u64);
+            let drift_ns = ((self.elapsed_cycles * self.cycle_duration_ps) / 1000).saturating_sub(running_time_ns);
+            if drift_ns > self.pause_threshold_ns {
+                println!("Sleeping to fix drift: {}ns", drift_ns);
+                thread::sleep(Duration::from_nanos(drift_ns));
+            }
+
+            if self.elapsed_seconds != running_time.as_secs() {
+                self.elapsed_seconds = running_time.as_secs();
+                println!("Running for {} second(s).  Executed {} master clock cycles total.  Avg {}Hz.  Current: {}Hz.", self.elapsed_seconds, self.elapsed_cycles, self.elapsed_cycles / self.elapsed_seconds, self.cycles_this_second);
+                self.cycles_this_second = 0;
+            }
         }
 
-        if self.elapsed_seconds != running_time.as_secs() {
-            self.elapsed_seconds = running_time.as_secs();
-            println!("Running for {} second(s).  Executed {} master clock cycles.  Avg {}Hz.", self.elapsed_seconds, self.elapsed_cycles, self.elapsed_cycles / self.elapsed_seconds);
-        }
+        self.num_ticks += 1;
+    }
+
+    pub fn elapsed_seconds(&self) -> u64 {
+        self.elapsed_seconds
     }
 
     pub fn manage(&mut self, ticker: Rc<RefCell<Ticker>>) {

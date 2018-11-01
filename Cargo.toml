@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Ryan Norris <rynorris@gmail.com>"]
 
 [dependencies]
-sdl2 = "0.31"
+sdl2 = { version = "0.31", features = ["unsafe_textures"] }
 
 [profile.release]
 debug = true

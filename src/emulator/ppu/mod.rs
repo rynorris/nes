@@ -76,7 +76,7 @@ pub struct PPU {
     // $3000-$3EFF = mirrors of $2000-$2EFF
     // $3F00-$3F1F = palette RAM indexes
     // $3F20-$3FFF = mirrors of $3F00-$3F1F
-    memory: memory::Manager,
+    memory: memory::RAM,
 
     // -- Background State --
 
@@ -115,10 +115,10 @@ pub struct PPU {
     // $02-$0E = Sprite attribute
     // $03-$0F = Sprite X coordinate
     // TODO: What does this actually mean?
-    oam: memory::Manager,
+    oam: memory::RAM,
 
     // Secondary OAM holds 8 sprites to be rendered on the current scanline.
-    secondary_oam: memory::Manager,
+    secondary_oam: memory::RAM,
 
     // Eight pairs of 8-bit shift registers to hold the bitmap data for 8 sprites to be rendered on
     // the current scanline.
@@ -152,7 +152,7 @@ impl clock::Ticker for PPU {
 }
 
 impl PPU {
-    pub fn new(memory: memory::Manager, output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: memory::RAM, output: Box<VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),
@@ -173,8 +173,8 @@ impl PPU {
             attribute_register_2: 0,
             attribute_latch_1: 0,
             attribute_latch_2: 0,
-            oam: memory::new(),
-            secondary_oam: memory::new(),
+            oam: memory::RAM::new(),
+            secondary_oam: memory::RAM::new(),
             scanline: 261,
             cycle:  0,
             tmp_pattern_coords: 0,
