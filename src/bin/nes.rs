@@ -16,10 +16,10 @@ fn main() {
         Some(path) => path,
     };
 
-    let num_cycles: u32 = match args.get(3) {
-        None => 100_000,
+    let seconds_to_run: u64 = match args.get(3) {
+        None => 10,
         Some(val) => match val.parse() {
-            Err(cause) => panic!("Failed to parse num_cycles: {}", cause),
+            Err(cause) => panic!("Failed to parse seconds_to_run: {}", cause),
             Ok(num) => num,
         },
     };
@@ -39,7 +39,7 @@ fn main() {
 
     let mut nes = emulator::NES::new(rom);
 
-    for _ in 0 .. num_cycles {
+    while nes.elapsed_seconds() < seconds_to_run {
         if trace_enabled {
             nes.cpu.borrow_mut().trace_next_instruction(&trace_out);
             write!(&trace_out, "\n");

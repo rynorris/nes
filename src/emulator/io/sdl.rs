@@ -107,7 +107,10 @@ impl Graphics {
     }
 
     fn convert_colour(c: ppu::Colour) -> pixels::Color {
-        let (r, g, b) = PALETTE[c.as_byte() as usize];
+        let (r, g, b) = match PALETTE.get(c.as_byte() as usize) {
+            None => (0, 0, 0),
+            Some(colour) => *colour,
+        };
         pixels::Color::RGB(r, g, b)
     }
 }

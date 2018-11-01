@@ -18,7 +18,7 @@ use self::memory::Writer;
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
 // CPU clock = 12 master clocks.
 // PPU clock = 4 master clocks.
-const NES_MASTER_CLOCK_TIME_PS: u64 = 46500;
+const NES_MASTER_CLOCK_TIME_PS: u64 = 1_000_000_000_000 / 21_477_272;
 const NES_CPU_CLOCK_FACTOR: u32 = 12;
 const NES_PPU_CLOCK_FACTOR: u32 = 4;
 
@@ -85,6 +85,10 @@ impl NES {
             self.nmi_pin = false;
         }
 
+    }
+
+    pub fn elapsed_seconds(&self) -> u64 {
+        self.clock.elapsed_seconds()
     }
 
     pub fn load(rom: ines::ROM) -> (memory::RAM, memory::RAM) {
