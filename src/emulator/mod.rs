@@ -12,8 +12,8 @@ pub mod util;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use self::io::sdl;
-use self::memory::Writer;
+use emulator::io::sdl;
+use emulator::memory::{MemoryRef, Writer};
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -45,25 +45,27 @@ impl NES {
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
-                    Rc::new(RefCell::new(memory::ChrMapper::new(mapper.clone()))),
+                    Box::new(memory::ChrMapper::new(mapper.clone())),
                     Box::new(output))));
         
         // Create CPU.
-        let cpu_memory = Rc::new(RefCell::new(memory::CPUMemory::new(
-            Rc::new(RefCell::new(memory::RAM::new())),
-            ppu.clone(),
-            Rc::new(RefCell::new(memory::RAM::new())),
-            Rc::new(RefCell::new(memory::PrgMapper::new(mapper.clone()))))));
+        let ppu_registers: MemoryRef = ppu.clone();
+        let cpu_memory = Box::new(memory::CPUMemory::new(
+            Box::new(memory::RAM::new()),
+            Box::new(ppu_registers),
+            Box::new(memory::RAM::new()),
+            Box::new(memory::PrgMapper::new(mapper.clone()))
+        ));
 
         let cpu = Rc::new(RefCell::new(cpu::new(cpu_memory)));
         cpu.borrow_mut().disable_bcd();
         cpu.borrow_mut().startup_sequence();
 
         // Wire up the clock timings.
-        let cpu_ticker = clock::ScaledTicker::new(cpu.clone(), NES_CPU_CLOCK_FACTOR);
-        let ppu_ticker = clock::ScaledTicker::new(ppu.clone(), NES_PPU_CLOCK_FACTOR);
-        clock.manage(Rc::new(RefCell::new(cpu_ticker)));
-        clock.manage(Rc::new(RefCell::new(ppu_ticker)));
+        let cpu_ticker = clock::ScaledTicker::new(Box::new(cpu.clone() as clock::TickerRef), NES_CPU_CLOCK_FACTOR);
+        let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone() as clock::TickerRef), NES_PPU_CLOCK_FACTOR);
+        clock.manage(Box::new(cpu_ticker));
+        clock.manage(Box::new(ppu_ticker));
 
         NES {
             clock,

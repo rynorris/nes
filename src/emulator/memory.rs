@@ -29,18 +29,18 @@ impl Writer for MemoryRef {
 }
 
 pub struct CPUMemory {
-    ram: MemoryRef,
-    ppu_registers: MemoryRef,
-    apu_registers: MemoryRef,
-    prg_rom: MemoryRef,
+    ram: Box<dyn ReadWriter>,
+    ppu_registers: Box<dyn ReadWriter>,
+    apu_registers: Box<dyn ReadWriter>,
+    prg_rom: Box<dyn ReadWriter>,
 }
 
 impl CPUMemory {
-    pub fn new(ram: MemoryRef, ppu_registers: MemoryRef, apu_registers: MemoryRef, prg_rom: MemoryRef) -> CPUMemory {
+    pub fn new(ram: Box<dyn ReadWriter>, ppu_registers: Box<dyn ReadWriter>, apu_registers: Box<dyn ReadWriter>, prg_rom: Box<dyn ReadWriter>) -> CPUMemory {
         CPUMemory { ram, ppu_registers, apu_registers, prg_rom }
     }
 
-    fn map(&mut self, address: u16) -> Option<(&mut MemoryRef, u16)> {
+    fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         match address {
             0x0000 ... 0x1FFF => Some((&mut self.ram, address & 0x7FF)),
             0x2000 ... 0x3FFF => Some((&mut self.ppu_registers, address & 0x7)),

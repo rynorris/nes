@@ -11,8 +11,7 @@ use std::io::Write;
 
 use emulator::clock;
 use emulator::components::bitfield::BitField;
-use emulator::memory;
-use emulator::memory::{Reader, Writer};
+use emulator::memory::{Reader, ReadWriter, Writer};
 use emulator::util;
 
 // Program vector locations.
@@ -38,7 +37,7 @@ impl Into<u8> for Flag {
 
 pub struct CPU {
     // Connection to main memory.
-    memory: memory::MemoryRef,
+    memory: Box<ReadWriter>,
 
     // Accumulator
     a: u8,
@@ -65,7 +64,7 @@ pub struct CPU {
     nmi_flip_flop: bool,
 }
 
-pub fn new(memory: memory::MemoryRef) -> CPU {
+pub fn new(memory: Box<ReadWriter>) -> CPU {
     let mut p = BitField::new();
     p.load_byte(0x00);
     CPU {

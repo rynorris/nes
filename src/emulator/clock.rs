@@ -14,19 +14,27 @@ pub trait Ticker {
 }
 
 pub struct ScaledTicker {
-    delegate: Rc<RefCell<dyn Ticker>>,
+    delegate: Box<dyn Ticker>,
     factor: u32,
 }
 
 impl ScaledTicker {
-    pub fn new(delegate: Rc<RefCell<dyn Ticker>>, factor: u32) -> ScaledTicker {
+    pub fn new(delegate: Box<dyn Ticker>, factor: u32) -> ScaledTicker {
         ScaledTicker { delegate, factor }
     }
 }
 
 impl Ticker for ScaledTicker {
     fn tick(&mut self) -> u32 {
-        self.delegate.borrow_mut().tick() * self.factor
+        self.delegate.tick() * self.factor
+    }
+}
+
+pub type TickerRef = Rc<RefCell<dyn Ticker>>;
+
+impl Ticker for TickerRef {
+    fn tick(&mut self) -> u32 {
+        self.borrow_mut().tick()
     }
 }
 
@@ -43,7 +51,7 @@ pub struct Clock {
     cycles_this_second: u64,
 
     // Tickers.
-    tickers: Vec<Rc<RefCell<dyn Ticker>>>,
+    tickers: Vec<Box<dyn Ticker>>,
     turn_order: BinaryHeap<TickNode>,
 }
 
@@ -67,7 +75,7 @@ impl Clock {
             Some(mut node) => {
                 self.cycles_this_second += node.next_tick_cycle - self.elapsed_cycles;
                 self.elapsed_cycles = node.next_tick_cycle;
-                let cycles = self.tickers[node.ticker_ix].borrow_mut().tick();
+                let cycles = self.tickers[node.ticker_ix].tick();
                 node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
             },
             None => ()
@@ -96,7 +104,7 @@ impl Clock {
         self.elapsed_seconds
     }
 
-    pub fn manage(&mut self, ticker: Rc<RefCell<Ticker>>) {
+    pub fn manage(&mut self, ticker: Box<Ticker>) {
         self.tickers.push(ticker);
         let node = TickNode {
             ticker_ix: self.tickers.len() - 1,
