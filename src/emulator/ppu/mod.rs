@@ -8,7 +8,7 @@ use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
 use emulator::memory;
-use emulator::memory::{Reader, ReadWriter};
+use emulator::memory::ReadWriter;
 
 // Colours represented as a single byte:
 // 76543210

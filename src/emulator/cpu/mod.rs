@@ -11,7 +11,7 @@ use std::io::Write;
 
 use emulator::clock;
 use emulator::components::bitfield::BitField;
-use emulator::memory::{Reader, ReadWriter, Writer};
+use emulator::memory::ReadWriter;
 use emulator::util;
 
 // Program vector locations.

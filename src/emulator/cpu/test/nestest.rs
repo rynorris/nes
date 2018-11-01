@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 
 use emulator::clock::Ticker;
 use emulator::cpu;
-use emulator::memory;
 
 use emulator::cpu::test::new_cpu;
 

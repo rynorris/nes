@@ -11,9 +11,6 @@ mod nestest;
 mod programs;
 mod startup_interrupts;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use emulator::cpu;
 use emulator::memory;
 use emulator::memory::ReadWriter;

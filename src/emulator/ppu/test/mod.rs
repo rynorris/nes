@@ -1,11 +1,7 @@
 mod background;
 mod data;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use emulator::memory;
-use emulator::memory::Writer;
 use emulator::ppu::Colour;
 use emulator::ppu::PPU;
 use emulator::ppu::VideoOut;
