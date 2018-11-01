@@ -107,8 +107,8 @@ impl MMC1 {
                 self.chr_offsets[1] = self.chr_offset((self.chr_bank_1 as u32) | 0x01);
             },
             1 => {
-                self.chr_offsets[0] = self.chr_offset((self.chr_bank_1 as u32) & 0x1E);
-                self.chr_offsets[1] = self.chr_offset((self.chr_bank_2 as u32) & 0x1E);
+                self.chr_offsets[0] = self.chr_offset((self.chr_bank_1 as u32) & 0x1F);
+                self.chr_offsets[1] = self.chr_offset((self.chr_bank_2 as u32) & 0x1F);
             },
             _ => panic!("Invalid chr control value: {:b}", self.control),
         }
@@ -177,7 +177,6 @@ impl memory::Mapper for MMC1 {
             self.load_register = 0;
             self.write_index = 0;
             self.update_offsets();
-            println!("control: 0x{:X}, prg: 0x{:X}, chr1: 0x{:X}, chr2: 0x{:X}", self.control, self.prg_bank, self.chr_bank_1, self.chr_bank_2);
         }
     }
 }
