@@ -489,7 +489,7 @@ impl PPU {
                 } else {
                     // Check if sprite is in range.
                     // If not then skip over it.
-                    if self.tmp_oam_byte as u16> min_y && self.tmp_oam_byte as u16 <= max_y {
+                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 >= max_y {
                         self.sprite_n += 1;
                     } else {
                         self.sprite_m += 1;
@@ -523,7 +523,7 @@ impl PPU {
                     self.sprite_m += 1;
                     self.sprite_queued_copies -= 1;
                 } else {
-                    if self.tmp_oam_byte as u16> min_y && self.tmp_oam_byte as u16 <= max_y {
+                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 >= max_y {
                         // Erroneously increment m, causing sprite overflow bug.
                         self.sprite_n += 1;
                         self.sprite_m += 1;
