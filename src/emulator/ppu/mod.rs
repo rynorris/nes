@@ -316,13 +316,13 @@ impl PPU {
         // Actually render and emit one pixel.
         // Unless this is scanline 261, which is just a dummy scanline.
         if self.scanline != 261 {
-            self.shift_sprite_registers();
             let pixel = self.render_pixel();
             self.output.emit(pixel);
         }
 
         // Finally shift all the registers.
         self.shift_registers();
+        self.shift_sprite_registers();
         1
     }
 
