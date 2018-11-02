@@ -77,7 +77,8 @@ impl PPUMemory {
     }
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
-        match address {
+        // Whole thing is mirrored above $4000.
+        match address & 0x3FFF {
             0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address)),
             0x2000 ... 0x3EFF => {
                 // Nametable and nametable mirrors.

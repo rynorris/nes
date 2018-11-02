@@ -167,6 +167,7 @@ pub struct PPU {
     sprite_queued_copies: u8,
     sprites_copied: u8,
     sprite_eval_phase: u8,
+    num_sprites: u8,
 }
 
 impl clock::Ticker for PPU {
@@ -213,6 +214,7 @@ impl PPU {
             sprite_queued_copies: 0,
             sprites_copied: 0,
             sprite_eval_phase: 0,
+            num_sprites: 0,
         }
     }
 
@@ -462,6 +464,9 @@ impl PPU {
 
     fn sprite_reset_state(&mut self) {
         // Prepare for next sprite evaluation.
+        // Num sprites on this scanline is equal to however many we copied during the last
+        // scanline.
+        self.num_sprites = self.sprites_copied;
         self.tmp_oam_byte = 0;
         self.sprite_n = 0;
         self.sprite_m = 0;
@@ -591,6 +596,7 @@ impl PPU {
         };
 
         let mut offset = self.scanline - (y as u16);
+
         if attribute & 0x80 != 0 {
             // Vertical flip.
             // In 8x16 mode have to flip top and bottom sprite also.
@@ -752,16 +758,16 @@ impl PPU {
     }
 
     fn sprite_colour(&self) -> (u8, u8) {
-        for ix in 0 .. 8 {
+        for ix in 0 .. self.num_sprites {
             // Don't consider inactive sprites.
-            if self.sprites_x[ix] > 0 {
+            if self.sprites_x[ix as usize] > 0 {
                 continue;
             }
 
-            let colour_high = self.sprites_tile_high[ix] >> 7;
-            let colour_low = self.sprites_tile_low[ix] >> 7;
+            let colour_high = self.sprites_tile_high[ix as usize] >> 7;
+            let colour_low = self.sprites_tile_low[ix as usize] >> 7;
             let sprite_colour = (colour_high << 1) | colour_low;
-            let sprite_attribute = self.sprites_attribute[ix];
+            let sprite_attribute = self.sprites_attribute[ix as usize];
             if sprite_colour != 0 {
                 return (sprite_colour, sprite_attribute);
             }
