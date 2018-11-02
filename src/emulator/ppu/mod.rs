@@ -267,7 +267,10 @@ impl PPU {
         };
 
         // Sprite evaluation.
-        self.sprite_evaluation();
+        // Does not occur on the pre-render scanline.
+        if self.scanline != 261 {
+            self.sprite_evaluation();
+        }
 
         // Scrolling.
         self.handle_scrolling();
