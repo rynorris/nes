@@ -77,7 +77,6 @@ impl Reader for PPU {
 
 impl Writer for PPU {
     fn write(&mut self, address: u16, byte: u8) {
-        //println!("${:X} = 0x{:X}", address, byte);
         match address % 8 {
             // PPUCTRL
             0 => {

@@ -44,6 +44,17 @@ pub trait VideoOut {
     fn emit(&mut self, c: Colour);
 }
 
+pub enum MirrorMode {
+    SINGLE_LOWER,
+    SINGLE_UPPER,
+    VERTICAL,
+    HORIZONTAL,
+}
+
+pub trait Mirrorer {
+    fn mirror_mode(&self) -> MirrorMode;
+}
+
 pub struct PPU {
     // Device to output rendered pixels to.
     output: Box<VideoOut>,

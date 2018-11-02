@@ -1,6 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::ppu::{Mirrorer, MirrorMode};
+
 const ADDRESS_SPACE: usize = 65536;
 
 pub trait Reader {
@@ -65,18 +67,27 @@ impl Writer for CPUMemory {
 
 pub struct PPUMemory {
     chr_rom: Box<dyn ReadWriter>,
+    mirrorer: Box<dyn Mirrorer>,
     vram: Box<dyn ReadWriter>,
 }
 
 impl PPUMemory {
-    pub fn new(chr_rom: Box<dyn ReadWriter>, vram: Box<dyn ReadWriter>) -> PPUMemory {
-        PPUMemory { chr_rom, vram }
+    pub fn new(chr_rom: Box<dyn ReadWriter>, mirrorer: Box<dyn Mirrorer>, vram: Box<dyn ReadWriter>) -> PPUMemory {
+        PPUMemory { chr_rom, mirrorer, vram }
     }
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         match address {
             0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address)),
-            0x2000 ... 0x3FFF => Some((&mut self.vram, address & !0x0800)),
+            0x2000 ... 0x3FFF => {
+                let mirrored_addr = match self.mirrorer.mirror_mode() {
+                    MirrorMode::SINGLE_LOWER => address & !0x0C00,
+                    MirrorMode::SINGLE_UPPER => (address & !0x0C00) | 0x0400,
+                    MirrorMode::VERTICAL => address & !0x0800,
+                    MirrorMode::HORIZONTAL => address & !0x0400
+                };
+                Some((&mut self.vram, mirrored_addr))
+            },
             _ => None
         }
     }
@@ -99,6 +110,7 @@ pub trait Mapper {
     fn write_chr(&mut self, address: u16, byte: u8);
     fn read_prg(&mut self, address: u16) -> u8;
     fn write_prg(&mut self, address: u16, byte: u8);
+    fn mirror_mode(&self) -> MirrorMode;
 }
 
 pub type MapperRef = Rc<RefCell<dyn Mapper>>;
@@ -118,6 +130,16 @@ impl Mapper for MapperRef {
 
     fn write_prg(&mut self, address: u16, byte: u8) {
         self.borrow_mut().write_prg(address, byte)
+    }
+
+    fn mirror_mode(&self) -> MirrorMode {
+        self.borrow().mirror_mode()
+    }
+}
+
+impl Mirrorer for MapperRef {
+    fn mirror_mode(&self) -> MirrorMode {
+        self.borrow().mirror_mode()
     }
 }
 

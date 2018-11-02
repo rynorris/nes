@@ -1,4 +1,5 @@
 use emulator::memory;
+use emulator::ppu::MirrorMode;
 
 // iNES Mapper 0: NROM
 // Non-switchable PRG ROM, mirrorred to fill the space.
@@ -29,6 +30,10 @@ impl memory::Mapper for NROM {
 
     fn write_prg(&mut self, _address: u16, _byte: u8) {
         // Can't write to ROM.
+    }
+
+    fn mirror_mode(&self) -> MirrorMode {
+        MirrorMode::SINGLE_LOWER
     }
 }
 
@@ -174,9 +179,20 @@ impl memory::Mapper for MMC1 {
                 *target_register = self.load_register;
             }
 
+            //println!("${:X} = 0b{:b}", address, self.load_register);
             self.load_register = 0;
             self.write_index = 0;
             self.update_offsets();
+        }
+    }
+
+    fn mirror_mode(&self) -> MirrorMode {
+        match self.control & 0x3 {
+            0 => MirrorMode::SINGLE_LOWER,
+            1 => MirrorMode::SINGLE_UPPER,
+            2 => MirrorMode::VERTICAL,
+            3 => MirrorMode::HORIZONTAL,
+            _ => panic!("Unexpected mirror control: 0b{:b}", self.control),
         }
     }
 }
