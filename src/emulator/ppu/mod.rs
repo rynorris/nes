@@ -437,12 +437,15 @@ impl PPU {
             self.ppustatus.set(flags::PPUSTATUS::S);
         }
 
-        let colour_addr = if sprite_attribute & 0x20 != 0 || bg_colour == 0 {
+        let colour_addr = if sprite_colour != 0 && (sprite_attribute & 0x20 == 0 || bg_colour == 0) {
             // Render sprite.
             PPU::palette_address((sprite_attribute & 0x3) | 0x04, sprite_colour)
-        } else {
+        } else if bg_colour != 0 {
             // Render BG.
             PPU::palette_address(bg_palette, bg_colour)
+        } else {
+            // Universal BG.
+            0x3F00
         };
 
         Colour {
