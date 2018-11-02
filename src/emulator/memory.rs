@@ -79,12 +79,24 @@ impl PPUMemory {
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         match address {
             0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address)),
-            0x2000 ... 0x3FFF => {
+            0x2000 ... 0x3EFF => {
+                // Nametable and nametable mirrors.
                 let mirrored_addr = match self.mirrorer.mirror_mode() {
                     MirrorMode::SINGLE_LOWER => address & !0x0C00,
                     MirrorMode::SINGLE_UPPER => (address & !0x0C00) | 0x0400,
                     MirrorMode::VERTICAL => address & !0x0800,
                     MirrorMode::HORIZONTAL => address & !0x0400
+                };
+                Some((&mut self.vram, mirrored_addr & 0x2FFF))
+            },
+            0x3F00 ... 0x3FFF => {
+                // Palettes and palette mirrors.
+                // First byte of each palette mirrored to $3F00.
+                // Everything after $3F1F mirrored down.
+                let mirrored_addr = if address % 4 == 0 {
+                    0x3F00
+                } else {
+                    address & 0x3F1F
                 };
                 Some((&mut self.vram, mirrored_addr))
             },
