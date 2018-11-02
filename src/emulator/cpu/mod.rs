@@ -431,11 +431,11 @@ impl CPU {
         }
     }
 
-    fn load_memory(&mut self, address: u16) -> u8 {
+    pub fn load_memory(&mut self, address: u16) -> u8 {
         self.memory.read(address)
     }
 
-    fn store_memory(&mut self, address: u16, byte: u8) {
+    pub fn store_memory(&mut self, address: u16, byte: u8) {
         self.memory.write(address, byte);
     }
 
