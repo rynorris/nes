@@ -487,7 +487,7 @@ impl PPU {
                 } else {
                     // Check if sprite is in range.
                     // If not then skip over it.
-                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 >= max_y {
+                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 > max_y {
                         self.sprite_n += 1;
                     } else {
                         self.sprite_m += 1;
@@ -521,7 +521,7 @@ impl PPU {
                     self.sprite_m += 1;
                     self.sprite_queued_copies -= 1;
                 } else {
-                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 >= max_y {
+                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 > max_y {
                         // Erroneously increment m, causing sprite overflow bug.
                         self.sprite_n += 1;
                         self.sprite_m += 1;
@@ -568,7 +568,10 @@ impl PPU {
         let attribute = self.secondary_oam[(sprite_ix * 4 + 2) as usize];
         let x = self.secondary_oam[(sprite_ix * 4 + 3) as usize];
 
-        let (pattern_table_base, tile_index) = match self.ppuctrl.is_set(flags::PPUCTRL::H) {
+        // 8x16 sprites?
+        let tall_sprites = self.ppuctrl.is_set(flags::PPUCTRL::H);
+
+        let (pattern_table_base, tile_index) = match tall_sprites {
             // Set = 8x16 mode, decided by bit 0.
             true => (((tile_no as u16) & 1) << 7, tile_no & 0xFE),
 
@@ -576,7 +579,15 @@ impl PPU {
             false => (if self.ppuctrl.is_set(flags::PPUCTRL::S) { 0x1000 } else { 0x0000 }, tile_no),
         };
 
-        let offset = self.scanline - (y as u16);
+        let mut offset = self.scanline - (y as u16);
+        if attribute & 0x80 != 0 {
+            // Vertical flip.
+            // In 8x16 mode have to flip top and bottom sprite also.
+            offset = match tall_sprites {
+                true => 15 - offset,
+                false => 7 - offset,
+            };
+        }
 
         let tile_addr_low = pattern_table_base | ((tile_index as u16) << 4) | offset;
         let tile_addr_high = tile_addr_low | 0b1000 | offset;
