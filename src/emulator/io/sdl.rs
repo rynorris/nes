@@ -20,11 +20,13 @@ impl IO {
     pub fn new() -> IO {
         let sdl_context = sdl2::init().unwrap();
         let video = sdl_context.video().unwrap();
-        let window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
+        let mut window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
             .position_centered()
             .opengl()
             .build()
             .unwrap();
+
+        window.raise();
 
         let mut canvas = window.into_canvas()
             .accelerated()
