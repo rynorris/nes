@@ -44,8 +44,8 @@ impl Reader for PPU {
             4 => {
                 // Reads during vblank read from OAM but do not increment OAMADDR.
                 if self.is_vblanking() {
-                    let addr = self.oamaddr as u16;
-                    self.oam.read(addr)
+                    let addr = self.oamaddr;
+                    self.oam[addr as usize]
                 } else {
                     0
                 }
@@ -100,8 +100,8 @@ impl Writer for PPU {
             // Ignore during rendering.
             4 => {
                 if !self.is_rendering() {
-                    let addr = self.oamaddr as u16;
-                    self.oam.write(addr, byte);
+                    let addr = self.oamaddr;
+                    self.oam[addr as usize] = byte;
                     self.oamaddr = self.oamaddr.wrapping_add(1);
                 }
             },
