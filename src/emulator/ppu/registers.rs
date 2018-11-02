@@ -109,7 +109,7 @@ impl Writer for PPU {
             // PPUSCROLL
             // Write 2 bytes sequentially, controlled by a latch.
             5 => {
-                match self.ppuscroll_latch.get() {
+                match self.write_latch.get() {
                     latch::State::OFF => {
                         // First write is to X scroll.
                         // High 5 bits go to coarse X in temporary VRAM address.
@@ -129,14 +129,14 @@ impl Writer for PPU {
                 }
 
                 // Flip the latch.
-                self.ppuscroll_latch.toggle();
+                self.write_latch.toggle();
             },
 
             // PPUADDR
             // Write 2 bytes sequentially to specify a 16bit address.
             // Upper byte first.
             6 => {
-                match self.ppuaddr_latch.get() {
+                match self.write_latch.get() {
                     latch::State::OFF => {
                         // First write is the high byte.
                         // Addresses above 0x3FFF are mirrored down, so clear the top two bits
@@ -156,7 +156,7 @@ impl Writer for PPU {
                 }
 
                 // Flip the latch.
-                self.ppuaddr_latch.toggle();
+                self.write_latch.toggle();
             }
 
             // PPUDATA
