@@ -454,6 +454,11 @@ impl PPU {
 
     fn sprite_reset_state(&mut self) {
         // Prepare for next sprite evaluation.
+        // Does not happen on pre-render scanline.
+        if self.scanline == 261 {
+            return;
+        }
+
         self.tmp_oam_byte = 0;
         self.sprite_n = 0;
         self.sprite_m = 0;
@@ -475,8 +480,8 @@ impl PPU {
             return;
         }
 
-        let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::S) { 16 } else { 8 };
-        let min_y = self.scanline - sprite_height;
+        let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::H) { 16 } else { 8 };
+        let min_y = self.scanline - sprite_height + 1;
         let max_y = self.scanline;
 
         match self.sprite_eval_phase {
@@ -574,7 +579,7 @@ impl PPU {
         // 8x16 sprites?
         let tall_sprites = self.ppuctrl.is_set(flags::PPUCTRL::H);
 
-        let (pattern_table_base, tile_index) = match tall_sprites {
+        let (pattern_table_base, mut tile_index) = match tall_sprites {
             // Set = 8x16 mode, decided by bit 0.
             true => (((tile_no as u16) & 1) << 7, tile_no & 0xFE),
 
@@ -590,6 +595,12 @@ impl PPU {
                 true => 15 - offset,
                 false => 7 - offset,
             };
+        }
+
+        if offset >= 8 {
+            // Lower half of a tall sprite, jump to the next tile.
+            tile_index += 1;
+            offset -= 8;
         }
 
         let tile_addr_low = pattern_table_base | ((tile_index as u16) << 4) | offset;
