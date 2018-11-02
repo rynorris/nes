@@ -7,8 +7,8 @@ mod test;
 use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
-use emulator::memory;
 use emulator::memory::ReadWriter;
+use emulator::util;
 
 // Colours represented as a single byte:
 // 76543210
@@ -577,11 +577,21 @@ impl PPU {
         };
 
         let offset = self.scanline - (y as u16);
+
         let tile_addr_low = pattern_table_base | ((tile_index as u16) << 4) | offset;
         let tile_addr_high = tile_addr_low | 0b1000 | offset;
 
-        self.sprites_tile_low[sprite_ix as usize] = self.memory.read(tile_addr_low);
-        self.sprites_tile_high[sprite_ix as usize] = self.memory.read(tile_addr_high);
+        let mut tile_byte_low = self.memory.read(tile_addr_low);
+        let mut tile_byte_high = self.memory.read(tile_addr_high);
+
+        if attribute & 0x40 != 0 {
+            // Horizontal flip.
+            tile_byte_low = util::reverse_bits(tile_byte_low);
+            tile_byte_high = util::reverse_bits(tile_byte_high);
+        }
+
+        self.sprites_tile_low[sprite_ix as usize] = tile_byte_low;
+        self.sprites_tile_high[sprite_ix as usize] = tile_byte_high;
         self.sprites_attribute[sprite_ix as usize] = attribute;
         self.sprites_x[sprite_ix as usize] = x;
     }
