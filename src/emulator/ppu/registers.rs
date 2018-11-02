@@ -124,7 +124,7 @@ impl Writer for PPU {
                         // Low 3 bits go to fine Y in temporary VRAM address.
                         self.t &= 0x1C1F;
                         self.t |= ((byte >> 3) as u16) << 5;
-                        self.t |= ((byte & 0x03) as u16) << 12;
+                        self.t |= ((byte & 0x07) as u16) << 12;
                     }
                 }
 
