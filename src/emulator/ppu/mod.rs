@@ -445,8 +445,9 @@ impl PPU {
     fn sprite_evaluation(&mut self) {
         match self.cycle {
             0 => self.sprite_reset_state(),
-            1 ... 64 => self.sprite_init_cycle(),
-            65 ... 256 => self.sprite_evaluation_cycle(),
+            // These 2 phases do not occur on the pre-render scanline.
+            1 ... 64 => if self.scanline != 261 { self.sprite_init_cycle() },
+            65 ... 256 => if self.scanline != 261 { self.sprite_evaluation_cycle() },
             257 ... 320 => self.sprite_fetch_cycle(),
             _ => (),
         }
@@ -454,11 +455,6 @@ impl PPU {
 
     fn sprite_reset_state(&mut self) {
         // Prepare for next sprite evaluation.
-        // Does not happen on pre-render scanline.
-        if self.scanline == 261 {
-            return;
-        }
-
         self.tmp_oam_byte = 0;
         self.sprite_n = 0;
         self.sprite_m = 0;
