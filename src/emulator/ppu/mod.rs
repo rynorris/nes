@@ -427,7 +427,7 @@ impl PPU {
 
         let colour_addr = if sprite_attribute & 0x20 != 0 || bg_colour == 0 {
             // Render sprite.
-            PPU::palette_address(sprite_attribute & 0x3, sprite_colour)
+            PPU::palette_address((sprite_attribute & 0x3) | 0x04, sprite_colour)
         } else {
             // Render BG.
             PPU::palette_address(bg_palette, bg_colour)
