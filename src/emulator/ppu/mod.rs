@@ -8,7 +8,7 @@ use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
 use emulator::memory;
-use emulator::memory::Reader;
+use emulator::memory::ReadWriter;
 
 // Colours represented as a single byte:
 // 76543210
@@ -44,6 +44,17 @@ pub trait VideoOut {
     fn emit(&mut self, c: Colour);
 }
 
+pub enum MirrorMode {
+    SINGLE_LOWER,
+    SINGLE_UPPER,
+    VERTICAL,
+    HORIZONTAL,
+}
+
+pub trait Mirrorer {
+    fn mirror_mode(&self) -> MirrorMode;
+}
+
 pub struct PPU {
     // Device to output rendered pixels to.
     output: Box<VideoOut>,
@@ -76,7 +87,7 @@ pub struct PPU {
     // $3000-$3EFF = mirrors of $2000-$2EFF
     // $3F00-$3F1F = palette RAM indexes
     // $3F20-$3FFF = mirrors of $3F00-$3F1F
-    memory: memory::RAM,
+    memory: Box<dyn ReadWriter>,
 
     // -- Background State --
 
@@ -146,13 +157,14 @@ pub struct PPU {
 }
 
 impl clock::Ticker for PPU {
+    #[inline]
     fn tick(&mut self) -> u32 {
         self.tick_internal() as u32
     }
 }
 
 impl PPU {
-    pub fn new(memory: memory::RAM, output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: Box<ReadWriter>, output: Box<VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),

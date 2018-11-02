@@ -13,14 +13,14 @@ mod startup_interrupts;
 
 use emulator::cpu;
 use emulator::memory;
-use emulator::memory::Writer;
+use emulator::memory::ReadWriter;
 
 pub const PROGRAM_ROOT: u16 = 0xF000;
 fn new_cpu() -> cpu::CPU {
-    cpu::new(memory::new())
+    cpu::new(Box::new(memory::RAM::new()))
 }
 
-fn load_data(memory: &mut memory::Manager, addr: u16, bytes: &[u8]) {
+fn load_data(memory: &mut Box<dyn ReadWriter>, addr: u16, bytes: &[u8]) {
     for (ix, byte) in bytes.iter().enumerate() {
         memory.write(addr + (ix as u16), *byte);
     }

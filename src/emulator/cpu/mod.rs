@@ -11,9 +11,7 @@ use std::io::Write;
 
 use emulator::clock;
 use emulator::components::bitfield::BitField;
-use emulator::memory;
-use emulator::memory::Reader;
-use emulator::memory::Writer;
+use emulator::memory::ReadWriter;
 use emulator::util;
 
 // Program vector locations.
@@ -39,7 +37,7 @@ impl Into<u8> for Flag {
 
 pub struct CPU {
     // Connection to main memory.
-    memory: memory::Manager,
+    memory: Box<ReadWriter>,
 
     // Accumulator
     a: u8,
@@ -66,7 +64,7 @@ pub struct CPU {
     nmi_flip_flop: bool,
 }
 
-pub fn new(memory: memory::Manager) -> CPU {
+pub fn new(memory: Box<ReadWriter>) -> CPU {
     let mut p = BitField::new();
     p.load_byte(0x00);
     CPU {
@@ -83,6 +81,7 @@ pub fn new(memory: memory::Manager) -> CPU {
 }
 
 impl clock::Ticker for CPU {
+    #[inline]
     fn tick(&mut self) -> u32 {
         return if self.should_non_maskable_interrupt() {
             self.nmi_flip_flop = false;
@@ -428,7 +427,7 @@ impl CPU {
             opcodes::TSX => (instructions::tsx, addressing::implied, 2),
             opcodes::TXS => (instructions::txs, addressing::implied, 2),
 
-            _ => panic!("Unknown opcode: {:X}", opcode)
+            _ => panic!("Unknown opcode: {:X}", opcode),
         }
     }
 

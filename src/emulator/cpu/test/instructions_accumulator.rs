@@ -4,8 +4,6 @@ use emulator::cpu::test::load_data;
 use emulator::cpu::test::new_cpu;
 use emulator::cpu::test::run_program;
 
-use emulator::memory::Reader;
-
 #[test]
 fn test_lda_sets_zero_flag() {
     let mut cpu = new_cpu();

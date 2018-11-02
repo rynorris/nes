@@ -4,6 +4,7 @@ pub mod components;
 pub mod cpu;
 pub mod ines;
 pub mod io;
+pub mod mappers;
 pub mod memory;
 pub mod ppu;
 pub mod util;
@@ -11,8 +12,7 @@ pub mod util;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use self::io::sdl;
-use self::memory::Writer;
+use emulator::io::sdl;
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -38,31 +38,40 @@ impl NES {
         let mut clock = clock::Clock::new(0, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
-        let (cpu_memory, ppu_memory) = NES::load(rom);
-        cpu_memory.debug_print(0xFFF0, 16);
-
-        let mut manager = memory::new();
-        manager.mount(Rc::new(RefCell::new(cpu_memory)), 0x8000, 0xFFFF);
-        manager.debug_print(0xFFF0, 16);
+        let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
         let io = sdl::IO::new();
         let output = sdl::Graphics::new(io);
-        let ppu = Rc::new(RefCell::new(ppu::PPU::new(ppu_memory, Box::new(output))));
 
-        // Mount PPU registers on main memory.
-        manager.mount(ppu.clone(), 0x2000, 0x3FFF);
-        
+        let ppu_memory = Box::new(memory::PPUMemory::new(
+            Box::new(memory::ChrMapper::new(mapper.clone())),
+            Box::new(mapper.clone()),
+            Box::new(memory::RAM::new()),
+        ));
+
+        let ppu = Rc::new(RefCell::new(ppu::PPU::new(
+                    ppu_memory,
+                    Box::new(output))));
+
         // Create CPU.
-        let cpu = Rc::new(RefCell::new(cpu::new(manager)));
+        let cpu_memory = Box::new(memory::CPUMemory::new(
+            Box::new(memory::RAM::new()),
+            Box::new(ppu.clone()),
+            Box::new(memory::RAM::new()),
+            Box::new(memory::RAM::new()),
+            Box::new(memory::PrgMapper::new(mapper.clone()))
+        ));
+
+        let cpu = Rc::new(RefCell::new(cpu::new(cpu_memory)));
         cpu.borrow_mut().disable_bcd();
         cpu.borrow_mut().startup_sequence();
 
         // Wire up the clock timings.
-        let cpu_ticker = clock::ScaledTicker::new(cpu.clone(), NES_CPU_CLOCK_FACTOR);
-        let ppu_ticker = clock::ScaledTicker::new(ppu.clone(), NES_PPU_CLOCK_FACTOR);
-        clock.manage(Rc::new(RefCell::new(cpu_ticker)));
-        clock.manage(Rc::new(RefCell::new(ppu_ticker)));
+        let cpu_ticker = clock::ScaledTicker::new(Box::new(cpu.clone()), NES_CPU_CLOCK_FACTOR);
+        let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
+        clock.manage(Box::new(cpu_ticker));
+        clock.manage(Box::new(ppu_ticker));
 
         NES {
             clock,
@@ -89,24 +98,14 @@ impl NES {
         self.clock.elapsed_seconds()
     }
 
-    pub fn load(rom: ines::ROM) -> (memory::RAM, memory::RAM) {
-        let mut cpu_memory = memory::RAM::new();
-        rom.prg_rom()
-            .iter()
-            .enumerate()
-            .for_each(|(ix, byte)| {
-                cpu_memory.write(0x8000 + (ix as u16), *byte);
-                cpu_memory.write(0xC000 + (ix as u16), *byte);
-            });
+    pub fn load(rom: ines::ROM) -> memory::MapperRef {
+        let prg_rom = rom.prg_rom().to_vec();
+        let chr_rom = rom.chr_rom().to_vec();
 
-        let mut ppu_memory = memory::RAM::new();
-        rom.chr_rom()
-            .iter()
-            .enumerate()
-            .for_each(|(ix, byte)| {
-                ppu_memory.write(0x0000 + (ix as u16), *byte);
-            });
-
-        (cpu_memory, ppu_memory)
+        match rom.mapper_number() {
+            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom))),
+            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
+            _ => panic!("Unknown mapper: {}", rom.mapper_number()),
+        }
     }
 }

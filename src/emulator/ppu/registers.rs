@@ -79,7 +79,12 @@ impl Writer for PPU {
     fn write(&mut self, address: u16, byte: u8) {
         match address % 8 {
             // PPUCTRL
-            0 => self.ppuctrl.load_byte(byte),
+            0 => {
+                // Load ppuctrl and also set base nametable bits in t.
+                self.ppuctrl.load_byte(byte);
+                self.t &= 0xF3FF;
+                self.t |= ((byte & 0b11) as u16) << 10;
+            },
 
             // PPUMASK
             1 => self.ppumask.load_byte(byte),
