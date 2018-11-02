@@ -92,10 +92,9 @@ impl PPUMemory {
             },
             0x3F00 ... 0x3FFF => {
                 // Palettes and palette mirrors.
-                // First byte of each palette mirrored to $3F00.
-                // Everything after $3F1F mirrored down.
                 let mirrored_addr = if address % 4 == 0 {
-                    0x3F00
+                    // Colour 0 in sprite palettes is mirrored to the BG palettes.
+                    address & 0x3F0F
                 } else {
                     address & 0x3F1F
                 };
