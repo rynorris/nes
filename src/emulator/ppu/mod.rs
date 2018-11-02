@@ -74,8 +74,7 @@ pub struct PPU {
     ppustatus: BitField,
 
     oamaddr: u8,
-    ppuscroll_latch: latch::Latch,
-    ppuaddr_latch: latch::Latch,
+    write_latch: latch::Latch,
 
     // PPU memory is laid out like so:
     // $0000-$0FFF = pattern table 0
@@ -171,8 +170,7 @@ impl PPU {
             ppumask: BitField::new(),
             ppustatus: BitField::new(),
             oamaddr: 0,
-            ppuscroll_latch: latch::new(),
-            ppuaddr_latch: latch::new(),
+            write_latch: latch::new(),
             memory,
             v: 0,
             t: 0,
