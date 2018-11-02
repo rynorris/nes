@@ -419,10 +419,17 @@ impl PPU {
     // --- RENDERING
     // Put all rendering logic in one place.
     fn render_pixel(&mut self) -> Colour {
-        let bg_colour = self.bg_colour();
-        let bg_palette = self.bg_palette_index();
+        let (bg_colour, bg_palette) = if self.ppumask.is_set(flags::PPUMASK::BG) {
+            (self.bg_colour(), self.bg_palette_index())
+        } else {
+            (0, 0)
+        };
 
-        let (sprite_colour, sprite_attribute) = self.sprite_colour();
+        let (sprite_colour, sprite_attribute) = if self.ppumask.is_set(flags::PPUMASK::S) {
+            self.sprite_colour()
+        } else {
+            (0, 0)
+        };
 
         if bg_colour != 0 && sprite_colour != 0 {
             self.ppustatus.set(flags::PPUSTATUS::S);
