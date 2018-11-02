@@ -116,7 +116,7 @@ impl Writer for PPU {
                         // Low 3 bits go to fine X.
                         self.t &= 0xFFE0;
                         self.t |= (byte >> 3) as u16;
-                        self.fine_x = byte & 0x03;
+                        self.fine_x = byte & 0x07;
                     },
                     latch::State::ON => {
                         // Second write is to Y scroll.
