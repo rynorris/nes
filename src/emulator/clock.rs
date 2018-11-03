@@ -2,8 +2,6 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
-use std::thread;
 use std::vec::Vec;
 
 pub trait Ticker {
@@ -37,18 +35,8 @@ impl <T : Ticker> Ticker for Rc<RefCell<T>> {
 }
 
 pub struct Clock {
-    // Configuration.
-    cycle_duration_ps: u64,
-    pause_threshold_ns: u64,
-    started_instant: Instant,
-    last_sync_ns: u64,
-
     // Timing.
-    num_ticks: u64,
     elapsed_cycles: u64,
-    elapsed_seconds: u64,
-    cycles_this_second: u64,
-    cycles_since_sync: u64,
 
     // Tickers.
     tickers: Vec<Box<dyn Ticker>>,
@@ -56,39 +44,25 @@ pub struct Clock {
 }
 
 impl Clock {
-    pub fn new(cycle_duration_ps: u64, pause_threshold_ns: u64) -> Clock {
+    pub fn new() -> Clock {
         Clock {
-            cycle_duration_ps: cycle_duration_ps,
-            num_ticks: 0,
             elapsed_cycles: 0,
-            elapsed_seconds: 0,
-            cycles_this_second: 0,
-            cycles_since_sync: 0,
-            pause_threshold_ns: pause_threshold_ns,
-            started_instant: Instant::now(),
-            last_sync_ns: 0,
             tickers: Vec::new(),
             turn_order: BinaryHeap::new(),
         }
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self) -> u64 {
         match self.turn_order.peek_mut() {
             Some(mut node) => {
-                self.cycles_this_second += node.next_tick_cycle - self.elapsed_cycles;
-                self.cycles_since_sync += node.next_tick_cycle - self.elapsed_cycles;
+                let cycles_waited = node.next_tick_cycle - self.elapsed_cycles;
                 self.elapsed_cycles = node.next_tick_cycle;
                 let cycles = self.tickers[node.ticker_ix].tick();
                 node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
+                cycles_waited
             },
-            None => ()
+            None => 0
         }
-
-        self.num_ticks += 1;
-    }
-
-    pub fn elapsed_seconds(&self) -> u64 {
-        self.elapsed_seconds
     }
 
     pub fn manage(&mut self, ticker: Box<Ticker>) {
@@ -98,45 +72,6 @@ impl Clock {
             next_tick_cycle: self.elapsed_cycles,
         };
         self.turn_order.push(node);
-    }
-
-    pub fn synchronize(&mut self) {
-        let elapsed_time = self.started_instant.elapsed();
-        let time_ns = elapsed_time.as_secs() * 1_000_000_000 + (elapsed_time.subsec_nanos() as u64);
-        let since_sync_ns = time_ns - self.last_sync_ns;
-        let drift_ns = ((self.cycles_since_sync * self.cycle_duration_ps) / 1000).saturating_sub(since_sync_ns);
-        if drift_ns > self.pause_threshold_ns {
-            thread::sleep(Duration::from_nanos(drift_ns));
-        }
-
-        let elapsed_seconds = self.started_instant.elapsed().as_secs();
-        if self.elapsed_seconds != elapsed_seconds {
-            self.elapsed_seconds = elapsed_seconds;
-            let nes_freq = 21.477f64;
-            let target_freq = 1_000_000f64 / (self.cycle_duration_ps as f64);
-            let actual_freq = (self.cycles_this_second as f64) / 1_000_000f64;
-            println!("Target: {:.3}MHz,  Current: {:.3}MHz ({:.2}x).",
-                 target_freq,
-                 actual_freq,
-                 actual_freq / nes_freq,
-            );
-            self.cycles_this_second = 0;
-        }
-    }
-
-    pub fn set_master_clock(&mut self, duration_ps: u64) {
-        if duration_ps == self.cycle_duration_ps {
-            return;
-        }
-
-        self.cycle_duration_ps = duration_ps;
-
-        // Reset sync state, because changing the clock speed screws it all up.
-        let elapsed_time = self.started_instant.elapsed();
-        let time_ns = elapsed_time.as_secs() * 1_000_000_000 + (elapsed_time.subsec_nanos() as u64);
-        self.last_sync_ns = time_ns;
-        self.cycles_since_sync = 0;
-
     }
 }
 
@@ -187,7 +122,7 @@ mod test {
 
     #[test]
     fn test_single_ticker() {
-        let mut clock = Clock::new(0, 1);
+        let mut clock = Clock::new();
         let ticker = Rc::new(RefCell::new(DummyTicker::new()));
         clock.manage(Box::new(ticker.clone()));
 
@@ -201,7 +136,7 @@ mod test {
 
     #[test]
     fn test_scaled_ticker() {
-        let mut clock = Clock::new(0, 1);
+        let mut clock = Clock::new();
         let ticker1 = Rc::new(RefCell::new(DummyTicker::new()));
         let ticker3 = Rc::new(RefCell::new(DummyTicker::new()));
         let scaled_ticker3 = Rc::new(RefCell::new(ScaledTicker::new(Box::new(ticker3.clone()), 3)));
