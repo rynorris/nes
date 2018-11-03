@@ -186,8 +186,10 @@ impl CPU {
         let pcl = self.pc as u8;
         self.stack_push(pch);
         self.stack_push(pcl);
+
+        // Bits 4 and 5 should be 10 when pushed to the stack.
         let p = self.p.as_byte();
-        self.stack_push(p);
+        self.stack_push((p & 0xEF) | 0x20);
 
         self.load_vector_to_pc(vector);
 

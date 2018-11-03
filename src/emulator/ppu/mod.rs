@@ -497,7 +497,7 @@ impl PPU {
         }
 
         let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::H) { 16 } else { 8 };
-        let min_y = self.scanline - sprite_height + 1;
+        let min_y = self.scanline.saturating_sub(sprite_height) + 1;
         let max_y = self.scanline;
 
         match self.sprite_eval_phase {
@@ -603,14 +603,14 @@ impl PPU {
             false => (if self.ppuctrl.is_set(flags::PPUCTRL::S) { 0x1000 } else { 0x0000 }, tile_no),
         };
 
-        let mut offset = self.scanline - (y as u16);
+        let mut offset = self.scanline.saturating_sub(y as u16);
 
         if attribute & 0x80 != 0 {
             // Vertical flip.
             // In 8x16 mode have to flip top and bottom sprite also.
             offset = match tall_sprites {
-                true => 15 - offset,
-                false => 7 - offset,
+                true => 15u16.saturating_sub(offset),
+                false => 7u16.saturating_sub(offset),
             };
         }
 
