@@ -108,9 +108,10 @@ impl NES {
     pub fn load(rom: ines::ROM) -> memory::MapperRef {
         let prg_rom = rom.prg_rom().to_vec();
         let chr_rom = rom.chr_rom().to_vec();
+        let mirror_mode = rom.mirror_mode();
 
         match rom.mapper_number() {
-            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom))),
+            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom, mirror_mode))),
             1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
             _ => panic!("Unknown mapper: {}", rom.mapper_number()),
         }

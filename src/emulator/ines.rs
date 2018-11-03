@@ -2,6 +2,8 @@ use std::fs::File;
 use std::io::Read;
 use std::vec::Vec;
 
+use emulator::ppu;
+
 pub struct ROM {
     data: Vec<u8>,
 }
@@ -55,5 +57,13 @@ impl ROM {
 
     pub fn chr_rom_size_bytes(&self) -> u32 {
         (self.data[5] as u32) * 8192
+    }
+
+    pub fn mirror_mode(&self) -> ppu::MirrorMode {
+        if self.data[6] & 0x1 == 0 {
+            ppu::MirrorMode::HORIZONTAL
+        } else {
+            ppu::MirrorMode::VERTICAL
+        }
     }
 }

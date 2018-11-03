@@ -44,6 +44,7 @@ pub trait VideoOut {
     fn emit(&mut self, c: Colour);
 }
 
+#[derive(Clone, Copy)]
 pub enum MirrorMode {
     SINGLE_LOWER,
     SINGLE_UPPER,
