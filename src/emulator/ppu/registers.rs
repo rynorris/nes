@@ -44,8 +44,8 @@ impl Reader for PPU {
             4 => {
                 // Reads during vblank read from OAM but do not increment OAMADDR.
                 if self.is_vblanking() {
-                    let addr = self.oamaddr as u16;
-                    self.oam.read(addr)
+                    let addr = self.oamaddr;
+                    self.oam[addr as usize]
                 } else {
                     0
                 }
@@ -67,7 +67,18 @@ impl Reader for PPU {
                 // Amount to increment by is determined by PPUCTRL.
                 let inc = self.ppuaddr_increment();
                 self.v = self.v.wrapping_add(inc);
-                byte
+
+                if addr < 0x3F00 {
+                    // Reading from before palettes, buffer the read.
+                    let byte_to_return = self.ppudata_read_buffer;
+                    self.ppudata_read_buffer = byte;
+                    byte_to_return
+                } else {
+                    // Reading from palettes, return immediately, but grab the nametable byte
+                    // "behind" the palettes into the buffer.
+                    self.ppudata_read_buffer = self.memory.read(addr & 0x2FFF);
+                    byte
+                }
             },
 
             _ => panic!("Unexpected PPU register address: {}", address),
@@ -100,8 +111,8 @@ impl Writer for PPU {
             // Ignore during rendering.
             4 => {
                 if !self.is_rendering() {
-                    let addr = self.oamaddr as u16;
-                    self.oam.write(addr, byte);
+                    let addr = self.oamaddr;
+                    self.oam[addr as usize] = byte;
                     self.oamaddr = self.oamaddr.wrapping_add(1);
                 }
             },

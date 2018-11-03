@@ -30,7 +30,7 @@ fn test_brk() {
     let p_before = cpu.p.as_byte();
     let cycles = run_instructions(&mut cpu, 1);
     assert_eq!(cpu.pc, 0xBEEF); // Jumped to interrup vector.
-    assert_eq!(cpu.stack_pop(), p_before | 0b0001_0000); // P was stored, and break bit was set.
+    assert_eq!(cpu.stack_pop(), p_before | 0b0011_0000); // P was stored, and break bits were set.
     assert_eq!(cpu.stack_pop(), stored_pc as u8); // PCL was stored.
     assert_eq!(cpu.stack_pop(), (stored_pc >> 8) as u8); // PCH was stored.
     assert_eq!(cycles, 7);

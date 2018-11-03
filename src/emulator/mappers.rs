@@ -7,11 +7,12 @@ use emulator::ppu::MirrorMode;
 pub struct NROM {
     prg_rom: Vec<u8>,
     chr_rom: Vec<u8>,
+    mirror_mode: MirrorMode,
 }
 
 impl NROM {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>) -> NROM {
-        NROM { prg_rom, chr_rom }
+    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>, mirror_mode: MirrorMode) -> NROM {
+        NROM { prg_rom, chr_rom, mirror_mode }
     }
 }
 
@@ -33,7 +34,7 @@ impl memory::Mapper for NROM {
     }
 
     fn mirror_mode(&self) -> MirrorMode {
-        MirrorMode::SINGLE_LOWER
+        self.mirror_mode
     }
 }
 

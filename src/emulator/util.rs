@@ -40,6 +40,16 @@ pub fn hex_to_bcd(hex: u8) -> u8 {
     (tens << 4) | units
 }
 
+pub fn reverse_bits(mut byte: u8) -> u8 {
+    let mut target = 0x00;
+    for _ in 0 .. 8 {
+        target <<= 1;
+        target |= byte & 0x01;
+        byte >>= 1;
+    }
+    target
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -47,6 +57,11 @@ mod test {
     #[test]
     fn test_combine_bytes() {
         assert_eq!(combine_bytes(0x12, 0xAB), 0x12AB);
+    }
+
+    #[test]
+    fn test_reverse_bits() {
+        assert_eq!(reverse_bits(0b1101_0101), 0b1010_1011);
     }
 
     macro_rules! shr_test {

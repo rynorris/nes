@@ -7,8 +7,8 @@ mod test;
 use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
-use emulator::memory;
 use emulator::memory::ReadWriter;
+use emulator::util;
 
 // Colours represented as a single byte:
 // 76543210
@@ -44,6 +44,7 @@ pub trait VideoOut {
     fn emit(&mut self, c: Colour);
 }
 
+#[derive(Clone, Copy)]
 pub enum MirrorMode {
     SINGLE_LOWER,
     SINGLE_UPPER,
@@ -125,17 +126,21 @@ pub struct PPU {
     // $02-$0E = Sprite attribute
     // $03-$0F = Sprite X coordinate
     // TODO: What does this actually mean?
-    oam: memory::RAM,
+    oam: [u8; 256],
 
     // Secondary OAM holds 8 sprites to be rendered on the current scanline.
-    secondary_oam: memory::RAM,
+    secondary_oam: [u8; 32],
 
     // Eight pairs of 8-bit shift registers to hold the bitmap data for 8 sprites to be rendered on
     // the current scanline.
+    sprites_tile_high: [u8; 8],
+    sprites_tile_low: [u8; 8],
 
     // Eight latches containing the attribute bytes for the 8 sprites.
+    sprites_attribute: [u8; 8],
 
     // Eight counters containing the X positions for the 8 sprites.
+    sprites_x: [u8; 8],
 
     // --- Counters for tracking the current rendering stage.
 
@@ -153,6 +158,20 @@ pub struct PPU {
 
     // Byte fetched from attribute table for next tile.
     tmp_attribute_byte: u8,
+
+    // Byte read from OAM.
+    tmp_oam_byte: u8,
+
+    // Counters.
+    sprite_n: u8,
+    sprite_m: u8,
+    sprite_queued_copies: u8,
+    sprites_copied: u8,
+    sprite_eval_phase: u8,
+    num_sprites: u8,
+
+    // Bytes read from $2007 are delayed in this buffer.
+    ppudata_read_buffer: u8,
 }
 
 impl clock::Ticker for PPU {
@@ -183,12 +202,24 @@ impl PPU {
             attribute_register_2: 0,
             attribute_latch_1: 0,
             attribute_latch_2: 0,
-            oam: memory::RAM::new(),
-            secondary_oam: memory::RAM::new(),
+            oam: [0; 256],
+            secondary_oam: [0; 32],
+            sprites_tile_high: [0; 8],
+            sprites_tile_low: [0; 8],
+            sprites_attribute: [0; 8],
+            sprites_x: [0; 8],
             scanline: 261,
             cycle:  0,
             tmp_pattern_coords: 0,
             tmp_attribute_byte: 0,
+            tmp_oam_byte: 0,
+            sprite_n: 0,
+            sprite_m: 0,
+            sprite_queued_copies: 0,
+            sprites_copied: 0,
+            sprite_eval_phase: 0,
+            num_sprites: 0,
+            ppudata_read_buffer: 0,
         }
     }
 
@@ -242,12 +273,20 @@ impl PPU {
             _ => panic!("PPU cycle index should never exceed 341.  Got {}.", self.cycle),
         };
 
+        // Sprite evaluation.
+        // Does not occur on the pre-render scanline.
+        if self.scanline != 261 {
+            self.sprite_evaluation();
+        }
+
         // Scrolling.
         self.handle_scrolling();
 
-        // On dot 1 of the pre-render scanline, clear vblank flag.
+        // On dot 1 of the pre-render scanline, clear vblank flag and sprite overflow flag.
         if self.scanline == 261 && self.cycle == 1 {
             self.ppustatus.clear(flags::PPUSTATUS::V);
+            self.ppustatus.clear(flags::PPUSTATUS::O);
+            self.ppustatus.clear(flags::PPUSTATUS::S);
         }
 
         cycles
@@ -290,14 +329,15 @@ impl PPU {
 
         // Finally shift all the registers.
         self.shift_registers();
+        self.shift_sprite_registers();
         1
     }
 
     fn tick_sprite_fetch_cycle(&mut self) -> u16 {
+        // Background not doing much during these cycles.
         if self.cycle == 257 {
             self.reload_shift_registers();
         }
-        // TODO: Implement sprites.
         1
     }
 
@@ -386,12 +426,216 @@ impl PPU {
     // --- RENDERING
     // Put all rendering logic in one place.
     fn render_pixel(&mut self) -> Colour {
-        let colour_addr = self.bg_colour_address();
-        let colour_byte = self.memory.read(colour_addr);
+        let (bg_colour, bg_palette) = if self.ppumask.is_set(flags::PPUMASK::BG) {
+            (self.bg_colour(), self.bg_palette_index())
+        } else {
+            (0, 0)
+        };
+
+        let (sprite_colour, sprite_attribute) = if self.ppumask.is_set(flags::PPUMASK::S) {
+            self.sprite_colour()
+        } else {
+            (0, 0)
+        };
+
+        if bg_colour != 0 && sprite_colour != 0 {
+            self.ppustatus.set(flags::PPUSTATUS::S);
+        }
+
+        let colour_addr = if sprite_colour != 0 && (sprite_attribute & 0x20 == 0 || bg_colour == 0) {
+            // Render sprite.
+            PPU::palette_address((sprite_attribute & 0x3) | 0x04, sprite_colour)
+        } else if bg_colour != 0 {
+            // Render BG.
+            PPU::palette_address(bg_palette, bg_colour)
+        } else {
+            // Universal BG.
+            0x3F00
+        };
 
         Colour {
-            byte: colour_byte,
+            byte: self.memory.read(colour_addr),
         }
+    }
+
+    // --- SPRITES
+    fn sprite_evaluation(&mut self) {
+        match self.cycle {
+            0 => self.sprite_reset_state(),
+            // These 2 phases do not occur on the pre-render scanline.
+            1 ... 64 => if self.scanline != 261 { self.sprite_init_cycle() },
+            65 ... 256 => if self.scanline != 261 { self.sprite_evaluation_cycle() },
+            257 ... 320 => self.sprite_fetch_cycle(),
+            _ => (),
+        }
+    }
+
+    fn sprite_reset_state(&mut self) {
+        // Prepare for next sprite evaluation.
+        // Num sprites on this scanline is equal to however many we copied during the last
+        // scanline.
+        self.num_sprites = self.sprites_copied;
+        self.tmp_oam_byte = 0;
+        self.sprite_n = 0;
+        self.sprite_m = 0;
+        self.sprites_copied = 0;
+        self.sprite_queued_copies = 0;
+        self.sprite_eval_phase = 0;
+    }
+
+    fn sprite_init_cycle(&mut self) {
+        if self.cycle % 2 == 0 {
+            self.secondary_oam[((self.cycle / 2) - 1) as usize] = 0xFF;
+        }
+    }
+
+    fn sprite_evaluation_cycle(&mut self) {
+        // Just read on odd cycles.
+        if self.cycle % 2 == 1 {
+            self.tmp_oam_byte = self.oam[((self.sprite_n * 4) + self.sprite_m) as usize];
+            return;
+        }
+
+        let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::H) { 16 } else { 8 };
+        let min_y = self.scanline.saturating_sub(sprite_height) + 1;
+        let max_y = self.scanline;
+
+        match self.sprite_eval_phase {
+            0 => {
+                // Phase 0: Sprite copy phase.
+                self.secondary_oam[((self.sprites_copied * 4) + self.sprite_m) as usize] = self.tmp_oam_byte;
+                if self.sprite_queued_copies > 0 {
+                    // Mid-way through a copy.  Keep going.
+                    self.sprite_m += 1;
+                    self.sprite_queued_copies -= 1;
+                } else {
+                    // Check if sprite is in range.
+                    // If not then skip over it.
+                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 > max_y {
+                        self.sprite_n += 1;
+                    } else {
+                        self.sprite_m += 1;
+                        self.sprite_queued_copies = 3;
+                    }
+                }
+
+                // Handle overflows.
+                if self.sprite_m >= 4 {
+                    self.sprite_n += 1;
+                    self.sprite_m = 0;
+                    self.sprites_copied += 1;
+                }
+
+                if self.sprite_n >= 64 {
+                    // We've seen all sprites.  Go to phase 2.
+                    self.sprite_eval_phase = 2;
+                    self.sprite_n = 0;
+                }
+
+                if self.sprites_copied == 8 {
+                    // We've filled up secondary OAM.  Go to phase 1.
+                    self.sprite_eval_phase = 1;
+                }
+            },
+            1 => {
+                // Phase 1: Sprite overflow.
+                // Keep looping through like before, checking for overflow.
+                // But this time don't write anything, and m gets incremented incorrectly.
+                if self.sprite_queued_copies > 0 {
+                    self.sprite_m += 1;
+                    self.sprite_queued_copies -= 1;
+                } else {
+                    if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 > max_y {
+                        // Erroneously increment m, causing sprite overflow bug.
+                        self.sprite_n += 1;
+                        self.sprite_m += 1;
+                    } else {
+                        // In range, set sprite overflow flag.
+                        self.ppustatus.set(flags::PPUSTATUS::O);
+                        self.sprite_m += 1;
+                        self.sprite_queued_copies = 3;
+                    }
+                }
+                //
+                // Handle overflows.
+                if self.sprite_m >= 4 {
+                    self.sprite_n += 1;
+                    self.sprite_m = 0;
+                }
+
+                if self.sprite_n >= 64 {
+                    // We've seen all sprites.  Go to phase 2.
+                    self.sprite_eval_phase = 2;
+                    self.sprite_n = 0;
+                }
+            },
+            2 => {
+                // Phase 2: All done.
+                // Do nothing.
+            },
+            _ => panic!("Unexpected sprite eval phase: {}", self.sprite_eval_phase),
+        }
+    }
+
+    fn sprite_fetch_cycle(&mut self) {
+        // Loading the sprite data for next scanline into registers.
+        // Technically this data should be handled 1 byte per cycle.
+        // But because we're only shuffling data around internally, it's impossible
+        // for anything weird to happen inbetween, so just do it in one go.
+        if self.cycle % 8 != 1 {
+            return;
+        }
+
+        let sprite_ix = (self.cycle - 256) / 8;
+        let y = self.secondary_oam[(sprite_ix * 4) as usize];
+        let tile_no = self.secondary_oam[(sprite_ix * 4 + 1) as usize];
+        let attribute = self.secondary_oam[(sprite_ix * 4 + 2) as usize];
+        let x = self.secondary_oam[(sprite_ix * 4 + 3) as usize];
+
+        // 8x16 sprites?
+        let tall_sprites = self.ppuctrl.is_set(flags::PPUCTRL::H);
+
+        let (pattern_table_base, mut tile_index) = match tall_sprites {
+            // Set = 8x16 mode, decided by bit 0.
+            true => (((tile_no as u16) & 1) << 7, tile_no & 0xFE),
+
+            // Unset = 8x8 mode, table decided by S flag.
+            false => (if self.ppuctrl.is_set(flags::PPUCTRL::S) { 0x1000 } else { 0x0000 }, tile_no),
+        };
+
+        let mut offset = self.scanline.saturating_sub(y as u16);
+
+        if attribute & 0x80 != 0 {
+            // Vertical flip.
+            // In 8x16 mode have to flip top and bottom sprite also.
+            offset = match tall_sprites {
+                true => 15u16.saturating_sub(offset),
+                false => 7u16.saturating_sub(offset),
+            };
+        }
+
+        if offset >= 8 {
+            // Lower half of a tall sprite, jump to the next tile.
+            tile_index += 1;
+            offset -= 8;
+        }
+
+        let tile_addr_low = pattern_table_base | ((tile_index as u16) << 4) | offset;
+        let tile_addr_high = tile_addr_low | 0b1000 | offset;
+
+        let mut tile_byte_low = self.memory.read(tile_addr_low);
+        let mut tile_byte_high = self.memory.read(tile_addr_high);
+
+        if attribute & 0x40 != 0 {
+            // Horizontal flip.
+            tile_byte_low = util::reverse_bits(tile_byte_low);
+            tile_byte_high = util::reverse_bits(tile_byte_high);
+        }
+
+        self.sprites_tile_low[sprite_ix as usize] = tile_byte_low;
+        self.sprites_tile_high[sprite_ix as usize] = tile_byte_high;
+        self.sprites_attribute[sprite_ix as usize] = attribute;
+        self.sprites_x[sprite_ix as usize] = x;
     }
 
     // --- SCROLLING
@@ -508,21 +752,53 @@ impl PPU {
             | self.fine_y_scroll()  // Fine Y offset.
     }
 
-    fn palette_index(&self) -> u8 {
+    fn bg_palette_index(&self) -> u8 {
         let low = (self.attribute_register_1 >> (7 - self.fine_x)) & 1;
         let high = (self.attribute_register_2 >> (7 - self.fine_x)) & 1;
         (high << 1) | low
     }
 
-    fn bg_colour_address(&self) -> u16 {
+    fn bg_colour(&self) -> u8 {
         let bg_low_bit = (self.tile_register_low >> (15 - self.fine_x)) & 1;
         let bg_high_bit = (self.tile_register_high >> (15 - self.fine_x)) & 1;
 
-        let colour_index = (bg_high_bit << 1) | bg_low_bit;
+        ((bg_high_bit << 1) | bg_low_bit) as u8
+    }
 
+    fn sprite_colour(&self) -> (u8, u8) {
+        for ix in 0 .. self.num_sprites {
+            // Don't consider inactive sprites.
+            if self.sprites_x[ix as usize] > 0 {
+                continue;
+            }
+
+            let colour_high = self.sprites_tile_high[ix as usize] >> 7;
+            let colour_low = self.sprites_tile_low[ix as usize] >> 7;
+            let sprite_colour = (colour_high << 1) | colour_low;
+            let sprite_attribute = self.sprites_attribute[ix as usize];
+            if sprite_colour != 0 {
+                return (sprite_colour, sprite_attribute);
+            }
+        }
+        (0, 0)
+    }
+
+    fn shift_sprite_registers(&mut self) {
+        for ix in 0 .. 8 {
+            // Decrement x if non-zero, otherwise shift tiles.
+            if self.sprites_x[ix] > 0 {
+                self.sprites_x[ix] -= 1;
+            } else {
+                self.sprites_tile_high[ix] <<= 1;
+                self.sprites_tile_low[ix] <<= 1;
+            }
+        }
+    }
+
+    fn palette_address(index: u8, colour: u8) -> u16 {
         0x3F00  // Palette memory.
-            | ((self.palette_index() << 2) as u16) // Palette select.
-            | (colour_index as u16)  // Colour select.
+            | ((index << 2) as u16) // Palette select.
+            | (colour as u16)  // Colour select.
     }
 
     // Utility methods to query internal state.
