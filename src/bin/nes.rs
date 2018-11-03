@@ -16,14 +16,6 @@ fn main() {
         Some(path) => path,
     };
 
-    let seconds_to_run: u64 = match args.get(3) {
-        None => 10,
-        Some(val) => match val.parse() {
-            Err(cause) => panic!("Failed to parse seconds_to_run: {}", cause),
-            Ok(num) => num,
-        },
-    };
-
     let trace_enabled = match env::var("NES_TRACE") {
         Err(_) => false,
         Ok(val) => val == "1",
@@ -39,13 +31,5 @@ fn main() {
 
     let mut nes = emulator::NES::new(rom);
 
-    while nes.elapsed_seconds() < seconds_to_run {
-        for _ in 0 .. 10000 {
-            if trace_enabled {
-                nes.cpu.borrow_mut().trace_next_instruction(&trace_out);
-                write!(&trace_out, "\n");
-            }
-            nes.tick();
-        }
-    }
+    nes.run_blocking();
 }

@@ -19,6 +19,7 @@ use emulator::controller::Button;
 use emulator::io::sdl;
 use emulator::memory::ReadWriter;
 
+use self::sdl2::event;
 use self::sdl2::keyboard::Keycode;
 
 // Timings (NTSC).
@@ -37,6 +38,7 @@ pub struct NES {
     pub cpu: Rc<RefCell<cpu::CPU>>,
     ppu: Rc<RefCell<ppu::PPU>>,
     nmi_pin: bool,
+    lifecycle: Rc<RefCell<Lifecycle>>,
 }
 
 impl NES {
@@ -109,11 +111,23 @@ impl NES {
         clock.manage(Box::new(ppu_ticker));
         clock.manage(Box::new(io.clone()));
 
+        // Create lifecycle controller.
+        let lifecycle = Rc::new(RefCell::new(Lifecycle::new()));
+        io.borrow_mut().register_event_handler(Box::new(lifecycle.clone()));
+
         NES {
             clock,
             cpu,
             ppu,
             nmi_pin: false,
+            lifecycle: lifecycle.clone(),
+        }
+    }
+
+    pub fn run_blocking(&mut self) {
+        self.lifecycle.borrow_mut().start();
+        while self.lifecycle.borrow_mut().is_running() {
+            self.tick();
         }
     }
 
@@ -189,5 +203,39 @@ impl clock::Ticker for DMAController {
         } else {
             self.cpu.borrow_mut().tick()
         }
+    }
+}
+
+pub struct Lifecycle {
+    is_running: bool,
+}
+
+impl Lifecycle {
+    pub fn new() -> Lifecycle {
+        Lifecycle {
+            is_running: false,
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.is_running
+    }
+
+    pub fn start(&mut self) {
+        self.is_running = true;
+    }
+}
+
+impl sdl::EventHandler for Lifecycle {
+    fn handle_event(&mut self, event: &event::Event) {
+        match event {
+            event::Event::KeyDown { keycode, .. } => {
+                match keycode {
+                    Some(Keycode::Escape) => self.is_running = false,
+                    _ => (),
+                };
+            },
+            _ => (),
+        };
     }
 }
