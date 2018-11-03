@@ -122,12 +122,15 @@ impl PPUMemory {
             0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address)),
             0x2000 ... 0x3EFF => {
                 // Nametable and nametable mirrors.
-                let mirrored_addr = match self.mirrorer.mirror_mode() {
-                    MirrorMode::SINGLE_LOWER => address & !0x0C00,
-                    MirrorMode::SINGLE_UPPER => (address & !0x0C00) | 0x0400,
-                    MirrorMode::VERTICAL => address & !0x0800,
-                    MirrorMode::HORIZONTAL => address & !0x0400
+                // Note that we don't just literally mirror the address horizontally/vertically.
+                // We need to make sure we always read from one of just 2 banks of memory.
+                let nt_bank = match self.mirrorer.mirror_mode() {
+                    MirrorMode::SINGLE_LOWER => 0,
+                    MirrorMode::SINGLE_UPPER => 1,
+                    MirrorMode::VERTICAL => (address & 0x0400) >> 10,
+                    MirrorMode::HORIZONTAL => (address & 0x0800) >> 11,
                 };
+                let mirrored_addr = 0x2000 | (nt_bank << 10) | (address & 0x03FF);
                 Some((&mut self.vram, mirrored_addr & 0x2FFF))
             },
             0x3F00 ... 0x3FFF => {
