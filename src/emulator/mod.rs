@@ -1,6 +1,9 @@
 #![allow(dead_code)]
+extern crate sdl2;
+
 pub mod clock;
 pub mod components;
+pub mod controller;
 pub mod cpu;
 pub mod ines;
 pub mod io;
@@ -12,8 +15,11 @@ pub mod util;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::controller::Button;
 use emulator::io::sdl;
 use emulator::memory::ReadWriter;
+
+use self::sdl2::keyboard::Keycode;
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -36,7 +42,7 @@ pub struct NES {
 impl NES {
     pub fn new(rom: ines::ROM) -> NES {
         // Create master clock.
-        let mut clock = clock::Clock::new(0, PAUSE_THRESHOLD_NS);
+        let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_PS, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
         let mapper = NES::load(rom);
@@ -55,8 +61,30 @@ impl NES {
                     ppu_memory,
                     Box::new(output))));
 
+        // Create controllers.
+        let joy1 = Rc::new(RefCell::new(controller::Controller::new([
+           (Keycode::Z, Button::A),
+           (Keycode::X, Button::B),
+           (Keycode::A, Button::Start),
+           (Keycode::S, Button::Select),
+           (Keycode::Up, Button::Up),
+           (Keycode::Down, Button::Down),
+           (Keycode::Left, Button::Left),
+           (Keycode::Right, Button::Right),
+        ].iter().cloned().collect())));
+
+        let joy2 = Rc::new(RefCell::new(controller::Controller::new([
+        ].iter().cloned().collect())));
+
+        io.borrow_mut().register_event_handler(Box::new(joy1.clone()));
+        io.borrow_mut().register_event_handler(Box::new(joy2.clone()));
+
         // Create CPU.
-        let io_registers = Rc::new(RefCell::new(memory::RAM::new()));
+        let io_registers = Rc::new(RefCell::new(memory::IORegisters::new(
+            Box::new(joy1.clone()),
+            Box::new(joy2.clone()),
+        )));
+
         let cpu_memory = Box::new(memory::CPUMemory::new(
             Box::new(memory::RAM::new()),
             Box::new(ppu.clone()),

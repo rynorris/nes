@@ -79,6 +79,10 @@ impl IO {
             handler.handle_event(&event);
         }
     }
+
+    pub fn register_event_handler(&mut self, handler: Box<dyn EventHandler>) {
+        self.event_handlers.push(handler);
+    }
 }
 
 impl clock::Ticker for IO {
@@ -149,5 +153,11 @@ impl Graphics {
 }
 
 pub trait EventHandler {
-    fn handle_event(&mut self, &event::Event);
+    fn handle_event(&mut self, event: &event::Event);
+}
+
+impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
+    fn handle_event(&mut self, event: &event::Event) {
+        self.borrow_mut().handle_event(event);
+    }
 }
