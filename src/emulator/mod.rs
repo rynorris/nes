@@ -127,7 +127,16 @@ impl NES {
     pub fn run_blocking(&mut self) {
         self.lifecycle.borrow_mut().start();
         while self.lifecycle.borrow_mut().is_running() {
-            self.tick();
+            for _ in 1 .. 10_000 {
+                self.tick();
+            }
+
+            if !self.lifecycle.borrow().speed_is_unlocked() {
+                self.clock.set_master_clock(NES_MASTER_CLOCK_TIME_PS);
+            } else {
+                self.clock.set_master_clock(0);
+            }
+            self.clock.synchronize();
         }
     }
 
@@ -208,12 +217,14 @@ impl clock::Ticker for DMAController {
 
 pub struct Lifecycle {
     is_running: bool,
+    unlock_speed: bool,
 }
 
 impl Lifecycle {
     pub fn new() -> Lifecycle {
         Lifecycle {
             is_running: false,
+            unlock_speed: false,
         }
     }
 
@@ -224,6 +235,10 @@ impl Lifecycle {
     pub fn start(&mut self) {
         self.is_running = true;
     }
+
+    pub fn speed_is_unlocked(&self) -> bool {
+        self.unlock_speed
+    }
 }
 
 impl sdl::EventHandler for Lifecycle {
@@ -232,6 +247,7 @@ impl sdl::EventHandler for Lifecycle {
             event::Event::KeyDown { keycode, .. } => {
                 match keycode {
                     Some(Keycode::Escape) => self.is_running = false,
+                    Some(Keycode::Tab) => self.unlock_speed = !self.unlock_speed,
                     _ => (),
                 };
             },
