@@ -12,10 +12,14 @@ pub mod memory;
 pub mod ppu;
 pub mod util;
 
+#[cfg(test)]
+mod test;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::controller::Button;
+use emulator::io::{EventHandler, Input};
 use emulator::io::sdl;
 use emulator::memory::ReadWriter;
 
@@ -51,7 +55,7 @@ impl NES {
 
         // Create graphics output module and PPU.
         let io = Rc::new(RefCell::new(sdl::IO::new()));
-        let output = sdl::Graphics::new(io.clone());
+        let output = io::SimpleVideoOut::new(io.clone());
 
         let ppu_memory = Box::new(memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
@@ -247,7 +251,7 @@ impl Lifecycle {
     }
 }
 
-impl sdl::EventHandler for Lifecycle {
+impl EventHandler for Lifecycle {
     fn handle_event(&mut self, event: &event::Event) {
         match event {
             event::Event::KeyDown { keycode, .. } => {

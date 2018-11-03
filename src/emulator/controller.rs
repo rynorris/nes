@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use self::sdl2::event;
 use self::sdl2::keyboard::Keycode;
 
-use emulator::io::sdl;
+use emulator::io::EventHandler;
 use emulator::memory::{Reader, Writer};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -48,7 +48,7 @@ impl Controller {
     }
 }
 
-impl sdl::EventHandler for Controller {
+impl EventHandler for Controller {
     fn handle_event(&mut self, event: &event::Event) {
         match event {
             event::Event::KeyDown { keycode, .. } => {
