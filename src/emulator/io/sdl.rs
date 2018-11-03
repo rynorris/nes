@@ -1,9 +1,14 @@
 extern crate sdl2;
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use self::sdl2::event;
 use self::sdl2::pixels;
 use self::sdl2::render;
 use self::sdl2::video;
 
+use emulator::clock;
 use emulator::io::palette::PALETTE;
 use emulator::ppu;
 
@@ -14,6 +19,9 @@ pub struct IO {
     video: sdl2::VideoSubsystem,
     canvas: render::Canvas<video::Window>,
     screen_texture: render::Texture,
+
+    event_pump: sdl2::EventPump,
+    event_handlers: Vec<Box<dyn EventHandler>>,
 }
 
 impl IO {
@@ -42,11 +50,18 @@ impl IO {
         let _ = canvas.set_scale(SCALE as f32, SCALE as f32);
         println!("Using SDL_Renderer \"{}\"", canvas.info().name);
 
+        let event_pump = match sdl_context.event_pump() {
+            Err(cause) => panic!("Failed to create event pump: {}", cause),
+            Ok(p) => p,
+        };
+
         IO {
             sdl_context,
             video,
             canvas,
             screen_texture,
+            event_pump,
+            event_handlers: vec![],
         }
     }
 
@@ -58,10 +73,26 @@ impl IO {
         let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
         let _ = self.canvas.copy(&self.screen_texture, None, None);
     }
+
+    pub fn process_event(&mut self, event: event::Event) {
+        for mut handler in self.event_handlers.iter_mut() {
+            handler.handle_event(&event);
+        }
+    }
+}
+
+impl clock::Ticker for IO {
+    fn tick(&mut self) -> u32 {
+        self.flip();
+        while let Some(e) = self.event_pump.poll_event() {
+            self.process_event(e);
+        }
+        400_000 // Shrug?  One frame ~= 100k PPU clocks ~= 400k master clock.
+    }
 }
 
 pub struct Graphics {
-    io: IO,
+    io: Rc<RefCell<IO>>,
     scanline: u32,
     dot: u32,
     screen_buffer: [u8; 256 * 240 * 3],
@@ -94,7 +125,7 @@ impl ppu::VideoOut for Graphics {
 }
 
 impl Graphics {
-    pub fn new(io: IO) -> Graphics {
+    pub fn new(io: Rc<RefCell<IO>>) -> Graphics {
         Graphics {
             io,
             scanline: 0,
@@ -105,8 +136,7 @@ impl Graphics {
     }
 
     fn render(&mut self) {
-        self.io.draw_screen(&self.screen_buffer);
-        self.io.flip();
+        self.io.borrow_mut().draw_screen(&self.screen_buffer);
     }
 
     fn convert_colour(c: ppu::Colour) -> pixels::Color {
@@ -116,4 +146,8 @@ impl Graphics {
         };
         pixels::Color::RGB(r, g, b)
     }
+}
+
+pub trait EventHandler {
+    fn handle_event(&mut self, &event::Event);
 }

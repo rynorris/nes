@@ -42,8 +42,8 @@ impl NES {
         let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
-        let io = sdl::IO::new();
-        let output = sdl::Graphics::new(io);
+        let io = Rc::new(RefCell::new(sdl::IO::new()));
+        let output = sdl::Graphics::new(io.clone());
 
         let ppu_memory = Box::new(memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
@@ -79,6 +79,7 @@ impl NES {
         let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
         clock.manage(Box::new(cpu_ticker));
         clock.manage(Box::new(ppu_ticker));
+        clock.manage(Box::new(io.clone()));
 
         NES {
             clock,
