@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use emulator::clock::Ticker;
 use emulator::memory::Writer;
 use emulator::ppu::test::data;
@@ -38,7 +41,7 @@ fn test_render_simple_background_sdl() {
 
     // Firstly, create the PPU.
     let io = sdl::IO::new();
-    let output = sdl::Graphics::new(io);
+    let output = sdl::Graphics::new(Rc::new(RefCell::new(io)));
     let mut ppu = new_ppu(Box::new(output));
 
     // Load the X tile into the first position in pattern table 1.
