@@ -1,12 +1,14 @@
 extern crate sdl2;
 
 use self::sdl2::event;
+use self::sdl2::keyboard::Keycode;
 use self::sdl2::pixels;
 use self::sdl2::render;
 use self::sdl2::video;
 
 use emulator::clock;
-use emulator::io::{EventHandler, Graphics, Input};
+use emulator::io::{Graphics, Input};
+use emulator::io::event::{Event, EventHandler, Key};
 
 const SCALE: u8 = 4;
 
@@ -66,8 +68,12 @@ impl IO {
     }
 
     pub fn process_event(&mut self, event: event::Event) {
-        for mut handler in self.event_handlers.iter_mut() {
-            handler.handle_event(&event);
+        let internal_event = convert_sdl_event_to_internal(event);
+
+        if let Some(e) = internal_event {
+            for mut handler in self.event_handlers.iter_mut() {
+                handler.handle_event(e);
+            }
         }
     }
 
@@ -96,3 +102,69 @@ impl clock::Ticker for IO {
     }
 }
 
+fn convert_sdl_event_to_internal(event: event::Event) -> Option<Event> {
+    match event {
+        event::Event::KeyDown { keycode, .. } => keycode
+            .and_then(|k| convert_sdl_keycode_to_internal(k))
+            .map(|k| Event::KeyDown(k)),
+        event::Event::KeyUp { keycode, .. } => keycode
+            .and_then(|k| convert_sdl_keycode_to_internal(k))
+            .map(|k| Event::KeyUp(k)),
+        _ => None,
+    }
+}
+
+fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
+    match keycode {
+        Keycode::A => Some(Key::A),
+        Keycode::B => Some(Key::B),
+        Keycode::C => Some(Key::C),
+        Keycode::D => Some(Key::D),
+        Keycode::E => Some(Key::E),
+        Keycode::F => Some(Key::F),
+        Keycode::G => Some(Key::G),
+        Keycode::H => Some(Key::H),
+        Keycode::I => Some(Key::I),
+        Keycode::J => Some(Key::J),
+        Keycode::K => Some(Key::K),
+        Keycode::L => Some(Key::L),
+        Keycode::M => Some(Key::M),
+        Keycode::N => Some(Key::N),
+        Keycode::O => Some(Key::O),
+        Keycode::P => Some(Key::P),
+        Keycode::Q => Some(Key::Q),
+        Keycode::S => Some(Key::S),
+        Keycode::T => Some(Key::T),
+        Keycode::U => Some(Key::U),
+        Keycode::V => Some(Key::V),
+        Keycode::W => Some(Key::W),
+        Keycode::X => Some(Key::X),
+        Keycode::Y => Some(Key::Y),
+        Keycode::Z => Some(Key::Z),
+
+        Keycode::Num0 => Some(Key::Num0),
+        Keycode::Num1 => Some(Key::Num1),
+        Keycode::Num2 => Some(Key::Num2),
+        Keycode::Num3 => Some(Key::Num3),
+        Keycode::Num4 => Some(Key::Num4),
+        Keycode::Num5 => Some(Key::Num5),
+        Keycode::Num6 => Some(Key::Num6),
+        Keycode::Num7 => Some(Key::Num7),
+        Keycode::Num8 => Some(Key::Num8),
+        Keycode::Num9 => Some(Key::Num9),
+        Keycode::Minus => Some(Key::Minus),
+        Keycode::Equals => Some(Key::Equals),
+
+        Keycode::Up => Some(Key::Up),
+        Keycode::Down => Some(Key::Down),
+        Keycode::Left => Some(Key::Left),
+        Keycode::Right => Some(Key::Right),
+
+        Keycode::Escape => Some(Key::Escape),
+        Keycode::Return => Some(Key::Return),
+        Keycode::Tab => Some(Key::Tab),
+        Keycode::Space => Some(Key::Space),
+
+        _ => None
+    }
+}

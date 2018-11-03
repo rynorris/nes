@@ -1,5 +1,4 @@
-extern crate sdl2;
-
+pub mod event;
 pub mod nop;
 pub mod palette;
 pub mod sdl;
@@ -7,10 +6,9 @@ pub mod sdl;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::io::event::EventHandler;
 use emulator::io::palette::PALETTE;
 use emulator::ppu;
-
-use self::sdl2::event;
 
 pub trait Input {
     fn register_event_handler(&mut self, handler: Box<dyn EventHandler>);
@@ -18,16 +16,6 @@ pub trait Input {
 
 pub trait Graphics {
     fn draw_screen(&mut self, pixel_data: &[u8]);
-}
-
-pub trait EventHandler {
-    fn handle_event(&mut self, event: &event::Event);
-}
-
-impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
-    fn handle_event(&mut self, event: &event::Event) {
-        self.borrow_mut().handle_event(event);
-    }
 }
 
 pub struct SimpleVideoOut {

@@ -1,11 +1,6 @@
-extern crate sdl2;
-
 use std::collections::HashMap;
 
-use self::sdl2::event;
-use self::sdl2::keyboard::Keycode;
-
-use emulator::io::EventHandler;
+use emulator::io::event::{Event, EventHandler, Key};
 use emulator::memory::{Reader, Writer};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -15,7 +10,7 @@ pub enum Button {
     Up, Down, Left, Right,
 }
 
-pub type KeyMap = HashMap<Keycode, Button>;
+pub type KeyMap = HashMap<Key, Button>;
 
 pub type KeyState = HashMap<Button, bool>;
 
@@ -49,20 +44,16 @@ impl Controller {
 }
 
 impl EventHandler for Controller {
-    fn handle_event(&mut self, event: &event::Event) {
+    fn handle_event(&mut self, event: Event) {
         match event {
-            event::Event::KeyDown { keycode, .. } => {
-                if let Some(key) = keycode {
-                    if let Some(button) = self.keymap.get(key) {
-                        self.keystate.insert(*button, true);
-                    }
+            Event::KeyDown(key) => {
+                if let Some(button) = self.keymap.get(&key) {
+                    self.keystate.insert(*button, true);
                 }
             },
-            event::Event::KeyUp { keycode, .. } => {
-                if let Some(key) = keycode {
-                    if let Some(button) = self.keymap.get(key) {
-                        self.keystate.insert(*button, false);
-                    }
+            Event::KeyUp(key) => {
+                if let Some(button) = self.keymap.get(&key) {
+                    self.keystate.insert(*button, false);
                 }
             },
             _ => (),

@@ -1,6 +1,4 @@
 #![allow(dead_code)]
-extern crate sdl2;
-
 pub mod clock;
 pub mod components;
 pub mod controller;
@@ -19,12 +17,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::controller::Button;
-use emulator::io::{EventHandler, Input};
+use emulator::io::event::{Event, EventHandler, Key};
+use emulator::io::Input;
 use emulator::io::sdl;
 use emulator::memory::ReadWriter;
-
-use self::sdl2::event;
-use self::sdl2::keyboard::Keycode;
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -69,14 +65,14 @@ impl NES {
 
         // Create controllers.
         let joy1 = Rc::new(RefCell::new(controller::Controller::new([
-           (Keycode::Z, Button::A),
-           (Keycode::X, Button::B),
-           (Keycode::A, Button::Start),
-           (Keycode::S, Button::Select),
-           (Keycode::Up, Button::Up),
-           (Keycode::Down, Button::Down),
-           (Keycode::Left, Button::Left),
-           (Keycode::Right, Button::Right),
+           (Key::Z, Button::A),
+           (Key::X, Button::B),
+           (Key::A, Button::Start),
+           (Key::S, Button::Select),
+           (Key::Up, Button::Up),
+           (Key::Down, Button::Down),
+           (Key::Left, Button::Left),
+           (Key::Right, Button::Right),
         ].iter().cloned().collect())));
 
         let joy2 = Rc::new(RefCell::new(controller::Controller::new([
@@ -252,15 +248,15 @@ impl Lifecycle {
 }
 
 impl EventHandler for Lifecycle {
-    fn handle_event(&mut self, event: &event::Event) {
+    fn handle_event(&mut self, event: Event) {
         match event {
-            event::Event::KeyDown { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::Escape) => self.is_running = false,
-                    Some(Keycode::Tab) => self.unlock_speed = !self.unlock_speed,
-                    Some(Keycode::Minus) => self.clock_duration_ps = self.clock_duration_ps.saturating_mul(2),
-                    Some(Keycode::Equals) => self.clock_duration_ps = self.clock_duration_ps / 2,
-                    Some(Keycode::Num0) => self.clock_duration_ps = NES_MASTER_CLOCK_TIME_PS,
+            Event::KeyDown(key) => {
+                match key {
+                    Key::Escape => self.is_running = false,
+                    Key::Tab => self.unlock_speed = !self.unlock_speed,
+                    Key::Minus => self.clock_duration_ps = self.clock_duration_ps.saturating_mul(2),
+                    Key::Equals => self.clock_duration_ps = self.clock_duration_ps / 2,
+                    Key::Num0 => self.clock_duration_ps = NES_MASTER_CLOCK_TIME_PS,
                     _ => (),
                 };
             },
