@@ -28,24 +28,64 @@ impl <M : Writer> Writer for Rc<RefCell<M>> {
     }
 }
 
+pub struct IORegisters {
+    oamdma: u8,
+    joy1: Box<dyn ReadWriter>,
+    joy2: Box<dyn ReadWriter>,
+}
+
+impl IORegisters {
+    pub fn new(joy1: Box<dyn ReadWriter>, joy2: Box<dyn ReadWriter>) -> IORegisters {
+        IORegisters { oamdma: 0, joy1, joy2 }
+    }
+}
+
+impl Reader for IORegisters {
+    fn read(&mut self, address: u16) -> u8 {
+        match address {
+            0x4014 => self.oamdma,
+            0x4016 => self.joy1.read(address),
+            0x4017 => self.joy2.read(address),
+            _ => 0,
+        }
+    }
+}
+
+impl Writer for IORegisters {
+    fn write(&mut self, address: u16, byte: u8) {
+        match address {
+            0x4014 => self.oamdma = byte,
+            0x4016 => self.joy1.write(address, byte),
+            0x4017 => self.joy2.write(address, byte),
+            _ => (),
+        }
+    }
+}
+
 pub struct CPUMemory {
     ram: Box<dyn ReadWriter>,
     ppu_registers: Box<dyn ReadWriter>,
-    apu_registers: Box<dyn ReadWriter>,
+    io_registers: Box<dyn ReadWriter>,
     sram: Box<dyn ReadWriter>,
     prg_rom: Box<dyn ReadWriter>,
 }
 
 impl CPUMemory {
-    pub fn new(ram: Box<dyn ReadWriter>, ppu_registers: Box<dyn ReadWriter>, apu_registers: Box<dyn ReadWriter>, sram: Box<dyn ReadWriter>, prg_rom: Box<dyn ReadWriter>) -> CPUMemory {
-        CPUMemory { ram, ppu_registers, apu_registers, sram, prg_rom }
+    pub fn new(
+        ram: Box<dyn ReadWriter>,
+        ppu_registers: Box<dyn ReadWriter>,
+        io_registers: Box<dyn ReadWriter>,
+        sram: Box<dyn ReadWriter>,
+        prg_rom: Box<dyn ReadWriter>,
+    ) -> CPUMemory {
+        CPUMemory { ram, ppu_registers, io_registers, sram, prg_rom }
     }
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         match address {
             0x0000 ... 0x1FFF => Some((&mut self.ram, address & 0x7FF)),
             0x2000 ... 0x3FFF => Some((&mut self.ppu_registers, address & 0x7)),
-            0x4000 ... 0x401F => Some((&mut self.apu_registers, address)),
+            0x4000 ... 0x401F => Some((&mut self.io_registers, address)),
             0x6000 ... 0x7FFF => Some((&mut self.sram, address - 0x6000)),
             0x8000 ... 0xFFFF => Some((&mut self.prg_rom, address)),
             _ => None

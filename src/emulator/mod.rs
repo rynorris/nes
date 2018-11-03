@@ -1,6 +1,9 @@
 #![allow(dead_code)]
+extern crate sdl2;
+
 pub mod clock;
 pub mod components;
+pub mod controller;
 pub mod cpu;
 pub mod ines;
 pub mod io;
@@ -12,8 +15,12 @@ pub mod util;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::controller::Button;
 use emulator::io::sdl;
 use emulator::memory::ReadWriter;
+
+use self::sdl2::event;
+use self::sdl2::keyboard::Keycode;
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -31,19 +38,20 @@ pub struct NES {
     pub cpu: Rc<RefCell<cpu::CPU>>,
     ppu: Rc<RefCell<ppu::PPU>>,
     nmi_pin: bool,
+    lifecycle: Rc<RefCell<Lifecycle>>,
 }
 
 impl NES {
     pub fn new(rom: ines::ROM) -> NES {
         // Create master clock.
-        let mut clock = clock::Clock::new(0, PAUSE_THRESHOLD_NS);
+        let mut clock = clock::Clock::new(NES_MASTER_CLOCK_TIME_PS, PAUSE_THRESHOLD_NS);
 
         // Load ROM into memory.
         let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
-        let io = sdl::IO::new();
-        let output = sdl::Graphics::new(io);
+        let io = Rc::new(RefCell::new(sdl::IO::new()));
+        let output = sdl::Graphics::new(io.clone());
 
         let ppu_memory = Box::new(memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
@@ -55,8 +63,30 @@ impl NES {
                     ppu_memory,
                     Box::new(output))));
 
+        // Create controllers.
+        let joy1 = Rc::new(RefCell::new(controller::Controller::new([
+           (Keycode::Z, Button::A),
+           (Keycode::X, Button::B),
+           (Keycode::A, Button::Start),
+           (Keycode::S, Button::Select),
+           (Keycode::Up, Button::Up),
+           (Keycode::Down, Button::Down),
+           (Keycode::Left, Button::Left),
+           (Keycode::Right, Button::Right),
+        ].iter().cloned().collect())));
+
+        let joy2 = Rc::new(RefCell::new(controller::Controller::new([
+        ].iter().cloned().collect())));
+
+        io.borrow_mut().register_event_handler(Box::new(joy1.clone()));
+        io.borrow_mut().register_event_handler(Box::new(joy2.clone()));
+
         // Create CPU.
-        let io_registers = Rc::new(RefCell::new(memory::RAM::new()));
+        let io_registers = Rc::new(RefCell::new(memory::IORegisters::new(
+            Box::new(joy1.clone()),
+            Box::new(joy2.clone()),
+        )));
+
         let cpu_memory = Box::new(memory::CPUMemory::new(
             Box::new(memory::RAM::new()),
             Box::new(ppu.clone()),
@@ -79,12 +109,25 @@ impl NES {
         let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
         clock.manage(Box::new(cpu_ticker));
         clock.manage(Box::new(ppu_ticker));
+        clock.manage(Box::new(io.clone()));
+
+        // Create lifecycle controller.
+        let lifecycle = Rc::new(RefCell::new(Lifecycle::new()));
+        io.borrow_mut().register_event_handler(Box::new(lifecycle.clone()));
 
         NES {
             clock,
             cpu,
             ppu,
             nmi_pin: false,
+            lifecycle: lifecycle.clone(),
+        }
+    }
+
+    pub fn run_blocking(&mut self) {
+        self.lifecycle.borrow_mut().start();
+        while self.lifecycle.borrow_mut().is_running() {
+            self.tick();
         }
     }
 
@@ -160,5 +203,39 @@ impl clock::Ticker for DMAController {
         } else {
             self.cpu.borrow_mut().tick()
         }
+    }
+}
+
+pub struct Lifecycle {
+    is_running: bool,
+}
+
+impl Lifecycle {
+    pub fn new() -> Lifecycle {
+        Lifecycle {
+            is_running: false,
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.is_running
+    }
+
+    pub fn start(&mut self) {
+        self.is_running = true;
+    }
+}
+
+impl sdl::EventHandler for Lifecycle {
+    fn handle_event(&mut self, event: &event::Event) {
+        match event {
+            event::Event::KeyDown { keycode, .. } => {
+                match keycode {
+                    Some(Keycode::Escape) => self.is_running = false,
+                    _ => (),
+                };
+            },
+            _ => (),
+        };
     }
 }

@@ -86,7 +86,6 @@ impl Clock {
             let running_time_ns = running_time.as_secs() * 1_000_000_000 + (running_time.subsec_nanos() as u64);
             let drift_ns = ((self.elapsed_cycles * self.cycle_duration_ps) / 1000).saturating_sub(running_time_ns);
             if drift_ns > self.pause_threshold_ns {
-                println!("Sleeping to fix drift: {}ns", drift_ns);
                 thread::sleep(Duration::from_nanos(drift_ns));
             }
 
