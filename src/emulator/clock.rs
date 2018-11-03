@@ -115,7 +115,7 @@ impl Clock {
             let nes_freq = 21.477f64;
             let target_freq = 1_000_000f64 / (self.cycle_duration_ps as f64);
             let actual_freq = (self.cycles_this_second as f64) / 1_000_000f64;
-            println!("Target: {:.3}MHz,  Current: {:.3}MHz ({:.1}x).",
+            println!("Target: {:.3}MHz,  Current: {:.3}MHz ({:.2}x).",
                  target_freq,
                  actual_freq,
                  actual_freq / nes_freq,
