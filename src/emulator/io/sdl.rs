@@ -64,6 +64,8 @@ impl IO {
     }
 
     pub fn flip(&mut self) {
+        self.canvas.clear();
+        let _ = self.canvas.copy(&self.screen_texture, None, None);
         self.canvas.present();
     }
 
@@ -82,7 +84,6 @@ impl IO {
 impl Graphics for IO {
     fn draw_screen(&mut self, pixel_data: &[u8]) {
         let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
-        let _ = self.canvas.copy(&self.screen_texture, None, None);
     }
 }
 

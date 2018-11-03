@@ -35,27 +35,27 @@ fn main() {
     io.borrow_mut().register_event_handler(Box::new(lifecycle.clone()));
 
     let started_instant = Instant::now();
-    let frames_per_second = 30;
+    let frames_per_second = 60;
     let mut frame_start = started_instant;
     let mut frame_ix = 0;
     let mut agg_cycles = 0;
     let mut agg_start = started_instant;
-    let mut overflow_cycles = 0;
+    let mut oversleep_ns = 0;
+    let mut overwork_cycles = 0;
 
     while lifecycle.borrow().is_running() {
         let target_hz = lifecycle.borrow().target_hz();
         let target_frame_cycles = target_hz / frames_per_second;
-        let target_frame_time_ns = 1_000_000_000 / frames_per_second;
+        let target_frame_ns = 1_000_000_000 / frames_per_second;
 
         let mut cycles_this_frame = 0;
-        let target_cycles_this_frame = target_frame_cycles - overflow_cycles;
+        let target_ns_this_frame = target_frame_ns.saturating_sub(oversleep_ns);
+        let target_cycles_this_frame = target_frame_cycles - overwork_cycles;
         let mut frame_ns = 0;
 
-        while cycles_this_frame < target_cycles_this_frame && frame_ns < target_frame_time_ns {
+        while cycles_this_frame < target_cycles_this_frame && frame_ns < target_ns_this_frame {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
-            // Reduce batch size when we're nearly done with a frame to try and get really close to
-            // the exact number.
-            let batch_size = 100;//max(1, min(1_000, (target_frame_cycles - cycles_this_frame) / 1000));
+            let batch_size = 100;
             for _ in 1 .. batch_size {
                 cycles_this_frame += nes.tick();
             }
@@ -66,16 +66,18 @@ fn main() {
 
         io.borrow_mut().tick();
 
-        let frame_end = Instant::now();
-        let frame_time = frame_end - frame_start;
-        frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
-        let sleep_ns = target_frame_time_ns.saturating_sub(frame_ns);
+        let render_end = Instant::now();
+        let render_time = render_end - frame_start;
+        let render_ns = render_time.as_secs() * 1_000_000_000 + (render_time.subsec_nanos() as u64);
+        let sleep_ns = target_ns_this_frame.saturating_sub(render_ns);
 
-        // Set frame_start to what we INTEND for it to be, so we will adjust for the sleep not
-        // being an exact amount.
-        frame_start = frame_end + Duration::from_nanos(sleep_ns);
-        overflow_cycles = cycles_this_frame.saturating_sub(target_cycles_this_frame);
         thread::sleep(Duration::from_nanos(sleep_ns));
+
+        let frame_end = Instant::now();
+        // If we slept too long, take that time off the next frame.
+        oversleep_ns = ((frame_end - frame_start).subsec_nanos() as u64).saturating_sub(target_ns_this_frame);
+        overwork_cycles = cycles_this_frame - target_cycles_this_frame;
+        frame_start = frame_end;
         
         // Print debug info here.
         agg_cycles += cycles_this_frame;
@@ -88,10 +90,12 @@ fn main() {
             let current_hz = (agg_cycles * 1_000_000_000) / agg_ns;
 
             println!(
-                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x)",
+                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.",
                 (target_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / (emulator::NES_MASTER_CLOCK_HZ as f64),
+                agg_ns,
+                agg_cycles,
             );
 
             agg_cycles = 0;
