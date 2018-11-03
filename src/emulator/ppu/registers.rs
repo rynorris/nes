@@ -67,7 +67,18 @@ impl Reader for PPU {
                 // Amount to increment by is determined by PPUCTRL.
                 let inc = self.ppuaddr_increment();
                 self.v = self.v.wrapping_add(inc);
-                byte
+
+                if addr < 0x3F00 {
+                    // Reading from before palettes, buffer the read.
+                    let byte_to_return = self.ppudata_read_buffer;
+                    self.ppudata_read_buffer = byte;
+                    byte_to_return
+                } else {
+                    // Reading from palettes, return immediately, but grab the nametable byte
+                    // "behind" the palettes into the buffer.
+                    self.ppudata_read_buffer = self.memory.read(addr & 0x2FFF);
+                    byte
+                }
             },
 
             _ => panic!("Unexpected PPU register address: {}", address),

@@ -168,6 +168,9 @@ pub struct PPU {
     sprites_copied: u8,
     sprite_eval_phase: u8,
     num_sprites: u8,
+
+    // Bytes read from $2007 are delayed in this buffer.
+    ppudata_read_buffer: u8,
 }
 
 impl clock::Ticker for PPU {
@@ -215,6 +218,7 @@ impl PPU {
             sprites_copied: 0,
             sprite_eval_phase: 0,
             num_sprites: 0,
+            ppudata_read_buffer: 0,
         }
     }
 
