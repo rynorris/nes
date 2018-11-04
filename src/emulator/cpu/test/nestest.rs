@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use emulator::clock::Ticker;
 use emulator::cpu;
 
+use emulator::test::test_resource_path;
 use emulator::cpu::test::new_cpu;
 
 #[test]
@@ -78,7 +79,7 @@ fn assert_state(cpu: &mut cpu::CPU, cycles: u64, line: String) {
 }
 
 fn load_rom(cpu: &mut cpu::CPU) {
-    let path = test_resource_path("nestest.nes");
+    let path = test_resource_path("nestest/nestest.nes");
     let mut file = match File::open(&path) {
         Err(cause) => panic!("Couldn't open {}: {}", path.display(), cause),
         Ok(file) => file,
@@ -104,7 +105,7 @@ fn load_rom(cpu: &mut cpu::CPU) {
 }
 
 fn load_trace() -> impl Iterator<Item = String> {
-    let path = test_resource_path("nestest.trace");
+    let path = test_resource_path("nestest/nestest.trace");
     let file = match File::open(&path) {
         Err(cause) => panic!("Couldn't open {}: {}", path.display(), cause),
         Ok(file) => file,
@@ -112,11 +113,4 @@ fn load_trace() -> impl Iterator<Item = String> {
 
     let reader = BufReader::new(file);
     reader.lines().map(|l| l.unwrap())
-}
-
-fn test_resource_path(name: &str) -> PathBuf {
-    let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    buf.push("src/emulator/cpu/test/resources/");
-    buf.push(name);
-    buf
 }

@@ -1,12 +1,61 @@
+extern crate base64;
+extern crate md5;
+
 use std::cell::RefCell;
-use std::path::PathBuf;
+use std::env;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+
+use self::md5::{Md5, Digest};
 
 use emulator::ines;
 use emulator::io;
-use emulator::io::event::EventBus;
+use emulator::io::event::{Event, EventBus, Key};
 use emulator::io::nop::DummyGraphics;
+use emulator::io::sdl::ImageCapture;
 use emulator::NES;
+
+// -- Visual nestest.
+#[test]
+fn test_nestest_visual() {
+    let path = test_resource_path("nestest/nestest.nes");
+    let rom = ines::ROM::load(&path.into_os_string().into_string().unwrap());
+    let event_bus = Rc::new(RefCell::new(EventBus::new()));
+    let graphics = Rc::new(RefCell::new(ImageCapture::new()));
+    let output = io::SimpleVideoOut::new(graphics.clone());
+    let mut nes = NES::new(event_bus.clone(), output, rom);
+
+    let tmp_dir = env::temp_dir();
+
+    // Wait for main menu to load.
+    for _ in 1 .. 500_000 {
+        nes.tick();
+    }
+
+    // Check the menu loaded properly.
+    let mut bmp_01_path = tmp_dir.clone();
+    bmp_01_path.push("01.bmp");
+    graphics.borrow_mut().save_bmp(&bmp_01_path);
+    println!("Saving image to tempfile at: {}", bmp_01_path.display());
+    assert_eq!(file_digest(bmp_01_path), file_digest(test_resource_path("nestest/capture_01_menu.bmp")));
+
+    // Start tests.
+    event_bus.borrow_mut().broadcast(Event::KeyDown(Key::A));
+   
+    // Wait for tests to finish.
+    for _ in 1 .. 2_000_000 {
+        nes.tick();
+    }
+
+    // Check the tests passed.
+    let mut bmp_02_path = tmp_dir.clone();
+    bmp_02_path.push("02.bmp");
+    println!("Saving image to tempfile at: {}", bmp_02_path.display());
+    graphics.borrow_mut().save_bmp(&bmp_02_path);
+    assert_eq!(file_digest(bmp_02_path), file_digest(test_resource_path("nestest/capture_02_passed.bmp")));
+}
 
 // -- instr_misc test ROMs --
 // TODO: Get 03 and 04 to pass and add tests for them.
@@ -95,9 +144,27 @@ fn collect_test_output(nes: &mut NES) -> String {
     }
 }
 
-fn test_resource_path(name: &str) -> PathBuf {
+pub fn test_resource_path(name: &str) -> PathBuf {
     let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     buf.push("src/emulator/test/resources/");
     buf.push(name);
     buf
+}
+
+pub fn file_digest<P: AsRef<Path>>(path: P) -> String {
+    let mut file = match File::open(&path) {
+        Err(cause) => panic!("Couldn't open file: {}", cause),
+        Ok(file) => file,
+    };
+
+    let mut hasher = Md5::new();
+
+    let mut contents = vec![];
+    match file.read_to_end(&mut contents) {
+        Err(cause) => panic!("Couldn't read file: {}", cause),
+        Ok(_) => (),
+    };
+
+    hasher.input(contents);
+    base64::encode(&hasher.result())
 }
