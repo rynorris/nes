@@ -60,6 +60,9 @@ pub struct CPU {
     // Decimal arithmetic enabled?
     dec_arith_on: bool,
 
+    // IRQ triggered?
+    irq_line: bool,
+
     // NMI triggered?
     nmi_flip_flop: bool,
 }
@@ -76,6 +79,7 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
         pc: 0,
         p,
         dec_arith_on: true,
+        irq_line: false,
         nmi_flip_flop: false,
     }
 }
@@ -116,6 +120,10 @@ impl CPU {
 
     pub fn enable_bcd(&mut self) {
         self.dec_arith_on = true;
+    }
+
+    pub fn set_irq_line(&mut self, on: bool) {
+        self.irq_line = on;
     }
 
     pub fn trigger_nmi(&mut self) {
@@ -200,7 +208,7 @@ impl CPU {
     }
 
     fn should_interrupt(&self) -> bool {
-        false
+        self.irq_line && !self.p.is_set(flags::Flag::I)
     }
 
     fn should_non_maskable_interrupt(&self) -> bool {

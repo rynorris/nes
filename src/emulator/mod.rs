@@ -28,12 +28,14 @@ use emulator::ppu::VideoOut;
 // PPU clock = 4 master clocks.
 pub const NES_MASTER_CLOCK_HZ: u64 = 21_477_272;
 const NES_CPU_CLOCK_FACTOR: u32 = 12;
+const NES_APU_CLOCK_FACTOR: u32 = 24;
 const NES_PPU_CLOCK_FACTOR: u32 = 4;
 
 pub struct NES {
     clock: clock::Clock,
     pub cpu: Rc<RefCell<cpu::CPU>>,
     ppu: Rc<RefCell<ppu::PPU>>,
+    apu: Rc<RefCell<apu::APU>>,
     nmi_pin: bool,
 }
 
@@ -55,6 +57,9 @@ impl NES {
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
                     ppu_memory,
                     Box::new(video))));
+
+        // Create APU.
+        let apu = Rc::new(RefCell::new(apu::APU::new()));
 
         // Create controllers.
         let joy1 = Rc::new(RefCell::new(controller::Controller::new([
@@ -100,13 +105,16 @@ impl NES {
         // Wire up the clock timings.
         let cpu_ticker = clock::ScaledTicker::new(Box::new(dma_controller), NES_CPU_CLOCK_FACTOR);
         let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
+        let apu_ticker = clock::ScaledTicker::new(Box::new(apu.clone()), NES_APU_CLOCK_FACTOR);
         clock.manage(Box::new(cpu_ticker));
         clock.manage(Box::new(ppu_ticker));
+        clock.manage(Box::new(apu_ticker));
 
         NES {
             clock,
             cpu,
             ppu,
+            apu,
             nmi_pin: false,
         }
     }
@@ -121,6 +129,8 @@ impl NES {
         } else {
             self.nmi_pin = false;
         }
+
+        self.cpu.borrow_mut().set_irq_line(self.apu.borrow().irq_triggered());
 
         cycles
     }
