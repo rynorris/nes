@@ -35,7 +35,7 @@ fn main() {
     io.borrow_mut().register_event_handler(Box::new(lifecycle.clone()));
 
     let started_instant = Instant::now();
-    let frames_per_second = 60;
+    let frames_per_second = 30;
     let mut frame_start = started_instant;
     let mut frame_ix = 0;
     let mut agg_cycles = 0;
@@ -66,17 +66,21 @@ fn main() {
 
         io.borrow_mut().tick();
 
-        let render_end = Instant::now();
-        let render_time = render_end - frame_start;
-        let render_ns = render_time.as_secs() * 1_000_000_000 + (render_time.subsec_nanos() as u64);
-        let sleep_ns = target_ns_this_frame.saturating_sub(render_ns);
+        // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
+        if frame_ns < target_ns_this_frame {
+            let render_end = Instant::now();
+            let render_time = render_end - frame_start;
+            let render_ns = render_time.as_secs() * 1_000_000_000 + (render_time.subsec_nanos() as u64);
+            let sleep_ns = target_ns_this_frame.saturating_sub(render_ns);
 
-        thread::sleep(Duration::from_nanos(sleep_ns));
+            thread::sleep(Duration::from_nanos(sleep_ns));
+
+        }
 
         let frame_end = Instant::now();
         // If we slept too long, take that time off the next frame.
         oversleep_ns = ((frame_end - frame_start).subsec_nanos() as u64).saturating_sub(target_ns_this_frame);
-        overwork_cycles = cycles_this_frame - target_cycles_this_frame;
+        overwork_cycles = cycles_this_frame.saturating_sub(target_cycles_this_frame);
         frame_start = frame_end;
         
         // Print debug info here.
