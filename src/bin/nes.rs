@@ -77,7 +77,6 @@ fn main() {
             let sleep_ns = target_ns_this_frame.saturating_sub(render_ns);
 
             thread::sleep(Duration::from_nanos(sleep_ns));
-
         }
 
         let frame_end = Instant::now();
