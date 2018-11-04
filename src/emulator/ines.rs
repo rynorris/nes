@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 use std::vec::Vec;
 
 use emulator::ppu;
@@ -9,15 +10,15 @@ pub struct ROM {
 }
 
 impl ROM {
-    pub fn load(path: &str) -> ROM {
+    pub fn load<P : AsRef<Path>>(path: P) -> ROM {
         let mut file = match File::open(path) {
-            Err(cause) => panic!("Couldn't open {}: {}", path, cause),
+            Err(cause) => panic!("Couldn't open file: {}", cause),
             Ok(file) => file,
         };
 
         let mut contents = vec![];
         match file.read_to_end(&mut contents) {
-            Err(cause) => panic!("Couldn't read {}: {}", path, cause),
+            Err(cause) => panic!("Couldn't read file: {}", cause),
             Ok(_) => (),
         };
 

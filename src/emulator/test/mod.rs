@@ -57,12 +57,21 @@ fn test_nestest_visual() {
     assert_eq!(file_digest(bmp_02_path), file_digest(test_resource_path("nestest/capture_02_passed.bmp")));
 }
 
+// TODO: Figure out why this test hangs.
+fn test_instr_test_v5_official_only() {
+    let path = Path::new("/Users/rnorris/test/nes_roms/instr_test-v5/official_only.nes");
+    let (status, output) = load_and_run_blargg_test_rom(path);
+
+    assert_eq!(status, 0x00);
+    assert_eq!(output, "\n01-abs_x_wrap\n\nPassed\n");
+}
+
 // -- instr_misc test ROMs --
 // TODO: Get 03 and 04 to pass and add tests for them.
 #[test]
 fn test_instr_misc_01() {
     let path = test_resource_path("instr_misc/rom_singles/01-abs_x_wrap.nes");
-    let (status, output) = load_and_run_blargg_test_rom(&path.into_os_string().into_string().unwrap());
+    let (status, output) = load_and_run_blargg_test_rom(path);
 
     assert_eq!(status, 0x00);
     assert_eq!(output, "\n01-abs_x_wrap\n\nPassed\n");
@@ -71,7 +80,7 @@ fn test_instr_misc_01() {
 #[test]
 fn test_instr_misc_02() {
     let path = test_resource_path("instr_misc/rom_singles/02-branch_wrap.nes");
-    let (status, output) = load_and_run_blargg_test_rom(&path.into_os_string().into_string().unwrap());
+    let (status, output) = load_and_run_blargg_test_rom(path);
 
     assert_eq!(status, 0x00);
     assert_eq!(output, "\n02-branch_wrap\n\nPassed\n");
@@ -79,13 +88,13 @@ fn test_instr_misc_02() {
 
 fn test_instr_misc_03() {
     let path = test_resource_path("instr_misc/rom_singles/03-dummy_reads.nes");
-    let (status, output) = load_and_run_blargg_test_rom(&path.into_os_string().into_string().unwrap());
+    let (status, output) = load_and_run_blargg_test_rom(path);
 
     assert_eq!(status, 0x00);
     assert_eq!(output, "\n02-branch_wrap\n\nPassed\n");
 }
 
-fn load_and_run_blargg_test_rom(rom_path: &str) -> (u8, String) {
+fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
     let rom = ines::ROM::load(rom_path);
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
     let graphics = Rc::new(RefCell::new(DummyGraphics{}));
