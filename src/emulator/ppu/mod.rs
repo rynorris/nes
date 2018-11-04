@@ -169,6 +169,8 @@ pub struct PPU {
     sprites_copied: u8,
     sprite_eval_phase: u8,
     num_sprites: u8,
+    sprite_0_next_line: bool,
+    sprite_0_this_line: bool,
 
     // Bytes read from $2007 are delayed in this buffer.
     ppudata_read_buffer: u8,
@@ -219,6 +221,8 @@ impl PPU {
             sprites_copied: 0,
             sprite_eval_phase: 0,
             num_sprites: 0,
+            sprite_0_next_line: false,
+            sprite_0_this_line: false,
             ppudata_read_buffer: 0,
         }
     }
@@ -432,13 +436,13 @@ impl PPU {
             (0, 0)
         };
 
-        let (sprite_colour, sprite_attribute) = if self.ppumask.is_set(flags::PPUMASK::S) {
+        let (sprite_colour, sprite_attribute, sprite_ix) = if self.ppumask.is_set(flags::PPUMASK::S) {
             self.sprite_colour()
         } else {
-            (0, 0)
+            (0, 0, 0)
         };
 
-        if bg_colour != 0 && sprite_colour != 0 {
+        if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line {
             self.ppustatus.set(flags::PPUSTATUS::S);
         }
 
@@ -475,6 +479,8 @@ impl PPU {
         // Num sprites on this scanline is equal to however many we copied during the last
         // scanline.
         self.num_sprites = self.sprites_copied;
+        self.sprite_0_this_line = self.sprite_0_next_line;
+        self.sprite_0_next_line = false;
         self.tmp_oam_byte = 0;
         self.sprite_n = 0;
         self.sprite_m = 0;
@@ -514,6 +520,10 @@ impl PPU {
                     if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 > max_y {
                         self.sprite_n += 1;
                     } else {
+                        // Track if sprite 0 is visible.
+                        if self.sprite_n == 0 {
+                            self.sprite_0_next_line = true;
+                        }
                         self.sprite_m += 1;
                         self.sprite_queued_copies = 3;
                     }
@@ -765,7 +775,7 @@ impl PPU {
         ((bg_high_bit << 1) | bg_low_bit) as u8
     }
 
-    fn sprite_colour(&self) -> (u8, u8) {
+    fn sprite_colour(&self) -> (u8, u8, u8) {
         for ix in 0 .. self.num_sprites {
             // Don't consider inactive sprites.
             if self.sprites_x[ix as usize] > 0 {
@@ -777,10 +787,10 @@ impl PPU {
             let sprite_colour = (colour_high << 1) | colour_low;
             let sprite_attribute = self.sprites_attribute[ix as usize];
             if sprite_colour != 0 {
-                return (sprite_colour, sprite_attribute);
+                return (sprite_colour, sprite_attribute, ix);
             }
         }
-        (0, 0)
+        (0, 0, 0)
     }
 
     fn shift_sprite_registers(&mut self) {
