@@ -100,16 +100,13 @@ impl clock::Ticker for IO {
 }
 
 pub struct ImageCapture {
-    video: sdl2::VideoSubsystem,
     pixel_data: [u8; 256 * 240 * 3],
 }
 
 impl ImageCapture {
     pub fn new() -> ImageCapture {
-        let sdl_context = sdl2::init().unwrap();
-        let video = sdl_context.video().unwrap();
+        let _ = sdl2::init().unwrap();
         ImageCapture {
-            video,
             pixel_data: [0; 256 * 240 * 3],
         }
     }
