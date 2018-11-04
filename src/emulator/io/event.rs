@@ -27,3 +27,25 @@ impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
         self.borrow_mut().handle_event(event);
     }
 }
+
+pub struct EventBus {
+    event_handlers: Vec<Box<dyn EventHandler>>,
+}
+
+impl EventBus {
+    pub fn new() -> EventBus {
+        EventBus {
+            event_handlers: vec![],
+        }
+    }
+
+    pub fn broadcast(&mut self, event: Event) {
+        for mut handler in self.event_handlers.iter_mut() {
+            handler.handle_event(event);
+        }
+    }
+
+    pub fn register(&mut self, handler: Box<dyn EventHandler>) {
+        self.event_handlers.push(handler);
+    }
+}

@@ -1,5 +1,8 @@
 extern crate sdl2;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use self::sdl2::event;
 use self::sdl2::keyboard::Keycode;
 use self::sdl2::pixels;
@@ -7,8 +10,8 @@ use self::sdl2::render;
 use self::sdl2::video;
 
 use emulator::clock;
-use emulator::io::{Graphics, Input};
-use emulator::io::event::{Event, EventHandler, Key};
+use emulator::io::Graphics;
+use emulator::io::event::{Event, EventBus, Key};
 
 const SCALE: u8 = 4;
 
@@ -19,11 +22,11 @@ pub struct IO {
     screen_texture: render::Texture,
 
     event_pump: sdl2::EventPump,
-    event_handlers: Vec<Box<dyn EventHandler>>,
+    event_bus: Rc<RefCell<EventBus>>,
 }
 
 impl IO {
-    pub fn new() -> IO {
+    pub fn new(event_bus: Rc<RefCell<EventBus>>) -> IO {
         let sdl_context = sdl2::init().unwrap();
         let video = sdl_context.video().unwrap();
         let mut window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
@@ -59,7 +62,7 @@ impl IO {
             canvas,
             screen_texture,
             event_pump,
-            event_handlers: vec![],
+            event_bus,
         }
     }
 
@@ -73,23 +76,14 @@ impl IO {
         let internal_event = convert_sdl_event_to_internal(event);
 
         if let Some(e) = internal_event {
-            for mut handler in self.event_handlers.iter_mut() {
-                handler.handle_event(e);
-            }
+            self.event_bus.borrow_mut().broadcast(e);
         }
     }
-
 }
 
 impl Graphics for IO {
     fn draw_screen(&mut self, pixel_data: &[u8]) {
         let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
-    }
-}
-
-impl Input for IO {
-    fn register_event_handler(&mut self, handler: Box<dyn EventHandler>) {
-        self.event_handlers.push(handler);
     }
 }
 

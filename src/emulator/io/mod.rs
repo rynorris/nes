@@ -6,19 +6,8 @@ pub mod sdl;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::io::event::EventHandler;
 use emulator::io::palette::PALETTE;
 use emulator::ppu;
-
-pub trait Input {
-    fn register_event_handler(&mut self, handler: Box<dyn EventHandler>);
-}
-
-impl <T : Input> Input for Rc<RefCell<T>> {
-    fn register_event_handler(&mut self, handler: Box<dyn EventHandler>) {
-        self.borrow_mut().register_event_handler(handler);
-    }
-}
 
 pub trait Graphics {
     fn draw_screen(&mut self, pixel_data: &[u8]);

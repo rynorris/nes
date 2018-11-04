@@ -1,14 +1,8 @@
-use emulator::ppu;
+use emulator::io::Graphics;
 
-pub struct Graphics;
+pub struct DummyGraphics;
 
-impl ppu::VideoOut for Graphics {
-    fn emit(&mut self, _: ppu::Colour) {
-    }
-}
-
-impl Graphics {
-    pub fn new() -> Graphics {
-        Graphics {}
+impl Graphics for DummyGraphics {
+    fn draw_screen(&mut self, _pixel_data: &[u8]) {
     }
 }
