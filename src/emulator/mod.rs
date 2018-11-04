@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+pub mod apu;
 pub mod clock;
 pub mod components;
 pub mod controller;
@@ -26,12 +27,8 @@ use emulator::ppu::VideoOut;
 // CPU clock = 12 master clocks.
 // PPU clock = 4 master clocks.
 pub const NES_MASTER_CLOCK_HZ: u64 = 21_477_272;
-pub const NES_MASTER_CLOCK_TIME_PS: u64 = 1_000_000_000_000 / NES_MASTER_CLOCK_HZ;
 const NES_CPU_CLOCK_FACTOR: u32 = 12;
 const NES_PPU_CLOCK_FACTOR: u32 = 4;
-
-// Pause operation if we drift more than 20ms.
-const PAUSE_THRESHOLD_NS: u64 = 20_000_000;
 
 pub struct NES {
     clock: clock::Clock,
