@@ -2,6 +2,8 @@ extern crate mos_6500;
 
 use std::cell::RefCell;
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::rc::Rc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -57,6 +59,7 @@ fn main() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
             for _ in 1 .. batch_size {
+                lifecycle.borrow_mut().trace_next_instruction(&nes);
                 cycles_this_frame += nes.tick();
             }
 
@@ -109,7 +112,7 @@ fn main() {
 
 pub struct Lifecycle {
     is_running: bool,
-    unlock_speed: bool,
+    trace_file: Option<File>,
     target_hz: u64,
 }
 
@@ -117,7 +120,7 @@ impl Lifecycle {
     pub fn new() -> Lifecycle {
         Lifecycle {
             is_running: false,
-            unlock_speed: false,
+            trace_file: None,
             target_hz: emulator::NES_MASTER_CLOCK_HZ,
         }
     }
@@ -130,12 +133,15 @@ impl Lifecycle {
         self.is_running = true;
     }
 
-    pub fn speed_is_unlocked(&self) -> bool {
-        self.unlock_speed
-    }
-
     pub fn target_hz(&self) -> u64 {
         self.target_hz
+    }
+
+    pub fn trace_next_instruction(&mut self, nes: &emulator::NES) {
+        if let Some(f) = self.trace_file.as_mut() {
+            nes.cpu.borrow_mut().trace_next_instruction(&*f);
+            write!(f, "\n");
+        }
     }
 }
 
@@ -145,14 +151,30 @@ impl EventHandler for Lifecycle {
             Event::KeyDown(key) => {
                 match key {
                     Key::Escape => self.is_running = false,
-                    Key::Tab => self.unlock_speed = !self.unlock_speed,
+                    Key::Tab => {
+                        if self.trace_file.is_some() {
+                            return;
+                        }
+                        let trace_file = match File::create("./cpu.trace") {
+                            Err(_) => panic!("Couldn't open trace file"),
+                            Ok(f) => f,
+                        };
+                        self.trace_file = Some(trace_file);
+                    },
                     Key::Minus => self.target_hz /= 2,
                     Key::Equals => self.target_hz *= 2,
                     Key::Num0 => self.target_hz = emulator::NES_MASTER_CLOCK_HZ,
                     _ => (),
                 };
             },
-            _ => (),
+            Event::KeyUp(key) => {
+                match key {
+                    Key::Tab => {
+                        self.trace_file = None;
+                    },
+                    _ => (),
+                };
+            },
         };
     }
 }
