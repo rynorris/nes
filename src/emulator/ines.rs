@@ -61,9 +61,9 @@ impl ROM {
 
     pub fn mirror_mode(&self) -> ppu::MirrorMode {
         if self.data[6] & 0x1 == 0 {
-            ppu::MirrorMode::HORIZONTAL
+            ppu::MirrorMode::Horizontal
         } else {
-            ppu::MirrorMode::VERTICAL
+            ppu::MirrorMode::Vertical
         }
     }
 }

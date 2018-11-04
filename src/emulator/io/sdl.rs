@@ -1,16 +1,14 @@
 extern crate sdl2;
 
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use self::sdl2::event;
+use self::sdl2::keyboard::Keycode;
 use self::sdl2::pixels;
 use self::sdl2::render;
 use self::sdl2::video;
 
 use emulator::clock;
-use emulator::io::palette::PALETTE;
-use emulator::ppu;
+use emulator::io::{Graphics, Input};
+use emulator::io::event::{Event, EventHandler, Key};
 
 const SCALE: u8 = 4;
 
@@ -66,21 +64,31 @@ impl IO {
     }
 
     pub fn flip(&mut self) {
+        self.canvas.clear();
+        let _ = self.canvas.copy(&self.screen_texture, None, None);
         self.canvas.present();
     }
 
-    pub fn draw_screen(&mut self, pixel_data: &[u8]) {
-        let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
-        let _ = self.canvas.copy(&self.screen_texture, None, None);
-    }
-
     pub fn process_event(&mut self, event: event::Event) {
-        for mut handler in self.event_handlers.iter_mut() {
-            handler.handle_event(&event);
+        let internal_event = convert_sdl_event_to_internal(event);
+
+        if let Some(e) = internal_event {
+            for mut handler in self.event_handlers.iter_mut() {
+                handler.handle_event(e);
+            }
         }
     }
 
-    pub fn register_event_handler(&mut self, handler: Box<dyn EventHandler>) {
+}
+
+impl Graphics for IO {
+    fn draw_screen(&mut self, pixel_data: &[u8]) {
+        let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
+    }
+}
+
+impl Input for IO {
+    fn register_event_handler(&mut self, handler: Box<dyn EventHandler>) {
         self.event_handlers.push(handler);
     }
 }
@@ -95,69 +103,69 @@ impl clock::Ticker for IO {
     }
 }
 
-pub struct Graphics {
-    io: Rc<RefCell<IO>>,
-    scanline: u32,
-    dot: u32,
-    screen_buffer: [u8; 256 * 240 * 3],
-    render_tile_grid: bool,
-}
-
-impl ppu::VideoOut for Graphics {
-    fn emit(&mut self, c: ppu::Colour) {
-        let x = self.dot;
-        let y = self.scanline;
-
-        let colour = if  self.render_tile_grid && (x % 8 == 0 || y % 8 == 0) {
-            pixels::Color::RGB(255, 0, 0)
-        } else {
-            Graphics::convert_colour(c)
-        };
-
-        self.screen_buffer[((x + y * 256) * 3) as usize] = colour.r;
-        self.screen_buffer[((x + y * 256) * 3 + 1) as usize] = colour.g;
-        self.screen_buffer[((x + y * 256) * 3 + 2) as usize] = colour.b;
-
-        self.dot = (self.dot + 1) % 256;
-        if self.dot == 0 {
-            self.scanline = (self.scanline + 1) % 240;
-            if self.scanline == 0 {
-                self.render();
-            }
-        }
+fn convert_sdl_event_to_internal(event: event::Event) -> Option<Event> {
+    match event {
+        event::Event::KeyDown { keycode, .. } => keycode
+            .and_then(|k| convert_sdl_keycode_to_internal(k))
+            .map(|k| Event::KeyDown(k)),
+        event::Event::KeyUp { keycode, .. } => keycode
+            .and_then(|k| convert_sdl_keycode_to_internal(k))
+            .map(|k| Event::KeyUp(k)),
+        _ => None,
     }
 }
 
-impl Graphics {
-    pub fn new(io: Rc<RefCell<IO>>) -> Graphics {
-        Graphics {
-            io,
-            scanline: 0,
-            dot: 0,
-            screen_buffer: [0; 256 * 240 * 3],
-            render_tile_grid: false,
-        }
-    }
+fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
+    match keycode {
+        Keycode::A => Some(Key::A),
+        Keycode::B => Some(Key::B),
+        Keycode::C => Some(Key::C),
+        Keycode::D => Some(Key::D),
+        Keycode::E => Some(Key::E),
+        Keycode::F => Some(Key::F),
+        Keycode::G => Some(Key::G),
+        Keycode::H => Some(Key::H),
+        Keycode::I => Some(Key::I),
+        Keycode::J => Some(Key::J),
+        Keycode::K => Some(Key::K),
+        Keycode::L => Some(Key::L),
+        Keycode::M => Some(Key::M),
+        Keycode::N => Some(Key::N),
+        Keycode::O => Some(Key::O),
+        Keycode::P => Some(Key::P),
+        Keycode::Q => Some(Key::Q),
+        Keycode::S => Some(Key::S),
+        Keycode::T => Some(Key::T),
+        Keycode::U => Some(Key::U),
+        Keycode::V => Some(Key::V),
+        Keycode::W => Some(Key::W),
+        Keycode::X => Some(Key::X),
+        Keycode::Y => Some(Key::Y),
+        Keycode::Z => Some(Key::Z),
 
-    fn render(&mut self) {
-        self.io.borrow_mut().draw_screen(&self.screen_buffer);
-    }
+        Keycode::Num0 => Some(Key::Num0),
+        Keycode::Num1 => Some(Key::Num1),
+        Keycode::Num2 => Some(Key::Num2),
+        Keycode::Num3 => Some(Key::Num3),
+        Keycode::Num4 => Some(Key::Num4),
+        Keycode::Num5 => Some(Key::Num5),
+        Keycode::Num6 => Some(Key::Num6),
+        Keycode::Num7 => Some(Key::Num7),
+        Keycode::Num8 => Some(Key::Num8),
+        Keycode::Num9 => Some(Key::Num9),
+        Keycode::Minus => Some(Key::Minus),
+        Keycode::Equals => Some(Key::Equals),
 
-    fn convert_colour(c: ppu::Colour) -> pixels::Color {
-        let (r, g, b) = match PALETTE.get(c.as_byte() as usize) {
-            None => (0, 0, 0),
-            Some(colour) => *colour,
-        };
-        pixels::Color::RGB(r, g, b)
-    }
-}
+        Keycode::Up => Some(Key::Up),
+        Keycode::Down => Some(Key::Down),
+        Keycode::Left => Some(Key::Left),
+        Keycode::Right => Some(Key::Right),
 
-pub trait EventHandler {
-    fn handle_event(&mut self, event: &event::Event);
-}
+        Keycode::Escape => Some(Key::Escape),
+        Keycode::Return => Some(Key::Return),
+        Keycode::Tab => Some(Key::Tab),
+        Keycode::Space => Some(Key::Space),
 
-impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
-    fn handle_event(&mut self, event: &event::Event) {
-        self.borrow_mut().handle_event(event);
+        _ => None
     }
 }
