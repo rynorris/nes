@@ -10,8 +10,7 @@ use mos_6500::emulator;
 use mos_6500::emulator::clock::Ticker;
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
-use mos_6500::emulator::io::{Input};
-use mos_6500::emulator::io::event::{Event, EventHandler, Key};
+use mos_6500::emulator::io::event::{Event, EventBus, EventHandler, Key};
 use mos_6500::emulator::io::sdl;
 
 fn main() {
@@ -24,14 +23,16 @@ fn main() {
 
     let rom = ines::ROM::load(rom_path);
 
-    let io = Rc::new(RefCell::new(sdl::IO::new()));
+    let event_bus = Rc::new(RefCell::new(EventBus::new()));
+
+    let io = Rc::new(RefCell::new(sdl::IO::new(event_bus.clone())));
     let output = io::SimpleVideoOut::new(io.clone());
 
-    let mut nes = emulator::NES::new(io.clone(), output, rom);
+    let mut nes = emulator::NES::new(event_bus.clone(), output, rom);
 
     let lifecycle = Rc::new(RefCell::new(Lifecycle::new()));
     lifecycle.borrow_mut().start();
-    io.borrow_mut().register_event_handler(Box::new(lifecycle.clone()));
+    event_bus.borrow_mut().register(Box::new(lifecycle.clone()));
 
     let started_instant = Instant::now();
     let frames_per_second = 30;

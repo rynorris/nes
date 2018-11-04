@@ -10,12 +10,14 @@ pub mod memory;
 pub mod ppu;
 pub mod util;
 
+#[cfg(test)]
+mod test;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::controller::Button;
-use emulator::io::event::Key;
-use emulator::io::Input;
+use emulator::io::event::{EventBus, Key};
 use emulator::memory::ReadWriter;
 use emulator::ppu::VideoOut;
 
@@ -39,7 +41,7 @@ pub struct NES {
 }
 
 impl NES {
-    pub fn new<I : Input, V: VideoOut + 'static>(mut input: I, video: V, rom: ines::ROM) -> NES {
+    pub fn new<V: VideoOut + 'static>(event_bus: Rc<RefCell<EventBus>>, video: V, rom: ines::ROM) -> NES {
         // Create master clock.
         let mut clock = clock::Clock::new();
 
@@ -72,8 +74,8 @@ impl NES {
         let joy2 = Rc::new(RefCell::new(controller::Controller::new([
         ].iter().cloned().collect())));
 
-        input.register_event_handler(Box::new(joy1.clone()));
-        input.register_event_handler(Box::new(joy2.clone()));
+        event_bus.borrow_mut().register(Box::new(joy1.clone()));
+        event_bus.borrow_mut().register(Box::new(joy2.clone()));
 
         // Create CPU.
         let io_registers = Rc::new(RefCell::new(memory::IORegisters::new(
