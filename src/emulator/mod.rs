@@ -10,9 +10,6 @@ pub mod memory;
 pub mod ppu;
 pub mod util;
 
-#[cfg(test)]
-mod test;
-
 use std::cell::RefCell;
 use std::rc::Rc;
 

@@ -46,10 +46,10 @@ pub trait VideoOut {
 
 #[derive(Clone, Copy)]
 pub enum MirrorMode {
-    SINGLE_LOWER,
-    SINGLE_UPPER,
-    VERTICAL,
-    HORIZONTAL,
+    SingleLower,
+    SingleUpper,
+    Vertical,
+    Horizontal,
 }
 
 pub trait Mirrorer {

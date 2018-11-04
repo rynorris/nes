@@ -1,7 +1,6 @@
 extern crate mos_6500;
 
 use std::cell::RefCell;
-use std::cmp::{max, min};
 use std::env;
 use std::rc::Rc;
 use std::thread;

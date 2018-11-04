@@ -1,14 +1,9 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use emulator::clock::Ticker;
 use emulator::memory::Writer;
 use emulator::ppu::test::data;
 use emulator::ppu::test::load_data_into_vram;
 use emulator::ppu::test::new_ppu;
 use emulator::ppu::test::ImageCapture;
-
-use emulator::io::sdl;
 
 #[test]
 fn test_render_simple_background() {

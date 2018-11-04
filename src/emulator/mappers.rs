@@ -189,10 +189,10 @@ impl memory::Mapper for MMC1 {
 
     fn mirror_mode(&self) -> MirrorMode {
         match self.control & 0x3 {
-            0 => MirrorMode::SINGLE_LOWER,
-            1 => MirrorMode::SINGLE_UPPER,
-            2 => MirrorMode::VERTICAL,
-            3 => MirrorMode::HORIZONTAL,
+            0 => MirrorMode::SingleLower,
+            1 => MirrorMode::SingleUpper,
+            2 => MirrorMode::Vertical,
+            3 => MirrorMode::Horizontal,
             _ => panic!("Unexpected mirror control: 0b{:b}", self.control),
         }
     }

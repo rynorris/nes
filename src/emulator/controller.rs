@@ -56,7 +56,6 @@ impl EventHandler for Controller {
                     self.keystate.insert(*button, false);
                 }
             },
-            _ => (),
         }
     }
 }
