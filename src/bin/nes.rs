@@ -106,6 +106,8 @@ fn main() {
             );
 
             agg_cycles = 0;
+
+            debug_print(&mut nes, 0x6000, 32);
         }
     }
 }
@@ -177,4 +179,12 @@ impl EventHandler for Lifecycle {
             },
         };
     }
+}
+
+fn debug_print(nes: &mut emulator::NES, start: u16, len: u16) {
+    println!("CPU Memory starting from ${:X}", start);
+    for ix in 0 .. len {
+        print!("{:X} ", nes.cpu.borrow_mut().load_memory(start + ix));
+    }
+    println!("");
 }

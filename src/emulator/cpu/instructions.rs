@@ -618,12 +618,14 @@ pub fn brk(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
     cpu.stack_push(pch);
     cpu.stack_push(pcl + 1);
 
-    cpu.p.set(cpu::flags::Flag::B);
     let byte = cpu.p.as_byte();
-    //
+
     // Set the B flag to the value we push, but do not modify the status register.
     // Bit 5 is always set.
     cpu.stack_push(byte | (cpu::flags::Flag::B as u8) | 0x20);
+
+    // Disable further interrupts.
+    cpu.p.set(cpu::flags::Flag::I);
 
     // Load interrupt vector.
     let pcl = cpu.load_memory(0xFFFE);
