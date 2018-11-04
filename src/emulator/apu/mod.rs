@@ -61,7 +61,7 @@ impl APU {
         }
     }
 
-    pub fn irq_triggered(&self) -> bool {
+    pub fn irq_triggered(&mut self) -> bool {
         self.irq_flag
     }
 
@@ -100,7 +100,7 @@ impl APU {
 
 impl Ticker for APU {
     fn tick(&mut self) -> u32 {
-        self.irq_flag = false;
+        self.cycle_counter += 1;
         match self.sequence_mode {
             SequenceMode::FourStep => match self.cycle_counter {
                 3729 => self.clock_linear_counters(),
@@ -128,36 +128,49 @@ impl Ticker for APU {
                     self.clock_linear_counters();
                     self.clock_length_counters();
                     self.cycle_counter = 0;
-                    self.irq_flag = true;
                 },
                 _ => (),
             },
         };
-        self.cycle_counter += 1;
-
-        if self.sequence_mode == SequenceMode::FourStep && self.cycle_counter == 14914 {
-            self.cycle_counter = 0;
-            self.irq_flag = true;
-        } else if self.sequence_mode == SequenceMode::FiveStep && self.cycle_counter == 18640 {
-            self.cycle_counter = 0;
-            self.irq_flag = false;
-        } else {
-            self.irq_flag = false;
-        }
         1
     }
 }
 
 impl Writer for APU {
     fn write(&mut self, address: u16, byte: u8) {
-        let register = self.addr_to_register(address);
-        *register = byte;
+        match address {
+            0x4003 => {
+                self.pulse_1_length = byte >> 3;
+            },
+            0x4007 => {
+                self.pulse_2_length = byte >> 3;
+            },
+            0x400B => {
+                self.triangle_length = byte >> 3;
+            },
+            0x400F => {
+                self.noise_length = byte >> 3;
+            },
+            _ => (),
+        }
     }
 }
 
 impl Reader for APU {
     fn read(&mut self, address: u16) -> u8 {
-        let register = self.addr_to_register(address);
-        *register
+        match address {
+            0x4015 => {
+                let mut status = 0;
+                if self.pulse_1_length != 0 { status |= 1 };
+                if self.pulse_2_length != 0 { status |= 1 << 1 };
+                if self.triangle_length != 0 { status |= 1 << 2 };
+                if self.noise_length != 0 { status |= 1 << 3 };
+                if self.irq_flag { status |= 1 << 6 };
+
+                self.irq_flag = false;
+                status
+            },
+            _ => 0,
+        }
     }
 }

@@ -61,7 +61,7 @@ pub struct CPU {
     dec_arith_on: bool,
 
     // IRQ triggered?
-    irq_line: bool,
+    irq_flip_flop: bool,
 
     // NMI triggered?
     nmi_flip_flop: bool,
@@ -79,7 +79,7 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
         pc: 0,
         p,
         dec_arith_on: true,
-        irq_line: false,
+        irq_flip_flop: false,
         nmi_flip_flop: false,
     }
 }
@@ -91,6 +91,7 @@ impl clock::Ticker for CPU {
             self.nmi_flip_flop = false;
             self.non_maskable_interrupt()
         } else if self.should_interrupt() {
+            self.irq_flip_flop = false;
             self.interrupt()
         } else {
             self.execute_next_instruction()
@@ -122,8 +123,8 @@ impl CPU {
         self.dec_arith_on = true;
     }
 
-    pub fn set_irq_line(&mut self, on: bool) {
-        self.irq_line = on;
+    pub fn trigger_irq(&mut self) {
+        self.irq_flip_flop = true;
     }
 
     pub fn trigger_nmi(&mut self) {
@@ -208,7 +209,7 @@ impl CPU {
     }
 
     fn should_interrupt(&self) -> bool {
-        self.irq_line && !self.p.is_set(flags::Flag::I)
+        self.irq_flip_flop && !self.p.is_set(flags::Flag::I)
     }
 
     fn should_non_maskable_interrupt(&self) -> bool {

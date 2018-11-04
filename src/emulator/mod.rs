@@ -81,6 +81,7 @@ impl NES {
 
         // Create CPU.
         let io_registers = Rc::new(RefCell::new(memory::IORegisters::new(
+            Box::new(apu.clone()),
             Box::new(joy1.clone()),
             Box::new(joy2.clone()),
         )));
@@ -130,7 +131,9 @@ impl NES {
             self.nmi_pin = false;
         }
 
-        self.cpu.borrow_mut().set_irq_line(self.apu.borrow().irq_triggered());
+        if self.apu.borrow_mut().irq_triggered() {
+            self.cpu.borrow_mut().trigger_irq();
+        }
 
         cycles
     }
