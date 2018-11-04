@@ -106,8 +106,6 @@ fn main() {
             );
 
             agg_cycles = 0;
-
-            debug_print(&mut nes, 0x6000, 32);
         }
     }
 }
