@@ -26,10 +26,10 @@ fn main() {
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let io = Rc::new(RefCell::new(sdl::IO::new(event_bus.clone())));
-    let output = io::SimpleVideoOut::new(io.clone());
+    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let mut io = sdl::IO::new(event_bus.clone(), output.clone());
 
-    let nes = NES::new(event_bus.clone(), output, rom);
+    let nes = NES::new(event_bus.clone(), output.clone(), rom);
     let lifecycle = Rc::new(RefCell::new(Lifecycle::new(nes)));
 
     lifecycle.borrow_mut().start();
@@ -57,7 +57,7 @@ fn main() {
         while cycles_this_frame < target_cycles_this_frame && frame_ns < target_ns_this_frame {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
-            for _ in 1 .. batch_size {
+            for _ in 0 .. batch_size {
                 cycles_this_frame += lifecycle.borrow_mut().tick();
             }
 
@@ -65,7 +65,7 @@ fn main() {
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
-        io.borrow_mut().tick();
+        io.tick();
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
         if frame_ns < target_ns_this_frame {

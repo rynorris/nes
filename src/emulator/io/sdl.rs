@@ -12,7 +12,7 @@ use self::sdl2::surface;
 use self::sdl2::video;
 
 use emulator::clock;
-use emulator::io::Graphics;
+use emulator::io::SimpleVideoOut;
 use emulator::io::event::{Event, EventBus, Key};
 
 const SCALE: u8 = 4;
@@ -22,13 +22,14 @@ pub struct IO {
     video: sdl2::VideoSubsystem,
     canvas: render::Canvas<video::Window>,
     screen_texture: render::Texture,
+    output: Rc<RefCell<SimpleVideoOut>>,
 
     event_pump: sdl2::EventPump,
     event_bus: Rc<RefCell<EventBus>>,
 }
 
 impl IO {
-    pub fn new(event_bus: Rc<RefCell<EventBus>>) -> IO {
+    pub fn new(event_bus: Rc<RefCell<EventBus>>, output: Rc<RefCell<SimpleVideoOut>>) -> IO {
         let sdl_context = sdl2::init().unwrap();
         let video = sdl_context.video().unwrap();
         let mut window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
@@ -63,6 +64,7 @@ impl IO {
             video,
             canvas,
             screen_texture,
+            output,
             event_pump,
             event_bus,
         }
@@ -70,7 +72,11 @@ impl IO {
 
     pub fn flip(&mut self) {
         self.canvas.clear();
-        let _ = self.canvas.copy(&self.screen_texture, None, None);
+        let texture = &mut self.screen_texture;
+        self.output.borrow().do_render(|data| {
+            let _ = texture.update(None, data, 256 * 3);
+        });
+        let _ = self.canvas.copy(&texture, None, None);
         self.canvas.present();
     }
 
@@ -80,12 +86,6 @@ impl IO {
         if let Some(e) = internal_event {
             self.event_bus.borrow_mut().broadcast(e);
         }
-    }
-}
-
-impl Graphics for IO {
-    fn draw_screen(&mut self, pixel_data: &[u8]) {
-        let _ = self.screen_texture.update(None, pixel_data, 256 * 3);
     }
 }
 
@@ -100,43 +100,39 @@ impl clock::Ticker for IO {
 }
 
 pub struct ImageCapture {
-    pixel_data: [u8; 256 * 240 * 3],
+    output: Rc<RefCell<SimpleVideoOut>>,
 }
 
 impl ImageCapture {
-    pub fn new() -> ImageCapture {
+    pub fn new(output: Rc<RefCell<SimpleVideoOut>>) -> ImageCapture {
         let _ = sdl2::init().unwrap();
         ImageCapture {
-            pixel_data: [0; 256 * 240 * 3],
+            output,
         }
     }
 
     pub fn save_bmp(&mut self, path: &Path) {
-        let surface = surface::Surface::from_data(
-            &mut self.pixel_data,
-            256,
-            240,
-            256 * 3,
-            pixels::PixelFormatEnum::RGB24,
-        );
+        self.output.borrow().do_render(|buffer| {
+            // Make a copy of the data so it doesn't need to be mutable.
+            let mut copy = Vec::from(buffer);
+            let surface = surface::Surface::from_data(
+                copy.as_mut_slice(),
+                256,
+                240,
+                256 * 3,
+                pixels::PixelFormatEnum::RGB24,
+            );
 
-        let result = match surface {
-            Err(cause) => panic!("Failed to create surface: {}", cause),
-            Ok(s) => s.save_bmp(path),
-        };
+            let result = match surface {
+                Err(cause) => panic!("Failed to create surface: {}", cause),
+                Ok(s) => s.save_bmp(path),
+            };
 
-        match result {
-            Err(cause) => panic!("Failed to save bmp image: {}", cause),
-            Ok(_) => (),
-        };
-    }
-}
-
-impl Graphics for ImageCapture {
-    fn draw_screen(&mut self, pixel_data: &[u8]) {
-        for (place, byte) in self.pixel_data.iter_mut().zip(pixel_data.iter()) {
-            *place = *byte;
-        }
+            match result {
+                Err(cause) => panic!("Failed to save bmp image: {}", cause),
+                Ok(_) => (),
+            };
+        });
     }
 }
 

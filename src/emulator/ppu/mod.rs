@@ -4,6 +4,9 @@ mod registers;
 #[cfg(test)]
 mod test;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
@@ -42,6 +45,12 @@ pub struct Palette {
 
 pub trait VideoOut {
     fn emit(&mut self, c: Colour);
+}
+
+impl <V : VideoOut> VideoOut for Rc<RefCell<V>> {
+    fn emit(&mut self, c: Colour) {
+        self.borrow_mut().emit(c);
+    }
 }
 
 #[derive(Clone, Copy)]
