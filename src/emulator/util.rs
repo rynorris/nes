@@ -2,6 +2,11 @@ pub fn combine_bytes(high: u8, low: u8) -> u16 {
     ((high as u16) << 8) + (low as u16)
 }
 
+pub fn split_word(word: u16) -> (u8, u8) {
+    // Returns (high, low)
+    ((word >> 8) as u8, (word & 0xFF) as u8)
+}
+
 pub fn shift_right(byte: u8) -> (u8, bool) {
     let carry = (byte & 0b0000_0001) != 0;
     return (byte >> 1, carry);

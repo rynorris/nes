@@ -3,12 +3,11 @@ extern crate mos_6500;
 use std::cell::RefCell;
 use std::env;
 use std::fs::File;
-use std::io::Write;
 use std::rc::Rc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use mos_6500::emulator;
+use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
 use mos_6500::emulator::clock::Ticker;
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
@@ -30,9 +29,9 @@ fn main() {
     let io = Rc::new(RefCell::new(sdl::IO::new(event_bus.clone())));
     let output = io::SimpleVideoOut::new(io.clone());
 
-    let mut nes = emulator::NES::new(event_bus.clone(), output, rom);
+    let nes = NES::new(event_bus.clone(), output, rom);
+    let lifecycle = Rc::new(RefCell::new(Lifecycle::new(nes)));
 
-    let lifecycle = Rc::new(RefCell::new(Lifecycle::new()));
     lifecycle.borrow_mut().start();
     event_bus.borrow_mut().register(Box::new(lifecycle.clone()));
 
@@ -59,8 +58,7 @@ fn main() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
             for _ in 1 .. batch_size {
-                lifecycle.borrow_mut().trace_next_instruction(&nes);
-                cycles_this_frame += nes.tick();
+                cycles_this_frame += lifecycle.borrow_mut().tick();
             }
 
             let frame_time = frame_start.elapsed();
@@ -99,7 +97,7 @@ fn main() {
                 "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.",
                 (target_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / 1_000_000f64,
-                (current_hz as f64) / (emulator::NES_MASTER_CLOCK_HZ as f64),
+                (current_hz as f64) / (NES_MASTER_CLOCK_HZ as f64),
                 agg_ns,
                 agg_cycles,
             );
@@ -110,18 +108,24 @@ fn main() {
 }
 
 pub struct Lifecycle {
+    nes: NES,
     is_running: bool,
-    trace_file: Option<File>,
+    is_tracing: bool,
     target_hz: u64,
 }
 
 impl Lifecycle {
-    pub fn new() -> Lifecycle {
+    pub fn new(nes: NES) -> Lifecycle {
         Lifecycle {
+            nes,
             is_running: false,
-            trace_file: None,
-            target_hz: emulator::NES_MASTER_CLOCK_HZ,
+            is_tracing: false,
+            target_hz: NES_MASTER_CLOCK_HZ,
         }
+    }
+
+    pub fn tick(&mut self) -> u64 {
+        self.nes.tick()
     }
 
     pub fn is_running(&self) -> bool {
@@ -135,13 +139,6 @@ impl Lifecycle {
     pub fn target_hz(&self) -> u64 {
         self.target_hz
     }
-
-    pub fn trace_next_instruction(&mut self, nes: &emulator::NES) {
-        if let Some(f) = self.trace_file.as_mut() {
-            nes.cpu.borrow_mut().trace_next_instruction(&*f);
-            write!(f, "\n");
-        }
-    }
 }
 
 impl EventHandler for Lifecycle {
@@ -151,34 +148,36 @@ impl EventHandler for Lifecycle {
                 match key {
                     Key::Escape => self.is_running = false,
                     Key::Tab => {
-                        if self.trace_file.is_some() {
-                            return;
+                        if self.is_tracing {
+                            self.nes.cpu.borrow_mut().stop_tracing();
+                            self.is_tracing = false;
+                        } else {
+                            self.is_tracing = true;
+                            self.nes.cpu.borrow_mut().start_tracing();
                         }
-                        let trace_file = match File::create("./cpu.trace") {
+                        println!("CPU Tracing: {}", if self.is_tracing { "ON" } else { "OFF" });
+                    },
+                    Key::Return => {
+                        println!("Flushing CPU trace buffer to ./cpu.trace");
+                        let mut trace_file = match File::create("./cpu.trace") {
                             Err(_) => panic!("Couldn't open trace file"),
                             Ok(f) => f,
                         };
-                        self.trace_file = Some(trace_file);
-                    },
+
+                        self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
+                    }
                     Key::Minus => self.target_hz /= 2,
                     Key::Equals => self.target_hz *= 2,
-                    Key::Num0 => self.target_hz = emulator::NES_MASTER_CLOCK_HZ,
+                    Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ,
                     _ => (),
                 };
             },
-            Event::KeyUp(key) => {
-                match key {
-                    Key::Tab => {
-                        self.trace_file = None;
-                    },
-                    _ => (),
-                };
-            },
+            _ => (),
         };
     }
 }
 
-fn debug_print(nes: &mut emulator::NES, start: u16, len: u16) {
+fn debug_print(nes: &mut NES, start: u16, len: u16) {
     println!("CPU Memory starting from ${:X}", start);
     for ix in 0 .. len {
         print!("{:X} ", nes.cpu.borrow_mut().load_memory(start + ix));
