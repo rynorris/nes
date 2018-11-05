@@ -1,277 +1,286 @@
 use emulator::cpu::opcodes;
 
-fn format_implied(opstring: &str) -> String {
-    return format!("{}", opstring);
+fn format_implied() -> String {
+    return format!("");
 }
 
-fn format_immediate(opstring: &str, arg: u8) -> String {
-    return format!("{} #${:02X}", opstring, arg);
+fn format_immediate(arg: u8) -> String {
+    return format!("#${:02X}", arg);
 }
 
-fn format_zero_page(opstring: &str, arg: u8) -> String {
-    return format!("{} ${:02X}", opstring, arg);
+fn format_zero_page(arg: u8) -> String {
+    return format!("${:02X}", arg);
 }
 
 // Note: identical to zero page formatting, but keeping both for clarity.
-fn format_relative(opstring: &str, arg: u8) -> String {
-    return format!("{} ${:02X}", opstring, arg);
+fn format_relative(arg: u8) -> String {
+    return format!("${:02X}", arg);
 }
 
-fn format_zero_page_x(opstring: &str, arg: u8) -> String {
-    return format!("{} ${:02X},X", opstring, arg);
+fn format_zero_page_x(arg: u8) -> String {
+    return format!("${:02X},X", arg);
 }
 
-fn format_zero_page_y(opstring: &str, arg: u8) -> String {
-    return format!("{} ${:02X},Y", opstring, arg);
+fn format_zero_page_y(arg: u8) -> String {
+    return format!("${:02X},Y", arg);
 }
 
-fn format_absolute(opstring: &str, arg1: u8, arg2: u8) -> String {
-    return format!("{} ${:02X}{:02X}", opstring, arg1, arg2);
+fn format_absolute(arg1: u8, arg2: u8) -> String {
+    return format!("${:02X}{:02X}", arg1, arg2);
 }
 
-fn format_absolute_x(opstring: &str, arg1: u8, arg2: u8) -> String {
-    return format!("{} ${:02X}{:02X},X", opstring, arg1, arg2);
+fn format_absolute_x(arg1: u8, arg2: u8) -> String {
+    return format!("${:02X}{:02X},X", arg1, arg2);
 }
 
-fn format_absolute_y(opstring: &str, arg1: u8, arg2: u8) -> String {
-    return format!("{} ${:02X}{:02X},Y", opstring, arg1, arg2);
+fn format_absolute_y(arg1: u8, arg2: u8) -> String {
+    return format!("${:02X}{:02X},Y", arg1, arg2);
 }
 
-fn format_indexed_indirect(opstring: &str, arg: u8) -> String {
-    return format!("{} (${:02X},X)", opstring, arg);
+fn format_indexed_indirect(arg: u8) -> String {
+    return format!("(${:02X},X)", arg);
 }
 
-fn format_indirect_indexed(opstring: &str, arg: u8) -> String {
-    return format!("{} (${:02X}),Y", opstring, arg);
+fn format_indirect_indexed(arg: u8) -> String {
+    return format!("(${:02X}),Y", arg);
 }
 
-fn format_indirect(opstring: &str, arg1: u8, arg2: u8) -> String {
-    return format!("{} (${:02X}{:02X})", opstring, arg1, arg2);
+fn format_indirect(arg1: u8, arg2: u8) -> String {
+    return format!("(${:02X}{:02X})", arg1, arg2);
 }
 
 pub fn format_instruction(opcode: u8, b1: u8, b2: u8) -> String {
-    match opcode {
+    let (opstring, num_args, human) = match opcode {
         // ADC
-        opcodes::ADC_IMM => format_immediate("ADC", b1),
-        opcodes::ADC_ZPG => format_zero_page("ADC", b1),
-        opcodes::ADC_ZPG_X => format_zero_page_x("ADC", b1),
-        opcodes::ADC_ABS => format_absolute("ADC", b2, b1),
-        opcodes::ADC_ABS_X => format_absolute_x("ADC", b2, b1),
-        opcodes::ADC_ABS_Y => format_absolute_y("ADC", b2, b1),
-        opcodes::ADC_IX_IND => format_indexed_indirect("ADC", b1),
-        opcodes::ADC_IND_IX => format_indirect_indexed("ADC", b1),
+        opcodes::ADC_IMM => ("ADC", 1, format_immediate(b1)),
+        opcodes::ADC_ZPG => ("ADC", 1, format_zero_page(b1)),
+        opcodes::ADC_ZPG_X => ("ADC", 1, format_zero_page_x(b1)),
+        opcodes::ADC_ABS => ("ADC", 2, format_absolute(b2, b1)),
+        opcodes::ADC_ABS_X => ("ADC", 2, format_absolute_x(b2, b1)),
+        opcodes::ADC_ABS_Y => ("ADC", 2, format_absolute_y(b2, b1)),
+        opcodes::ADC_IX_IND => ("ADC", 1, format_indexed_indirect(b1)),
+        opcodes::ADC_IND_IX => ("ADC", 1, format_indirect_indexed(b1)),
 
         // AND
-        opcodes::AND_IMM => format_immediate("AND", b1),
-        opcodes::AND_ZPG => format_zero_page("AND", b1),
-        opcodes::AND_ZPG_X => format_zero_page_x("AND", b1),
-        opcodes::AND_ABS => format_absolute("AND", b2, b1),
-        opcodes::AND_ABS_X => format_absolute_x("AND", b2, b1),
-        opcodes::AND_ABS_Y => format_absolute_y("AND", b2, b1),
-        opcodes::AND_IX_IND => format_indexed_indirect("AND", b1),
-        opcodes::AND_IND_IX => format_indirect_indexed("AND", b1),
+        opcodes::AND_IMM => ("AND", 1, format_immediate(b1)),
+        opcodes::AND_ZPG => ("AND", 1, format_zero_page(b1)),
+        opcodes::AND_ZPG_X => ("AND", 1, format_zero_page_x(b1)),
+        opcodes::AND_ABS => ("AND", 2, format_absolute(b2, b1)),
+        opcodes::AND_ABS_X => ("AND", 2, format_absolute_x(b2, b1)),
+        opcodes::AND_ABS_Y => ("AND", 2, format_absolute_y(b2, b1)),
+        opcodes::AND_IX_IND => ("AND", 1, format_indexed_indirect(b1)),
+        opcodes::AND_IND_IX => ("AND", 1, format_indirect_indexed(b1)),
 
         // ASL
-        opcodes::ASL_A => format_implied("ASL"),
-        opcodes::ASL_ZPG => format_zero_page("ASL", b1),
-        opcodes::ASL_ZPG_X => format_zero_page_x("ASL", b1),
-        opcodes::ASL_ABS => format_absolute("ASL", b2, b1),
-        opcodes::ASL_ABS_X => format_absolute_x("ASL", b2, b1),
+        opcodes::ASL_A => ("ASL", 0, format_implied()),
+        opcodes::ASL_ZPG => ("ASL", 1, format_zero_page(b1)),
+        opcodes::ASL_ZPG_X => ("ASL", 1, format_zero_page_x(b1)),
+        opcodes::ASL_ABS => ("ASL", 2, format_absolute(b2, b1)),
+        opcodes::ASL_ABS_X => ("ASL", 2, format_absolute_x(b2, b1)),
 
         // BCC, BCS, BEQ
-        opcodes::BCC => format_relative("BCC", b1),
-        opcodes::BCS => format_relative("BCS", b1),
-        opcodes::BEQ => format_relative("BEQ", b1),
+        opcodes::BCC => ("BCC", 1, format_relative(b1)),
+        opcodes::BCS => ("BCS", 1, format_relative(b1)),
+        opcodes::BEQ => ("BEQ", 1, format_relative(b1)),
         //
         // BIT
-        opcodes::BIT_ZPG => format_zero_page("BIT", b1),
-        opcodes::BIT_ABS => format_absolute("BIT", b2, b1),
+        opcodes::BIT_ZPG => ("BIT", 1, format_zero_page(b1)),
+        opcodes::BIT_ABS => ("BIT", 2, format_absolute(b2, b1)),
 
         // BMI, BNE, BPL, BVC, BVS
-        opcodes::BMI => format_relative("BMI", b1),
-        opcodes::BNE => format_relative("BNE", b1),
-        opcodes::BPL => format_relative("BPL", b1),
-        opcodes::BVC => format_relative("BVC", b1),
-        opcodes::BVS => format_relative("BVS", b1),
+        opcodes::BMI => ("BMI", 1, format_relative(b1)),
+        opcodes::BNE => ("BNE", 1, format_relative(b1)),
+        opcodes::BPL => ("BPL", 1, format_relative(b1)),
+        opcodes::BVC => ("BVC", 1, format_relative(b1)),
+        opcodes::BVS => ("BVS", 1, format_relative(b1)),
 
         // BRK
-        opcodes::BRK => format_implied("BRK"),
+        opcodes::BRK => ("BRK", 0, format_implied()),
 
         // CLC, CLD, CLI
-        opcodes::CLC => format_implied("CLC"),
-        opcodes::CLD => format_implied("CLD"),
-        opcodes::CLI => format_implied("CLI"),
-        opcodes::CLV => format_implied("CLV"),
+        opcodes::CLC => ("CLC", 0, format_implied()),
+        opcodes::CLD => ("CLD", 0, format_implied()),
+        opcodes::CLI => ("CLI", 0, format_implied()),
+        opcodes::CLV => ("CLV", 0, format_implied()),
 
         // CMP
-        opcodes::CMP_IMM => format_immediate("CMP", b1),
-        opcodes::CMP_ZPG => format_zero_page("CMP", b1),
-        opcodes::CMP_ZPG_X => format_zero_page_x("CMP", b1),
-        opcodes::CMP_ABS => format_absolute("CMP", b2, b1),
-        opcodes::CMP_ABS_X => format_absolute_x("CMP", b2, b1),
-        opcodes::CMP_ABS_Y => format_absolute_y("CMP", b2, b1),
-        opcodes::CMP_IX_IND => format_indexed_indirect("CMP", b1),
-        opcodes::CMP_IND_IX => format_indirect_indexed("CMP", b1),
+        opcodes::CMP_IMM => ("CMP", 1, format_immediate(b1)),
+        opcodes::CMP_ZPG => ("CMP", 1, format_zero_page(b1)),
+        opcodes::CMP_ZPG_X => ("CMP", 1, format_zero_page_x(b1)),
+        opcodes::CMP_ABS => ("CMP", 2, format_absolute(b2, b1)),
+        opcodes::CMP_ABS_X => ("CMP", 2, format_absolute_x(b2, b1)),
+        opcodes::CMP_ABS_Y => ("CMP", 2, format_absolute_y(b2, b1)),
+        opcodes::CMP_IX_IND => ("CMP", 1, format_indexed_indirect(b1)),
+        opcodes::CMP_IND_IX => ("CMP", 1, format_indirect_indexed(b1)),
 
         // CPX
-        opcodes::CPX_IMM => format_immediate("CPX", b1),
-        opcodes::CPX_ZPG => format_zero_page("CPX", b1),
-        opcodes::CPX_ABS => format_absolute("CPX", b2, b1),
+        opcodes::CPX_IMM => ("CPX", 1, format_immediate(b1)),
+        opcodes::CPX_ZPG => ("CPX", 1, format_zero_page(b1)),
+        opcodes::CPX_ABS => ("CPX", 2, format_absolute(b2, b1)),
 
         // CPY
-        opcodes::CPY_IMM => format_immediate("CPY", b1),
-        opcodes::CPY_ZPG => format_zero_page("CPY", b1),
-        opcodes::CPY_ABS => format_absolute("CPY", b2, b1),
+        opcodes::CPY_IMM => ("CPY", 1, format_immediate(b1)),
+        opcodes::CPY_ZPG => ("CPY", 1, format_zero_page(b1)),
+        opcodes::CPY_ABS => ("CPY", 2, format_absolute(b2, b1)),
 
         // DEC
-        opcodes::DEC_ZPG => format_zero_page("DEC", b1),
-        opcodes::DEC_ZPG_X => format_zero_page_x("DEC", b1),
-        opcodes::DEC_ABS => format_absolute("DEC", b2, b1),
-        opcodes::DEC_ABS_X => format_absolute_x("DEC", b2, b1),
+        opcodes::DEC_ZPG => ("DEC", 1, format_zero_page(b1)),
+        opcodes::DEC_ZPG_X => ("DEC", 1, format_zero_page_x(b1)),
+        opcodes::DEC_ABS => ("DEC", 2, format_absolute(b2, b1)),
+        opcodes::DEC_ABS_X => ("DEC", 2, format_absolute_x(b2, b1)),
 
         // DEX, INY
-        opcodes::DEX => format_implied("DEX"),
-        opcodes::DEY => format_implied("DEY"),
+        opcodes::DEX => ("DEX", 0, format_implied()),
+        opcodes::DEY => ("DEY", 0, format_implied()),
 
         // EOR
-        opcodes::EOR_IMM => format_immediate("EOR", b1),
-        opcodes::EOR_ZPG => format_zero_page("EOR", b1),
-        opcodes::EOR_ZPG_X => format_zero_page_x("EOR", b1),
-        opcodes::EOR_ABS => format_absolute("EOR", b2, b1),
-        opcodes::EOR_ABS_X => format_absolute_x("EOR", b2, b1),
-        opcodes::EOR_ABS_Y => format_absolute_y("EOR", b2, b1),
-        opcodes::EOR_IX_IND => format_indexed_indirect("EOR", b1),
-        opcodes::EOR_IND_IX => format_indirect_indexed("EOR", b1),
+        opcodes::EOR_IMM => ("EOR", 1, format_immediate(b1)),
+        opcodes::EOR_ZPG => ("EOR", 1, format_zero_page(b1)),
+        opcodes::EOR_ZPG_X => ("EOR", 1, format_zero_page_x(b1)),
+        opcodes::EOR_ABS => ("EOR", 2, format_absolute(b2, b1)),
+        opcodes::EOR_ABS_X => ("EOR", 2, format_absolute_x(b2, b1)),
+        opcodes::EOR_ABS_Y => ("EOR", 2, format_absolute_y(b2, b1)),
+        opcodes::EOR_IX_IND => ("EOR", 1, format_indexed_indirect(b1)),
+        opcodes::EOR_IND_IX => ("EOR", 1, format_indirect_indexed(b1)),
 
         // INC
-        opcodes::INC_ZPG => format_zero_page("INC", b1),
-        opcodes::INC_ZPG_X => format_zero_page_x("INC", b1),
-        opcodes::INC_ABS => format_absolute("INC", b2, b1),
-        opcodes::INC_ABS_X => format_absolute_x("INC", b2, b1),
+        opcodes::INC_ZPG => ("INC", 1, format_zero_page(b1)),
+        opcodes::INC_ZPG_X => ("INC", 1, format_zero_page_x(b1)),
+        opcodes::INC_ABS => ("INC", 2, format_absolute(b2, b1)),
+        opcodes::INC_ABS_X => ("INC", 2, format_absolute_x(b2, b1)),
 
         // INX, INY
-        opcodes::INX => format_implied("INX"),
-        opcodes::INY => format_implied("INY"),
+        opcodes::INX => ("INX", 0, format_implied()),
+        opcodes::INY => ("INY", 0, format_implied()),
 
         // JMP
-        opcodes::JMP_ABS => format_absolute("JMP", b2, b1),
-        opcodes::JMP_IND => format_indirect("JMP", b2, b1),
+        opcodes::JMP_ABS => ("JMP", 2, format_absolute(b2, b1)),
+        opcodes::JMP_IND => ("JMP", 2, format_indirect(b2, b1)),
 
         // JSR
-        opcodes::JSR => format_absolute("JSR", b2, b1),
+        opcodes::JSR => ("JSR", 2, format_absolute(b2, b1)),
 
         // LDA
-        opcodes::LDA_IMM => format_immediate("LDA", b1),
-        opcodes::LDA_ZPG => format_zero_page("LDA", b1),
-        opcodes::LDA_ZPG_X => format_zero_page_x("LDA", b1),
-        opcodes::LDA_ABS => format_absolute("LDA", b2, b1),
-        opcodes::LDA_ABS_X => format_absolute_x("LDA", b2, b1),
-        opcodes::LDA_ABS_Y => format_absolute_y("LDA", b2, b1),
-        opcodes::LDA_IX_IND => format_indexed_indirect("LDA", b1),
-        opcodes::LDA_IND_IX => format_indirect_indexed("LDA", b1),
+        opcodes::LDA_IMM => ("LDA", 1, format_immediate(b1)),
+        opcodes::LDA_ZPG => ("LDA", 1, format_zero_page(b1)),
+        opcodes::LDA_ZPG_X => ("LDA", 1, format_zero_page_x(b1)),
+        opcodes::LDA_ABS => ("LDA", 2, format_absolute(b2, b1)),
+        opcodes::LDA_ABS_X => ("LDA", 2, format_absolute_x(b2, b1)),
+        opcodes::LDA_ABS_Y => ("LDA", 2, format_absolute_y(b2, b1)),
+        opcodes::LDA_IX_IND => ("LDA", 1, format_indexed_indirect(b1)),
+        opcodes::LDA_IND_IX => ("LDA", 1, format_indirect_indexed(b1)),
 
         // LDX
-        opcodes::LDX_IMM => format_immediate("LDX", b1),
-        opcodes::LDX_ZPG => format_zero_page("LDX", b1),
-        opcodes::LDX_ZPG_Y => format_zero_page_y("LDX", b1),
-        opcodes::LDX_ABS => format_absolute("LDX", b2, b1),
-        opcodes::LDX_ABS_Y => format_absolute_y("LDX", b2, b1),
+        opcodes::LDX_IMM => ("LDX", 1, format_immediate(b1)),
+        opcodes::LDX_ZPG => ("LDX", 1, format_zero_page(b1)),
+        opcodes::LDX_ZPG_Y => ("LDX", 1, format_zero_page_y(b1)),
+        opcodes::LDX_ABS => ("LDX", 2, format_absolute(b2, b1)),
+        opcodes::LDX_ABS_Y => ("LDX", 2, format_absolute_y(b2, b1)),
 
         // LDY
-        opcodes::LDY_IMM => format_immediate("LDY", b1),
-        opcodes::LDY_ZPG => format_zero_page("LDY", b1),
-        opcodes::LDY_ZPG_X => format_zero_page_x("LDY", b1),
-        opcodes::LDY_ABS => format_absolute("LDY", b2, b1),
-        opcodes::LDY_ABS_X => format_absolute_x("LDY", b2, b1),
+        opcodes::LDY_IMM => ("LDY", 1, format_immediate(b1)),
+        opcodes::LDY_ZPG => ("LDY", 1, format_zero_page(b1)),
+        opcodes::LDY_ZPG_X => ("LDY", 1, format_zero_page_x(b1)),
+        opcodes::LDY_ABS => ("LDY", 2, format_absolute(b2, b1)),
+        opcodes::LDY_ABS_X => ("LDY", 2, format_absolute_x(b2, b1)),
 
         // LSR
-        opcodes::LSR_A => format_implied("LSR"),
-        opcodes::LSR_ZPG => format_zero_page("LSR", b1),
-        opcodes::LSR_ZPG_X => format_zero_page_x("LSR", b1),
-        opcodes::LSR_ABS => format_absolute("LSR", b2, b1),
-        opcodes::LSR_ABS_X => format_absolute_x("LSR", b2, b1),
+        opcodes::LSR_A => ("LSR", 0, format_implied()),
+        opcodes::LSR_ZPG => ("LSR", 1, format_zero_page(b1)),
+        opcodes::LSR_ZPG_X => ("LSR", 1, format_zero_page_x(b1)),
+        opcodes::LSR_ABS => ("LSR", 2, format_absolute(b2, b1)),
+        opcodes::LSR_ABS_X => ("LSR", 2, format_absolute_x(b2, b1)),
 
         // NOP
-        opcodes::NOP => format_implied("NOP"),
+        opcodes::NOP => ("NOP", 0, format_implied()),
 
         // ORA
-        opcodes::ORA_IMM => format_immediate("ORA", b1),
-        opcodes::ORA_ZPG => format_zero_page("ORA", b1),
-        opcodes::ORA_ZPG_X => format_zero_page_x("ORA", b1),
-        opcodes::ORA_ABS => format_absolute("ORA", b2, b1),
-        opcodes::ORA_ABS_X => format_absolute_x("ORA", b2, b1),
-        opcodes::ORA_ABS_Y => format_absolute_y("ORA", b2, b1),
-        opcodes::ORA_IX_IND => format_indexed_indirect("ORA", b1),
-        opcodes::ORA_IND_IX => format_indirect_indexed("ORA", b1),
+        opcodes::ORA_IMM => ("ORA", 1, format_immediate(b1)),
+        opcodes::ORA_ZPG => ("ORA", 1, format_zero_page(b1)),
+        opcodes::ORA_ZPG_X => ("ORA", 1, format_zero_page_x(b1)),
+        opcodes::ORA_ABS => ("ORA", 2, format_absolute(b2, b1)),
+        opcodes::ORA_ABS_X => ("ORA", 2, format_absolute_x(b2, b1)),
+        opcodes::ORA_ABS_Y => ("ORA", 2, format_absolute_y(b2, b1)),
+        opcodes::ORA_IX_IND => ("ORA", 1, format_indexed_indirect(b1)),
+        opcodes::ORA_IND_IX => ("ORA", 1, format_indirect_indexed(b1)),
 
         // PHA, PLA, PHP, PLP
-        opcodes::PHA => format_implied("PHA"),
-        opcodes::PLA => format_implied("PLA"),
-        opcodes::PHP => format_implied("PHP"),
-        opcodes::PLP => format_implied("PLP"),
+        opcodes::PHA => ("PHA", 0, format_implied()),
+        opcodes::PLA => ("PLA", 0, format_implied()),
+        opcodes::PHP => ("PHP", 0, format_implied()),
+        opcodes::PLP => ("PLP", 0, format_implied()),
 
         // ROL
-        opcodes::ROL_A => format_implied("ROL"),
-        opcodes::ROL_ZPG => format_zero_page("ROL", b1),
-        opcodes::ROL_ZPG_X => format_zero_page_x("ROL", b1),
-        opcodes::ROL_ABS => format_absolute("ROL", b2, b1),
-        opcodes::ROL_ABS_X => format_absolute_x("ROL", b2, b1),
+        opcodes::ROL_A => ("ROL", 0, format_implied()),
+        opcodes::ROL_ZPG => ("ROL", 1, format_zero_page(b1)),
+        opcodes::ROL_ZPG_X => ("ROL", 1, format_zero_page_x(b1)),
+        opcodes::ROL_ABS => ("ROL", 2, format_absolute(b2, b1)),
+        opcodes::ROL_ABS_X => ("ROL", 2, format_absolute_x(b2, b1)),
 
         // ROR
-        opcodes::ROR_A => format_implied("ROR"),
-        opcodes::ROR_ZPG => format_zero_page("ROR", b1),
-        opcodes::ROR_ZPG_X => format_zero_page_x("ROR", b1),
-        opcodes::ROR_ABS => format_absolute("ROR", b2, b1),
-        opcodes::ROR_ABS_X => format_absolute_x("ROR", b2, b1),
+        opcodes::ROR_A => ("ROR", 0, format_implied()),
+        opcodes::ROR_ZPG => ("ROR", 1, format_zero_page(b1)),
+        opcodes::ROR_ZPG_X => ("ROR", 1, format_zero_page_x(b1)),
+        opcodes::ROR_ABS => ("ROR", 2, format_absolute(b2, b1)),
+        opcodes::ROR_ABS_X => ("ROR", 2, format_absolute_x(b2, b1)),
 
         // RTI, RTS
-        opcodes::RTI => format_implied("RTI"),
-        opcodes::RTS => format_implied("RTS"),
+        opcodes::RTI => ("RTI", 0, format_implied()),
+        opcodes::RTS => ("RTS", 0, format_implied()),
 
         // SBC
-        opcodes::SBC_IMM => format_immediate("SBC", b1),
-        opcodes::SBC_ZPG => format_zero_page("SBC", b1),
-        opcodes::SBC_ZPG_X => format_zero_page_x("SBC", b1),
-        opcodes::SBC_ABS => format_absolute("SBC", b2, b1),
-        opcodes::SBC_ABS_X => format_absolute_x("SBC", b2, b1),
-        opcodes::SBC_ABS_Y => format_absolute_y("SBC", b2, b1),
-        opcodes::SBC_IX_IND => format_indexed_indirect("SBC", b1),
-        opcodes::SBC_IND_IX => format_indirect_indexed("SBC", b1),
+        opcodes::SBC_IMM => ("SBC", 1, format_immediate(b1)),
+        opcodes::SBC_ZPG => ("SBC", 1, format_zero_page(b1)),
+        opcodes::SBC_ZPG_X => ("SBC", 1, format_zero_page_x(b1)),
+        opcodes::SBC_ABS => ("SBC", 2, format_absolute(b2, b1)),
+        opcodes::SBC_ABS_X => ("SBC", 2, format_absolute_x(b2, b1)),
+        opcodes::SBC_ABS_Y => ("SBC", 2, format_absolute_y(b2, b1)),
+        opcodes::SBC_IX_IND => ("SBC", 1, format_indexed_indirect(b1)),
+        opcodes::SBC_IND_IX => ("SBC", 1, format_indirect_indexed(b1)),
 
         // SEC, SED, SEI
-        opcodes::SEC => format_implied("SEC"),
-        opcodes::SED => format_implied("SED"),
-        opcodes::SEI => format_implied("SEI"),
+        opcodes::SEC => ("SEC", 0, format_implied()),
+        opcodes::SED => ("SED", 0, format_implied()),
+        opcodes::SEI => ("SEI", 0, format_implied()),
 
         // STA
-        opcodes::STA_ZPG => format_zero_page("STA", b1),
-        opcodes::STA_ZPG_X => format_zero_page_x("STA", b1),
-        opcodes::STA_ABS => format_absolute("STA", b2, b1),
-        opcodes::STA_ABS_X => format_absolute_x("STA", b2, b1),
-        opcodes::STA_ABS_Y => format_absolute_y("STA", b2, b1),
-        opcodes::STA_IX_IND => format_indexed_indirect("STA", b1),
-        opcodes::STA_IND_IX => format_indirect_indexed("STA", b1),
+        opcodes::STA_ZPG => ("STA", 1, format_zero_page(b1)),
+        opcodes::STA_ZPG_X => ("STA", 1, format_zero_page_x(b1)),
+        opcodes::STA_ABS => ("STA", 2, format_absolute(b2, b1)),
+        opcodes::STA_ABS_X => ("STA", 2, format_absolute_x(b2, b1)),
+        opcodes::STA_ABS_Y => ("STA", 2, format_absolute_y(b2, b1)),
+        opcodes::STA_IX_IND => ("STA", 1, format_indexed_indirect(b1)),
+        opcodes::STA_IND_IX => ("STA", 1, format_indirect_indexed(b1)),
 
         // STX
-        opcodes::STX_ZPG => format_zero_page("STX", b1),
-        opcodes::STX_ZPG_Y => format_zero_page_y("STX", b1),
-        opcodes::STX_ABS => format_absolute("STX", b2, b1),
+        opcodes::STX_ZPG => ("STX", 1, format_zero_page(b1)),
+        opcodes::STX_ZPG_Y => ("STX", 1, format_zero_page_y(b1)),
+        opcodes::STX_ABS => ("STX", 2, format_absolute(b2, b1)),
 
         // STY
-        opcodes::STY_ZPG => format_zero_page("STY", b1),
-        opcodes::STY_ZPG_X => format_zero_page_x("STY", b1),
-        opcodes::STY_ABS => format_absolute("STY", b2, b1),
+        opcodes::STY_ZPG => ("STY", 1, format_zero_page(b1)),
+        opcodes::STY_ZPG_X => ("STY", 1, format_zero_page_x(b1)),
+        opcodes::STY_ABS => ("STY", 2, format_absolute(b2, b1)),
 
         // TAX, TXA, TAY, TYA, TSX, TXS
-        opcodes::TAX => format_implied("TAX"),
-        opcodes::TXA => format_implied("TXA"),
-        opcodes::TAY => format_implied("TAY"),
-        opcodes::TYA => format_implied("TYA"),
-        opcodes::TSX => format_implied("TSX"),
-        opcodes::TXS => format_implied("TXS"),
+        opcodes::TAX => ("TAX", 0, format_implied()),
+        opcodes::TXA => ("TXA", 0, format_implied()),
+        opcodes::TAY => ("TAY", 0, format_implied()),
+        opcodes::TYA => ("TYA", 0, format_implied()),
+        opcodes::TSX => ("TSX", 0, format_implied()),
+        opcodes::TXS => ("TXS", 0, format_implied()),
 
         _ => panic!("Unknown opcode: {:X}", opcode)
-    }
+    };
+
+    let mut output = format!("{:02X} ", opcode);
+    let b1_str = if num_args >= 1 { format!("{:02X} ", b1) } else { String::from("   ") };
+    output.push_str(&b1_str);
+    let b2_str = if num_args >= 2 { format!("{:02X}  ", b2) } else { String::from("    ") };
+    output.push_str(&b2_str);
+    output.push_str(&format!("{} {:<28}", opstring, human));
+
+    output
 }
 
 // And parsing functions.

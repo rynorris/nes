@@ -18,12 +18,6 @@ fn test_nestest() {
 
     let mut trace_lines = load_trace();
 
-    let trace_out_path = Path::new("./cpu.trace");
-    let trace_out = match File::create(trace_out_path) {
-        Err(cause) => panic!("Couldn't open {}: {}", trace_out_path.display(), cause),
-        Ok(file) => file,
-    };
-
     cpu.startup_sequence();
 
     // TODO(rnorris): Figure out if these starting conditions are universal.
@@ -35,10 +29,6 @@ fn test_nestest() {
     // At instruction 5004 it starts testing undocumented opcodes which we don't support.
     for _ in 0..5003 {
         // We know there are more than 5000 lines.
-        cpu.trace_next_instruction(&trace_out);
-        write!(&trace_out, " CYC:{:>3}", (cycles * 3) % 341);
-        write!(&trace_out, "\n");
-
         let line = trace_lines.next().unwrap();
         assert_state(&mut cpu, cycles, line);
 

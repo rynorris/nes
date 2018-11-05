@@ -2,11 +2,12 @@ mod addressing;
 mod instructions;
 mod flags;
 mod opcodes;
-mod trace;
+pub mod trace;
 
 #[cfg(test)]
 mod test;
 
+use std::io::BufWriter;
 use std::io::Write;
 
 use emulator::clock;
@@ -62,6 +63,11 @@ pub struct CPU {
 
     // NMI triggered?
     nmi_flip_flop: bool,
+
+    // Debug tracing execution.
+    // Format: a x y sp pch pcl p opcode arg1 arg2
+    is_tracing: bool,
+    trace_buffer: Vec<u8>,
 }
 
 pub fn new(memory: Box<ReadWriter>) -> CPU {
@@ -77,6 +83,8 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
         p,
         dec_arith_on: true,
         nmi_flip_flop: false,
+        is_tracing: false,
+        trace_buffer: vec![],
     }
 }
 
@@ -122,7 +130,7 @@ impl CPU {
         self.nmi_flip_flop = true;
     }
 
-    fn peek_next_instruction(&mut self) -> (u8, Option<u8>, Option<u8>) {
+    pub fn peek_next_instruction(&mut self) -> (u8, Option<u8>, Option<u8>) {
         // Note since addressing modes modify the PC themselves we have to hack a bit here
         // to figure out which bytes form the next instruction.
         // Should probably refactor addressing modes so we can just query how many bytes it is.
@@ -159,12 +167,24 @@ impl CPU {
 
         // Dump registers.
         write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.a, self.x, self.y, self.p.as_byte(), self.sp);
+    }
 
+    fn write_trace_frame<W : Write>(w: &mut W, frame: &[u8]) {
+        if let [a, x, y, sp, pch, pcl, p, opcode, arg1, arg2] = frame {
+            write!(w, "{:02X}{:02X}  ", pch, pcl);
+            write!(w, "{}", trace::format_instruction(*opcode, *arg1, *arg2));
+            write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", a, x, y, p, sp);
+        }
     }
 
     // Returns number of elapsed cycles.
     fn execute_next_instruction(&mut self) -> u32 {
+        self.trace_registers();
+
         let opcode = self.memory.read(self.pc);
+        self.trace_byte(opcode);
+        self.trace_args();
+
         self.pc += 1;
         let (operation, addressing_mode, cycles) = CPU::decode_instruction(opcode);
         let extra_cycles = operation(self, addressing_mode);
@@ -457,5 +477,68 @@ impl CPU {
         let vector_low = self.load_memory(vector);
         let vector_high = self.load_memory(vector + 1);
         self.pc = util::combine_bytes(vector_high, vector_low);
+    }
+
+    fn trace_byte(&mut self, byte: u8) {
+        if self.is_tracing {
+            self.trace_buffer.push(byte);
+        }
+    }
+
+    fn trace_registers(&mut self) {
+        if self.is_tracing {
+            self.trace_buffer.push(self.a);
+            self.trace_buffer.push(self.x);
+            self.trace_buffer.push(self.y);
+            self.trace_buffer.push(self.sp);
+            let (pch, pcl) = util::split_word(self.pc);
+            self.trace_buffer.push(pch);
+            self.trace_buffer.push(pcl);
+            self.trace_buffer.push(self.p.as_byte());
+        }
+    }
+
+    fn trace_args(&mut self) {
+        if self.is_tracing {
+            // Note, we trace garbage bytes if the instruction has less than 2 args, but the
+            // decoder will ignore them.
+            // TODO: Trace these actually as we read them so we don't double-read.
+            let pc = self.pc;
+            let arg1 = self.load_memory(pc + 1);
+            self.trace_buffer.push(arg1);
+            let arg2 = self.load_memory(pc + 2);
+            self.trace_buffer.push(arg2);
+        }
+    }
+
+    pub fn start_tracing(&mut self) {
+        self.is_tracing = true;
+    }
+
+    pub fn stop_tracing(&mut self) {
+        self.is_tracing = false;
+    }
+
+    pub fn flush_trace<W : Write>(&mut self, w: &mut W) {
+        let mut buf = BufWriter::new(w);
+        println!("Flushing {} instructions.", self.trace_buffer.len() / 10);
+        {
+            let mut chunks = self.trace_buffer.chunks(10);
+            while let Some(args) = chunks.next() {
+                match args {
+                    [_, _, _, _, _, _, _, _, _, _] => {
+                        CPU::write_trace_frame(&mut buf, args);
+                        write!(buf, "\n");
+                    },
+                    _ => (),
+                };
+            }
+        }
+        println!("Done flushing!");
+        self.clear_trace();
+    }
+
+    pub fn clear_trace(&mut self) {
+        self.trace_buffer.clear();
     }
 }
