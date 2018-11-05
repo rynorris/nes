@@ -12,9 +12,14 @@ use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
 use mos_6500::emulator::io::sdl;
+
 use mos_6500::ui::controller::Controller;
+use mos_6500::ui::compositor::Compositor;
+use mos_6500::ui::input::InputPump;
 
 fn main() {
+    // -- Handle Args --
+
     let args: Vec<String> = env::args().collect();
 
     let rom_path = match args.get(2) {
@@ -22,18 +27,29 @@ fn main() {
         Some(path) => path,
     };
 
+
+    // -- Initialize --
+
     let rom = ines::ROM::load(rom_path);
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
     let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
-    let mut io = sdl::IO::new(event_bus.clone(), output.clone());
 
     let nes = NES::new(event_bus.clone(), output.clone(), rom);
     let controller = Rc::new(RefCell::new(Controller::new(nes)));
 
     controller.borrow_mut().start();
     event_bus.borrow_mut().register(Box::new(controller.clone()));
+
+    let sdl_context = sdl2::init().unwrap();
+    let video = sdl_context.video().unwrap();
+
+    let mut compositor = Compositor::new(video, output.clone());
+    let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
+
+
+    // -- Run --
 
     let started_instant = Instant::now();
     let frames_per_second = 30;
@@ -65,7 +81,8 @@ fn main() {
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
-        io.tick();
+        compositor.render();
+        input.pump();
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
         if frame_ns < target_ns_this_frame {
