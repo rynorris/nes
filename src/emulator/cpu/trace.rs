@@ -1,4 +1,14 @@
+use std::io::Write;
+
 use emulator::cpu::opcodes;
+
+pub fn write_trace_frame<W : Write>(w: &mut W, frame: &[u8]) {
+    if let [a, x, y, sp, pch, pcl, p, opcode, arg1, arg2] = frame {
+        write!(w, "{:02X}{:02X}  ", pch, pcl);
+        write!(w, "{}", format_instruction(*opcode, *arg1, *arg2));
+        write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", a, x, y, p, sp);
+    }
+}
 
 fn format_implied() -> String {
     return format!("");

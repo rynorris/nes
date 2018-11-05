@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
-use std::path::Path;
+use std::io::{BufRead, BufReader, Read};
 
 use emulator::clock::Ticker;
 use emulator::cpu;

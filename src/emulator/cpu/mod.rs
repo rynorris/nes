@@ -2,13 +2,12 @@ mod addressing;
 mod instructions;
 mod flags;
 mod opcodes;
-pub mod trace;
+mod trace;
 
 #[cfg(test)]
 mod test;
 
-use std::io::BufWriter;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 use emulator::clock;
 use emulator::components::bitfield::BitField;
@@ -130,6 +129,7 @@ impl CPU {
         self.nmi_flip_flop = true;
     }
 
+    // Note: Only used by nestest test.
     pub fn peek_next_instruction(&mut self) -> (u8, Option<u8>, Option<u8>) {
         // Note since addressing modes modify the PC themselves we have to hack a bit here
         // to figure out which bytes form the next instruction.
@@ -146,35 +146,6 @@ impl CPU {
         let b2 = if num_bytes > 1 { Some(self.memory.read(self.pc + 2)) } else { None };
 
         (opcode, b1, b2)
-    }
-
-    pub fn trace_next_instruction<W : Write>(&mut self, mut w: W) {
-        let (opcode, b1, b2) = self.peek_next_instruction();
-
-        write!(w, "{:04X}  {:02X} ", self.pc, opcode);
-
-        let _ = match b1 {
-            Some(b) => write!(w, "{:02X} ", b),
-            None => write!(w, "   "),
-        };
-
-        let _ = match b2 {
-            Some(b) => write!(w, "{:02X}  ", b),
-            None => write!(w, "    "),
-        };
-
-        write!(w, "{:<32}", trace::format_instruction(opcode, b1.unwrap_or(0), b2.unwrap_or(0)));
-
-        // Dump registers.
-        write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", self.a, self.x, self.y, self.p.as_byte(), self.sp);
-    }
-
-    fn write_trace_frame<W : Write>(w: &mut W, frame: &[u8]) {
-        if let [a, x, y, sp, pch, pcl, p, opcode, arg1, arg2] = frame {
-            write!(w, "{:02X}{:02X}  ", pch, pcl);
-            write!(w, "{}", trace::format_instruction(*opcode, *arg1, *arg2));
-            write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", a, x, y, p, sp);
-        }
     }
 
     // Returns number of elapsed cycles.
@@ -478,7 +449,11 @@ impl CPU {
         let vector_high = self.load_memory(vector + 1);
         self.pc = util::combine_bytes(vector_high, vector_low);
     }
+}
 
+
+// CPU Debug tracing functions.
+impl CPU {
     fn trace_byte(&mut self, byte: u8) {
         if self.is_tracing {
             self.trace_buffer.push(byte);
@@ -527,7 +502,7 @@ impl CPU {
             while let Some(args) = chunks.next() {
                 match args {
                     [_, _, _, _, _, _, _, _, _, _] => {
-                        CPU::write_trace_frame(&mut buf, args);
+                        trace::write_trace_frame(&mut buf, args);
                         write!(buf, "\n");
                     },
                     _ => (),
