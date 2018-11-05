@@ -1,5 +1,5 @@
 # mos-6500
-MOS 6500 CPU emulator written in Rust
+NES emulator written in Rust
 
 [![Build Status](https://travis-ci.org/DiscoViking/mos-6500.svg?branch=master)](https://travis-ci.org/DiscoViking/mos-6500) [![codecov](https://codecov.io/gh/DiscoViking/mos-6500/branch/master/graph/badge.svg)](https://codecov.io/gh/DiscoViking/mos-6500)
 
@@ -12,16 +12,16 @@ MOS 6500 CPU emulator written in Rust
 **PPU**
   - [x] Tiles
   - [x] Palettes
-  - [ ] Sprites
+  - [X] Sprites
   
  **IO**
   - [x] Graphics output
   - [ ] Properly emulate NTSC video signal
-  - [ ] Controller input
+  - [X] Controller input
   
  **Other**
   - [x] Basic iNES file loading
-  - [ ] Support common mappers
+  - [ ] Support common mappers (~NROM~, ~MMC1~, MMC3)
   - [x] Clock to drive all components at the correct speed
   
   ## Examples

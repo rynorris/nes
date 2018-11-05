@@ -57,13 +57,13 @@ fn test_nestest_visual() {
     assert_eq!(file_digest(bmp_02_path), file_digest(test_resource_path("nestest/capture_02_passed.bmp")));
 }
 
-// TODO: Figure out why this test hangs.
+#[test]
 fn test_instr_test_v5_official_only() {
-    let path = Path::new("/Users/rnorris/test/nes_roms/instr_test-v5/official_only.nes");
-    let (status, output) = load_and_run_blargg_test_rom(path);
+    let path = test_resource_path("instr_test-v5/official_only.nes");
+    let (status, output) = load_and_run_blargg_test_rom_with_cycles(path, 1_000_000_000);
 
     assert_eq!(status, 0x00);
-    assert_eq!(output, "\n01-abs_x_wrap\n\nPassed\n");
+    assert_eq!(output, "All 16 tests passed\n\n\n");
 }
 
 // -- instr_misc test ROMs --
@@ -95,16 +95,20 @@ fn test_instr_misc_03() {
 }
 
 fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
+    load_and_run_blargg_test_rom_with_cycles(rom_path, 20_000_000)
+}
+
+fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cycles: u64) -> (u8, String) {
     let rom = ines::ROM::load(rom_path);
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
     let graphics = Rc::new(RefCell::new(DummyGraphics{}));
     let output = io::SimpleVideoOut::new(graphics.clone());
     let mut nes = NES::new(event_bus.clone(), output, rom);
 
-    run_blargg_test_rom(&mut nes)
+    run_blargg_test_rom(&mut nes, max_cycles)
 }
 
-fn run_blargg_test_rom(nes: &mut NES) -> (u8, String) {
+fn run_blargg_test_rom(nes: &mut NES, max_cycles: u64) -> (u8, String) {
     let mut cycles = 0;
     // Run until the status byte says the test is running.
     let mut status = nes.cpu.borrow_mut().load_memory(0x6000);
@@ -123,7 +127,7 @@ fn run_blargg_test_rom(nes: &mut NES) -> (u8, String) {
         status = nes.cpu.borrow_mut().load_memory(0x6000);
 
         cycles += 1;
-        if cycles > 50_000_000 {
+        if cycles > max_cycles {
             let output = collect_test_output(nes);
             panic!("Test took too long to end.  Gave up after {} cycles.  Current output: {}", cycles, output);
         }
