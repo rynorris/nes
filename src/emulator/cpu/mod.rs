@@ -8,9 +8,11 @@ mod trace;
 mod test;
 
 use std::io::{BufWriter, Write};
+use std::time::Instant;
 
 use emulator::clock;
 use emulator::components::bitfield::BitField;
+use emulator::components::ringbuffer::RingBuffer;
 use emulator::memory::ReadWriter;
 use emulator::util;
 
@@ -18,6 +20,11 @@ use emulator::util;
 pub const START_VECTOR: u16 = 0xFFFC;
 pub const IRQ_VECTOR: u16= 0xFFFE;
 pub const NMI_VECTOR: u16= 0xFFFA;
+
+// Only buffer the last ~1 second of trace to prevent blowing up.
+// Even this produces a ~150mb trace file!
+const TRACE_FRAME_SIZE: usize = 10;
+const MAX_TRACE_FRAMES: usize = 2_000_000 * TRACE_FRAME_SIZE;
 
 pub enum Flag {
     N = 1 << 7, // Negative
@@ -66,7 +73,7 @@ pub struct CPU {
     // Debug tracing execution.
     // Format: a x y sp pch pcl p opcode arg1 arg2
     is_tracing: bool,
-    trace_buffer: Vec<u8>,
+    trace_buffer: RingBuffer<u8>,
 }
 
 pub fn new(memory: Box<ReadWriter>) -> CPU {
@@ -83,7 +90,7 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
         dec_arith_on: true,
         nmi_flip_flop: false,
         is_tracing: false,
-        trace_buffer: vec![],
+        trace_buffer: RingBuffer::new(MAX_TRACE_FRAMES),
     }
 }
 
@@ -497,9 +504,11 @@ impl CPU {
     pub fn flush_trace<W : Write>(&mut self, w: &mut W) {
         let mut buf = BufWriter::new(w);
         println!("Flushing {} instructions.", self.trace_buffer.len() / 10);
+        let before = Instant::now();
         {
-            let mut chunks = self.trace_buffer.chunks(10);
-            while let Some(args) = chunks.next() {
+            let trace_bytes = self.trace_buffer.flush_vec();
+            let mut frames = trace_bytes.chunks(TRACE_FRAME_SIZE);
+            while let Some(args) = frames.next() {
                 match args {
                     [_, _, _, _, _, _, _, _, _, _] => {
                         trace::write_trace_frame(&mut buf, args);
@@ -509,7 +518,9 @@ impl CPU {
                 };
             }
         }
-        println!("Done flushing!");
+        let elapsed = before.elapsed();
+        let elapsed_ns = elapsed.as_secs() * 1_000_000_000 + (elapsed.subsec_nanos() as u64);
+        println!("Done flushing!  Took {:.2}s", (elapsed_ns as f64) / 1_000_000_000f64);
         self.clear_trace();
     }
 

@@ -149,39 +149,30 @@ impl EventHandler for Lifecycle {
                     Key::Escape => self.is_running = false,
                     Key::Tab => {
                         if self.is_tracing {
-                            return;
+                            self.nes.cpu.borrow_mut().stop_tracing();
+                            self.is_tracing = false;
+                        } else {
+                            self.is_tracing = true;
+                            self.nes.cpu.borrow_mut().start_tracing();
                         }
-
-                        println!("Starting CPU trace.");
-                        self.is_tracing = true;
-                        self.nes.cpu.borrow_mut().start_tracing();
+                        println!("CPU Tracing: {}", if self.is_tracing { "ON" } else { "OFF" });
                     },
+                    Key::Return => {
+                        println!("Flushing CPU trace buffer to ./cpu.trace");
+                        let mut trace_file = match File::create("./cpu.trace") {
+                            Err(_) => panic!("Couldn't open trace file"),
+                            Ok(f) => f,
+                        };
+
+                        self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
+                    }
                     Key::Minus => self.target_hz /= 2,
                     Key::Equals => self.target_hz *= 2,
                     Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ,
                     _ => (),
                 };
             },
-            Event::KeyUp(key) => {
-                match key {
-                    Key::Tab => {
-                        if !self.is_tracing {
-                            return;
-                        }
-
-                        println!("Stopping CPU trace.  Flushing to ./cpu.trace.");
-                        let mut trace_file = match File::create("./cpu.trace") {
-                            Err(_) => panic!("Couldn't open trace file"),
-                            Ok(f) => f,
-                        };
-
-                        self.nes.cpu.borrow_mut().stop_tracing();
-                        self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
-                        self.is_tracing = false;
-                    },
-                    _ => (),
-                };
-            },
+            _ => (),
         };
     }
 }
