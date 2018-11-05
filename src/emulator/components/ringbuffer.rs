@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::mem;
 
 pub struct RingBuffer<T> {
     capacity: usize,
@@ -21,7 +22,7 @@ impl <T> RingBuffer<T> {
     }
 
     pub fn flush_vec(&mut self) -> Vec<T> {
-        let deque = std::mem::replace(&mut self.data, VecDeque::new());
+        let deque = mem::replace(&mut self.data, VecDeque::new());
         Vec::from(deque)
     }
 
