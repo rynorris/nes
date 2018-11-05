@@ -36,7 +36,7 @@ const PAUSE_THRESHOLD_NS: u64 = 20_000_000;
 pub struct NES {
     clock: clock::Clock,
     pub cpu: Rc<RefCell<cpu::CPU>>,
-    ppu: Rc<RefCell<ppu::PPU>>,
+    pub ppu: Rc<RefCell<ppu::PPU>>,
     nmi_pin: bool,
 }
 

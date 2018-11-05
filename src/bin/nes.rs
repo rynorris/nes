@@ -10,6 +10,7 @@ use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
+use mos_6500::emulator::ppu::debug::PPUDebug;
 
 use mos_6500::ui::controller::Controller;
 use mos_6500::ui::compositor::Compositor;
@@ -35,17 +36,18 @@ fn main() {
     let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
 
     let nes = NES::new(event_bus.clone(), output.clone(), rom);
-    let controller = Rc::new(RefCell::new(Controller::new(nes)));
-
-    controller.borrow_mut().start();
-    event_bus.borrow_mut().register(Box::new(controller.clone()));
+    let ppu_debug = PPUDebug::new(nes.ppu.clone());
 
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
 
-    let mut compositor = Compositor::new(video, output.clone());
+
+    let controller = Rc::new(RefCell::new(Controller::new(nes)));
+    let mut compositor = Compositor::new(video, output.clone(), ppu_debug);
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
+    controller.borrow_mut().start();
+    event_bus.borrow_mut().register(Box::new(controller.clone()));
 
     // -- Run --
 
@@ -93,7 +95,7 @@ fn main() {
         }
 
         let frame_end = Instant::now();
-        // If we slept too long, take that time off the next frame.
+        // If we slept too long, take that time off the next frame with a sensible bound.
         oversleep_ns = ((frame_end - frame_start).subsec_nanos() as u64).saturating_sub(target_ns_this_frame);
         overwork_cycles = cycles_this_frame.saturating_sub(target_cycles_this_frame);
         frame_start = frame_end;

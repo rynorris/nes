@@ -1,3 +1,4 @@
+pub mod debug;
 mod flags;
 mod registers;
 
