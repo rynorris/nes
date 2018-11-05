@@ -67,7 +67,7 @@ fn main() {
 
         let mut cycles_this_frame = 0;
         let target_ns_this_frame = target_frame_ns.saturating_sub(oversleep_ns);
-        let target_cycles_this_frame = target_frame_cycles - overwork_cycles;
+        let target_cycles_this_frame = target_frame_cycles.saturating_sub(overwork_cycles);
         let mut frame_ns = 0;
 
         while cycles_this_frame < target_cycles_this_frame && frame_ns < target_ns_this_frame {
@@ -95,7 +95,7 @@ fn main() {
         }
 
         let frame_end = Instant::now();
-        // If we slept too long, take that time off the next frame with a sensible bound.
+        // If we slept too long, take that time off the next frame.
         oversleep_ns = ((frame_end - frame_start).subsec_nanos() as u64).saturating_sub(target_ns_this_frame);
         overwork_cycles = cycles_this_frame.saturating_sub(target_cycles_this_frame);
         frame_start = frame_end;
