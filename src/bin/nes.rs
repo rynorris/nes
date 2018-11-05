@@ -2,7 +2,6 @@ extern crate mos_6500;
 
 use std::cell::RefCell;
 use std::env;
-use std::fs::File;
 use std::rc::Rc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -11,8 +10,9 @@ use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
 use mos_6500::emulator::clock::Ticker;
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
-use mos_6500::emulator::io::event::{Event, EventBus, EventHandler, Key};
+use mos_6500::emulator::io::event::EventBus;
 use mos_6500::emulator::io::sdl;
+use mos_6500::ui::controller::Controller;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -30,10 +30,10 @@ fn main() {
     let mut io = sdl::IO::new(event_bus.clone(), output.clone());
 
     let nes = NES::new(event_bus.clone(), output.clone(), rom);
-    let lifecycle = Rc::new(RefCell::new(Lifecycle::new(nes)));
+    let controller = Rc::new(RefCell::new(Controller::new(nes)));
 
-    lifecycle.borrow_mut().start();
-    event_bus.borrow_mut().register(Box::new(lifecycle.clone()));
+    controller.borrow_mut().start();
+    event_bus.borrow_mut().register(Box::new(controller.clone()));
 
     let started_instant = Instant::now();
     let frames_per_second = 30;
@@ -44,8 +44,8 @@ fn main() {
     let mut oversleep_ns = 0;
     let mut overwork_cycles = 0;
 
-    while lifecycle.borrow().is_running() {
-        let target_hz = lifecycle.borrow().target_hz();
+    while controller.borrow().is_running() {
+        let target_hz = controller.borrow().target_hz();
         let target_frame_cycles = target_hz / frames_per_second;
         let target_frame_ns = 1_000_000_000 / frames_per_second;
 
@@ -58,7 +58,7 @@ fn main() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
             for _ in 0 .. batch_size {
-                cycles_this_frame += lifecycle.borrow_mut().tick();
+                cycles_this_frame += controller.borrow_mut().tick();
             }
 
             let frame_time = frame_start.elapsed();
@@ -104,76 +104,6 @@ fn main() {
 
             agg_cycles = 0;
         }
-    }
-}
-
-pub struct Lifecycle {
-    nes: NES,
-    is_running: bool,
-    is_tracing: bool,
-    target_hz: u64,
-}
-
-impl Lifecycle {
-    pub fn new(nes: NES) -> Lifecycle {
-        Lifecycle {
-            nes,
-            is_running: false,
-            is_tracing: false,
-            target_hz: NES_MASTER_CLOCK_HZ,
-        }
-    }
-
-    pub fn tick(&mut self) -> u64 {
-        self.nes.tick()
-    }
-
-    pub fn is_running(&self) -> bool {
-        self.is_running
-    }
-
-    pub fn start(&mut self) {
-        self.is_running = true;
-    }
-
-    pub fn target_hz(&self) -> u64 {
-        self.target_hz
-    }
-}
-
-impl EventHandler for Lifecycle {
-    fn handle_event(&mut self, event: Event) {
-        match event {
-            Event::KeyDown(key) => {
-                match key {
-                    Key::Escape => self.is_running = false,
-                    Key::Tab => {
-                        if self.is_tracing {
-                            self.nes.cpu.borrow_mut().stop_tracing();
-                            self.is_tracing = false;
-                        } else {
-                            self.is_tracing = true;
-                            self.nes.cpu.borrow_mut().start_tracing();
-                        }
-                        println!("CPU Tracing: {}", if self.is_tracing { "ON" } else { "OFF" });
-                    },
-                    Key::Return => {
-                        println!("Flushing CPU trace buffer to ./cpu.trace");
-                        let mut trace_file = match File::create("./cpu.trace") {
-                            Err(_) => panic!("Couldn't open trace file"),
-                            Ok(f) => f,
-                        };
-
-                        self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
-                    }
-                    Key::Minus => self.target_hz /= 2,
-                    Key::Equals => self.target_hz *= 2,
-                    Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ,
-                    _ => (),
-                };
-            },
-            _ => (),
-        };
     }
 }
 

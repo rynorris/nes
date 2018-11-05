@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::Rc;
 
 // Framework agnostic internal event types.
@@ -20,6 +21,9 @@ pub enum Key {
 
 pub trait EventHandler {
     fn handle_event(&mut self, event: Event);
+    fn handle_event_with_dispatch(&mut self, _dispatch: &FnOnce (Event) -> (), event: Event) {
+        self.handle_event(event);
+    }
 }
 
 impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
@@ -30,18 +34,32 @@ impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
 
 pub struct EventBus {
     event_handlers: Vec<Box<dyn EventHandler>>,
+    event_queue: VecDeque<Event>,
 }
 
 impl EventBus {
     pub fn new() -> EventBus {
         EventBus {
             event_handlers: vec![],
+            event_queue: VecDeque::new(),
         }
     }
 
     pub fn broadcast(&mut self, event: Event) {
+        self.event_queue.push_back(event);
+        self.flush_queue();
+    }
+
+    fn flush_queue(&mut self) {
+        while let Some(event) = self.event_queue.pop_front() {
+            self.handle_event(event);
+        }
+    }
+
+    fn handle_event(&mut self, event: Event) {
+        let deque = &mut self.event_queue;
         for mut handler in self.event_handlers.iter_mut() {
-            handler.handle_event(event);
+            handler.handle_event_with_dispatch(&|e| deque.push_back(e), event);
         }
     }
 

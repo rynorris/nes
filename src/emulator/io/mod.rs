@@ -48,7 +48,7 @@ impl SimpleVideoOut {
         }
     }
 
-    fn do_render<F : FnOnce(&[u8]) -> ()>(&self, render: F) {
+    pub fn do_render<F : FnOnce(&[u8]) -> ()>(&self, render: F) {
         render(&self.screen_buffer);
     }
 }
