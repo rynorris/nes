@@ -13,7 +13,6 @@ use self::md5::{Md5, Digest};
 use emulator::ines;
 use emulator::io;
 use emulator::io::event::{Event, EventBus, Key};
-use emulator::io::nop::DummyGraphics;
 use emulator::io::sdl::ImageCapture;
 use emulator::NES;
 
@@ -23,9 +22,9 @@ fn test_nestest_visual() {
     let path = test_resource_path("nestest/nestest.nes");
     let rom = ines::ROM::load(&path.into_os_string().into_string().unwrap());
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let graphics = Rc::new(RefCell::new(ImageCapture::new()));
-    let output = io::SimpleVideoOut::new(graphics.clone());
-    let mut nes = NES::new(event_bus.clone(), output, rom);
+    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let mut image = ImageCapture::new(output.clone());
+    let mut nes = NES::new(event_bus.clone(), output.clone(), rom);
 
     let tmp_dir = env::temp_dir();
 
@@ -37,7 +36,7 @@ fn test_nestest_visual() {
     // Check the menu loaded properly.
     let mut bmp_01_path = tmp_dir.clone();
     bmp_01_path.push("01.bmp");
-    graphics.borrow_mut().save_bmp(&bmp_01_path);
+    image.save_bmp(&bmp_01_path);
     println!("Saving image to tempfile at: {}", bmp_01_path.display());
     assert_eq!(file_digest(bmp_01_path), file_digest(test_resource_path("nestest/capture_01_menu.bmp")));
 
@@ -53,7 +52,7 @@ fn test_nestest_visual() {
     let mut bmp_02_path = tmp_dir.clone();
     bmp_02_path.push("02.bmp");
     println!("Saving image to tempfile at: {}", bmp_02_path.display());
-    graphics.borrow_mut().save_bmp(&bmp_02_path);
+    image.save_bmp(&bmp_02_path);
     assert_eq!(file_digest(bmp_02_path), file_digest(test_resource_path("nestest/capture_02_passed.bmp")));
 }
 
@@ -101,8 +100,7 @@ fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
 fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cycles: u64) -> (u8, String) {
     let rom = ines::ROM::load(rom_path);
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let graphics = Rc::new(RefCell::new(DummyGraphics{}));
-    let output = io::SimpleVideoOut::new(graphics.clone());
+    let output = io::SimpleVideoOut::new();
     let mut nes = NES::new(event_bus.clone(), output, rom);
 
     run_blargg_test_rom(&mut nes, max_cycles)

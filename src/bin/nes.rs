@@ -7,11 +7,9 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
-use mos_6500::emulator::clock::Ticker;
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
-use mos_6500::emulator::io::sdl;
 
 use mos_6500::ui::controller::Controller;
 use mos_6500::ui::compositor::Compositor;
