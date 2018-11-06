@@ -3,6 +3,8 @@ pub mod nop;
 pub mod palette;
 pub mod sdl;
 
+use std::f32::consts::PI;
+
 use emulator::apu;
 use emulator::ppu;
 
@@ -57,32 +59,34 @@ impl SimpleVideoOut {
 pub struct SimpleAudioOut {
     buffer: Vec<f32>,
     counter: u16,
+    low_pass_filter: LowPassFilter,
+    high_pass_filter_1: HighPassFilter,
+    high_pass_filter_2: HighPassFilter,
 }
 
 impl SimpleAudioOut {
-    const BUF_SIZE: usize = 44700 / 4;
+    const BUF_SIZE: usize = 2000;
     const DOWNSAMPLE_FACTOR: u16 = 20;
 
     pub fn new() -> SimpleAudioOut {
         SimpleAudioOut {
             buffer: Vec::with_capacity(SimpleAudioOut::BUF_SIZE),
             counter: 0,
+            low_pass_filter: LowPassFilter::new(14_000.0, 44_100.0),
+            high_pass_filter_1: HighPassFilter::new(440.0, 44_100.0),
+            high_pass_filter_2: HighPassFilter::new(90.0, 44_100.0),
         }
     }
 
     pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, consume: F) {
-        print!("Consuming {} samples:", self.buffer.len());
-        for ix in 0 .. 8 {
-            if ix < self.buffer.len() {
-                print!(" {:.2}", self.buffer[ix]);
-            }
-        }
-        println!("");
         consume(self.buffer.as_slice());
         self.buffer.clear();
     }
 
-    fn queue_sample(&mut self, sample: f32) {
+    fn queue_sample(&mut self, mut sample: f32) {
+        sample = self.high_pass_filter_2.process(sample);
+        sample = self.high_pass_filter_1.process(sample);
+        sample = self.low_pass_filter.process(sample);
         // Just drop samples if our buffer is full.
         if self.buffer.len() <= SimpleAudioOut::BUF_SIZE {
             self.buffer.push(sample);
@@ -99,5 +103,54 @@ impl apu::AudioOut for SimpleAudioOut {
         } else {
             self.counter -= 1;
         }
+    }
+}
+
+struct LowPassFilter {
+    prev_out: f32,
+    alpha: f32,
+}
+
+impl LowPassFilter {
+    pub fn new(freq: f32, sample_rate: f32) -> LowPassFilter {
+        let rc = 1.0 / (2.0 * PI * freq);
+        let dt = 1.0 / sample_rate;
+        LowPassFilter {
+            prev_out: 0.0,
+            alpha: dt / (rc + dt),
+        }
+    }
+
+    pub fn process(&mut self, sample: f32) -> f32 {
+        // y[i] := y[i-1] + α * (x[i] - y[i-1])
+        let out = self.prev_out + self.alpha * (sample - self.prev_out);
+        self.prev_out = out;
+        out
+    }
+}
+
+struct HighPassFilter {
+    prev_in: f32,
+    prev_out: f32,
+    alpha: f32,
+}
+
+impl HighPassFilter {
+    pub fn new(freq: f32, sample_rate: f32) -> HighPassFilter {
+        let rc = 1.0 / (2.0 * PI * freq);
+        let dt = 1.0 / sample_rate;
+        HighPassFilter {
+            prev_in: 0.0,
+            prev_out: 0.0,
+            alpha: rc / (rc + dt),
+        }
+    }
+
+    pub fn process(&mut self, sample: f32) -> f32 {
+        // y[i] := α * (y[i-1] + x[i] - x[i-1])
+        let out = self.alpha * (self.prev_out + sample - self.prev_in);
+        self.prev_in = sample;
+        self.prev_out = out;
+        out
     }
 }

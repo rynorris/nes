@@ -176,6 +176,13 @@ impl Writer for APU {
                 self.pulse_2.period |= ((byte & 0x7) as u16) << 8;
                 self.pulse_2.restart();
             },
+            0x4017 => {
+                self.sequence_mode = if byte & 0x80 == 0 {
+                    SequenceMode::FourStep
+                } else {
+                    SequenceMode::FiveStep
+                };
+            },
             _ => (),
         }
     }

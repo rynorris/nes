@@ -59,7 +59,11 @@ impl Writer for IORegisters {
             0x4000 ... 0x4013 | 0x4015 => self.apu.write(address, byte),
             0x4014 => self.oamdma = byte,
             0x4016 => self.joy1.write(address, byte),
-            0x4017 => self.joy2.write(address, byte),
+            0x4017 => {
+                // This address half drives the APU and half the joypad.
+                self.apu.write(address, byte);
+                self.joy2.write(address, byte);
+            },
             _ => (),
         }
     }

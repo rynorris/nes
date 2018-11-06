@@ -11,11 +11,12 @@ pub struct AudioQueue {
 }
 
 impl AudioQueue {
+
     pub fn new(audio: sdl2::AudioSubsystem, output: Rc<RefCell<SimpleAudioOut>>) -> AudioQueue {
         let spec = audio::AudioSpecDesired {
-            freq: Some(44_700),
+            freq: Some(44_100),
             channels: Some(1),
-            samples: Some(44_700 / 4),
+            samples: None,
         };
 
         let queue = match audio.open_queue(None, &spec) {
@@ -33,7 +34,13 @@ impl AudioQueue {
 
     pub fn flush(&mut self) {
         self.output.borrow_mut().consume(|data| {
-            self.queue.queue(&data);
+            let space_in_queue = (2000 - self.queue.size()) as usize;
+            let samples_to_queue = if space_in_queue <= data.len() {
+                space_in_queue
+            } else {
+                data.len()
+            };
+            self.queue.queue(&data[..samples_to_queue]);
         });
     }
 }
