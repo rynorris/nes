@@ -6,7 +6,7 @@ use std::rc::Rc;
 use emulator::clock::Ticker;
 use emulator::memory::{Reader, Writer};
 
-use self::synth::Pulse;
+use self::synth::{Pulse, Triangle};
 
 pub trait AudioOut {
     fn emit(&mut self, sample: f32);
@@ -40,9 +40,7 @@ pub struct APU {
     pulse_1: Pulse,
     pulse_2: Pulse,
 
-    triangle_timer: u8,
-    triangle_length: u8,
-    triangle_linear: u8,
+    triangle: Triangle,
 
     noise_timer: u8,
     noise_length: u8,
@@ -61,9 +59,7 @@ impl APU {
             pulse_1: Pulse::new(),
             pulse_2: Pulse::new(),
 
-            triangle_timer: 0,
-            triangle_length: 0,
-            triangle_linear: 0,
+            triangle: Triangle::new(),
 
             noise_timer: 0,
             noise_length: 0,
@@ -79,12 +75,13 @@ impl APU {
     fn clock_linear_and_envelope(&mut self) {
         self.pulse_1.envelope.clock();
         self.pulse_2.envelope.clock();
-        self.triangle_linear = self.triangle_linear.saturating_sub(1);
+        self.triangle.clock_linear();
     }
 
     fn clock_length_counters(&mut self) {
         self.pulse_1.clock_length();
         self.pulse_2.clock_length();
+        self.triangle.clock_linear();
     }
 }
 
@@ -125,10 +122,12 @@ impl Ticker for APU {
 
         self.pulse_1.clock();
         self.pulse_2.clock();
+        self.triangle.clock();
 
         // Mixer.
         let pulse_out = 0.00752 * ((self.pulse_1.volume() + self.pulse_2.volume()) as f32);
-        self.output.emit(pulse_out);
+        let tnd_out = 0.00851 * (self.triangle.volume() as f32);// + 0.00494 * noise + 0.00335 * dmc
+        self.output.emit(pulse_out + tnd_out);
         1
     }
 }
@@ -138,7 +137,9 @@ impl Writer for APU {
         match address {
             0x4000 => {
                 self.pulse_1.sequence = byte >> 6;
+                // These 2 flags share the same bit.
                 self.pulse_1.envelope.loop_flag = (byte & 0x20) != 0;
+                self.pulse_1.halt_length = (byte & 0x20) != 0;
                 self.pulse_1.envelope.constant_volume = (byte & 0x10) != 0;
                 self.pulse_1.envelope.set_volume(byte & 0x0F);
                 self.pulse_1.envelope.restart();
@@ -157,11 +158,13 @@ impl Writer for APU {
                 self.pulse_1.restart();
             },
             0x4004 => {
-                self.pulse_1.sequence = byte >> 6;
-                self.pulse_1.envelope.loop_flag = (byte & 0x20) != 0;
-                self.pulse_1.envelope.constant_volume = (byte & 0x10) != 0;
-                self.pulse_1.envelope.set_volume(byte & 0x0F);
-                self.pulse_1.envelope.restart();
+                self.pulse_2.sequence = byte >> 6;
+                // These 2 flags share the same bit.
+                self.pulse_2.envelope.loop_flag = (byte & 0x20) != 0;
+                self.pulse_2.halt_length = (byte & 0x20) != 0;
+                self.pulse_2.envelope.constant_volume = (byte & 0x10) != 0;
+                self.pulse_2.envelope.set_volume(byte & 0x0F);
+                self.pulse_2.envelope.restart();
             },
             0x4001 => {
                 // TODO: Sweep.
@@ -175,6 +178,21 @@ impl Writer for APU {
                 self.pulse_2.period &= 0x00FF;
                 self.pulse_2.period |= ((byte & 0x7) as u16) << 8;
                 self.pulse_2.restart();
+            },
+            0x4008 => {
+                self.triangle.linear_reload_value = byte & 0x7F;
+                self.triangle.halt_length = (byte & 0x80) != 0;
+                self.triangle.control_flag = (byte & 0x80) != 0;
+            },
+            0x400A => {
+                self.triangle.period &= 0xFF00;
+                self.triangle.period |= byte as u16;
+            },
+            0x400B => {
+                self.triangle.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
+                self.triangle.period &= 0x00FF;
+                self.triangle.period |= ((byte & 0x7) as u16) << 8;
+                self.triangle.linear_reload_flag = true;
             },
             0x4017 => {
                 self.sequence_mode = if byte & 0x80 == 0 {

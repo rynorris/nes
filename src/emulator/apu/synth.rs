@@ -92,6 +92,7 @@ pub struct Pulse {
     pub period: u16,
     timer: u16,
     pub length: u8,
+    pub halt_length: bool,
     pub sequence: u8,
     sequence_ix: u8,
     pub envelope: Envelope,
@@ -109,6 +110,7 @@ impl Pulse {
         Pulse {
             period: 0,
             length: 0,
+            halt_length: false,
             sequence: 0,
             envelope: Envelope::new(),
             timer: 0,
@@ -126,7 +128,9 @@ impl Pulse {
     }
 
     pub fn clock_length(&mut self) {
-        self.length = self.length.saturating_sub(1);
+        if !self.halt_length {
+            self.length = self.length.saturating_sub(1);
+        }
     }
 
     pub fn volume(&self) -> u8 {
@@ -148,5 +152,74 @@ impl Pulse {
     pub fn restart(&mut self) {
         self.sequence_ix = 0;
         self.envelope.restart();
+    }
+}
+
+pub struct Triangle {
+    pub period: u16,
+    timer: u16,
+    linear: u8,
+    pub length: u8,
+    pub halt_length: bool,
+    pub linear_reload_flag: bool,
+    pub linear_reload_value: u8,
+    pub control_flag: bool,
+    sequence_ix: u8,
+}
+
+impl Triangle {
+    const SEQUENCE: [u8; 32] = [
+        15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
+         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+    ];
+
+    pub fn new() -> Triangle {
+        Triangle {
+            period: 0,
+            timer: 0,
+            linear: 0,
+            length: 0,
+            halt_length: false,
+            linear_reload_flag: false,
+            linear_reload_value: 0,
+            control_flag: false,
+            sequence_ix: 0,
+        }
+    }
+
+    pub fn clock(&mut self) {
+        if self.timer == 0 {
+            self.sequence_ix = (self.sequence_ix + 1) % 32;
+            self.timer = self.period;
+        } else {
+            // Triangle timer clocks twice as fast as the other components.
+            self.timer = self.timer.saturating_sub(2);
+        }
+    }
+
+    pub fn clock_linear(&mut self) {
+        if self.linear_reload_flag {
+            self.linear = self.linear_reload_value;
+        } else if self.linear > 0 {
+            self.linear -= 1;
+        }
+
+        if !self.control_flag {
+            self.linear_reload_flag = false;
+        }
+    }
+
+    pub fn clock_length(&mut self) {
+        if !self.halt_length {
+            self.length = self.length.saturating_sub(1);
+        }
+    }
+
+    pub fn volume(&self) -> u8 {
+        if self.linear == 0 || self.length == 0 {
+            return 0;
+        }
+
+        Triangle::SEQUENCE[self.sequence_ix as usize]
     }
 }
