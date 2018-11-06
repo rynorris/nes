@@ -6,21 +6,6 @@ use emulator::ppu::PPU;
 
 pub struct PPUDebug {
     ppu: Rc<RefCell<PPU>>,
-
-    // Copy of pattern memory.
-    pattern_tables: [u8; 0x2000],
-
-    // Render pattern tables.
-    // Layout as two 128x128 squares.
-    pattern_buffer: [u8; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
-
-    // Render nametables.
-    // Layout as four 256x240 rectangles.
-    nametable_buffer: [u8; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
-
-    // Render sprites in OAM.
-    // Layout as 2 rows of 32 sprites each.  Each row 16px tall to account for tall sprites.
-    sprite_buffer: [u8; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3],
 }
 
 impl PPUDebug {
@@ -34,39 +19,37 @@ impl PPUDebug {
     pub fn new(ppu: Rc<RefCell<PPU>>) -> PPUDebug {
         PPUDebug {
             ppu,
-            pattern_tables: [0; 0x2000],
-
-            pattern_buffer: [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
-            nametable_buffer: [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
-            sprite_buffer: [0; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3],
         }
     }
 
-    pub fn do_render_pattern_tables<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
-        self.fill_pattern_buffer();
-        render(&self.pattern_buffer);
+    pub fn do_render<F, G, H>(&mut self, render_pattern: F, render_nametable: G, render_sprites: H) where
+        F : FnOnce(&[u8]) -> (),
+        G : FnOnce(&[u8]) -> (),
+        H : FnOnce(&[u8]) -> () {
+
+        let mut pattern_tables = [0; 0x2000];
+        self.hydrate_pattern_tables(&mut pattern_tables);
+
+        let mut pattern_buffer = [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3];
+        let mut nametable_buffer = [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3];
+        let mut sprite_buffer = [0; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3];
+
+        PPUDebug::fill_pattern_buffer(&mut pattern_buffer, &pattern_tables);
+        PPUDebug::fill_nametable_buffer(self.ppu.clone(), &mut nametable_buffer, &pattern_tables);
+        PPUDebug::fill_sprite_buffer(self.ppu.clone(), &mut sprite_buffer, &pattern_tables);
+        render_pattern(&pattern_buffer);
+        render_nametable(&nametable_buffer);
+        render_sprites(&sprite_buffer);
     }
 
-    pub fn do_render_nametables<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
-        self.fill_nametable_buffer();
-        render(&self.nametable_buffer);
-    }
-
-    pub fn do_render_sprites<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
-        self.fill_sprite_buffer();
-        render(&self.sprite_buffer);
-    }
-
-    pub fn hydrate_pattern_tables(&mut self) {
+    fn hydrate_pattern_tables(&mut self, target: &mut[u8]) {
         let mut ppu = self.ppu.borrow_mut();
         for ix in 0 .. 0x2000 {
-            self.pattern_tables[ix] = ppu.memory.read(ix as u16);
+            target[ix] = ppu.memory.read(ix as u16);
         }
     }
 
-    fn fill_pattern_buffer(&mut self) {
-        let source = &self.pattern_tables;
-        let target = &mut self.pattern_buffer;
+    fn fill_pattern_buffer(buffer: &mut[u8], pattern_tables: &[u8]) {
         for side in 0 .. 2 {
             for row in 0 .. 16 {
                 for column in 0 .. 16 {
@@ -76,8 +59,8 @@ impl PPUDebug {
                         column,
                         column * 8 + side * 128,
                         row * 8,
-                        source,
-                        target,
+                        pattern_tables,
+                        buffer,
                         PPUDebug::PATTERN_WIDTH as u16,
                     );
                 }
@@ -85,10 +68,8 @@ impl PPUDebug {
         }
     }
 
-    fn fill_nametable_buffer(&mut self) {
-        let mut ppu = self.ppu.borrow_mut();
-        let source = &self.pattern_tables;
-        let target = &mut self.nametable_buffer;
+    fn fill_nametable_buffer(ppu_cell: Rc<RefCell<PPU>>, buffer: &mut[u8], pattern_tables: &[u8]) {
+        let mut ppu = ppu_cell.borrow_mut();
         let side = if ppu.ppuctrl.is_set(flags::PPUCTRL::B) { 1 } else { 0 };
         for table in 0 .. 4 {
             for row in 0 .. 30 {
@@ -101,8 +82,8 @@ impl PPUDebug {
                         (nt_byte & 0xF) as u16,
                         ((table % 2) * 256) + column * 8,
                         ((table / 2) * 240) + row * 8,
-                        source,
-                        target,
+                        pattern_tables,
+                        buffer,
                         PPUDebug::NAMETABLE_WIDTH as u16,
                     );
                 }
@@ -110,10 +91,8 @@ impl PPUDebug {
         }
     }
 
-    fn fill_sprite_buffer(&mut self) {
-        let ppu = self.ppu.borrow();
-        let source = &self.pattern_tables;
-        let target = &mut self.sprite_buffer;
+    fn fill_sprite_buffer(ppu_cell: Rc<RefCell<PPU>>, buffer: &mut[u8], pattern_tables: &[u8]) {
+        let ppu = ppu_cell.borrow_mut();
         for sprite_ix in 0 .. 64 {
             let tile_byte = ppu.oam[(sprite_ix + 1) as usize];
             let tall_sprites = ppu.ppuctrl.is_set(flags::PPUCTRL::H);
@@ -130,8 +109,8 @@ impl PPUDebug {
                 (tile_ix & 0xF) as u16,
                 (sprite_ix % 32) * 8,
                 (sprite_ix / 32) * 16,
-                source,
-                target,
+                pattern_tables,
+                buffer,
                 PPUDebug::SPRITE_WIDTH as u16,
             );
 
@@ -142,8 +121,8 @@ impl PPUDebug {
                     (tile_ix & 0xF) as u16 + 1,
                     (sprite_ix % 32) * 8,
                     (sprite_ix / 32) * 16 + 8,
-                    source,
-                    target,
+                    pattern_tables,
+                    buffer,
                     PPUDebug::SPRITE_WIDTH as u16,
                 );
             }

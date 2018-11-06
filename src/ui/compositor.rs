@@ -124,19 +124,11 @@ impl Compositor {
         let nametable_texture = &mut self.nametable_texture;
         let sprite_texture = &mut self.sprite_texture;
 
-        self.ppu_debug.hydrate_pattern_tables();
-
-        self.ppu_debug.do_render_pattern_tables(|data| {
-            pattern_texture.update(None, data, PPUDebug::PATTERN_WIDTH * 3).unwrap();
-        });
-
-        self.ppu_debug.do_render_nametables(|data| {
-            nametable_texture.update(None, data, PPUDebug::NAMETABLE_WIDTH * 3).unwrap();
-        });
-
-        self.ppu_debug.do_render_sprites(|data| {
-            sprite_texture.update(None, data, PPUDebug::SPRITE_WIDTH * 3).unwrap();
-        });
+        self.ppu_debug.do_render(
+            |patterns| pattern_texture.update(None, patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap(),
+            |nametables| nametable_texture.update(None, nametables, PPUDebug::NAMETABLE_WIDTH * 3).unwrap(),
+            |sprites| sprite_texture.update(None, sprites, PPUDebug::SPRITE_WIDTH * 3).unwrap(),
+        );
 
         let _ = self.debug_canvas.copy(&pattern_texture, None, rect::Rect::new(0, 0, 256, 128));
         let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
