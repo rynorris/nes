@@ -11,10 +11,16 @@ pub struct PPUDebug {
     pattern_tables: [u8; 0x2000],
 
     // Render pattern tables.
-    // Layout as two 128x128 squares with a gap of 8 in the middle.
-    // => 264 x 128
+    // Layout as two 128x128 squares.
     pattern_buffer: [u8; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
+
+    // Render nametables.
+    // Layout as four 256x240 rectangles.
     nametable_buffer: [u8; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
+
+    // Render sprites in OAM.
+    // Layout as 2 rows of 32 sprites each.  Each row 16px tall to account for tall sprites.
+    sprite_buffer: [u8; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3],
 }
 
 impl PPUDebug {
@@ -22,6 +28,8 @@ impl PPUDebug {
     pub const PATTERN_HEIGHT: usize = 128;
     pub const NAMETABLE_WIDTH: usize = 256 * 2;
     pub const NAMETABLE_HEIGHT: usize = 240 * 2;
+    pub const SPRITE_WIDTH: usize = 256;
+    pub const SPRITE_HEIGHT: usize = 32;
 
     pub fn new(ppu: Rc<RefCell<PPU>>) -> PPUDebug {
         PPUDebug {
@@ -30,6 +38,7 @@ impl PPUDebug {
 
             pattern_buffer: [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
             nametable_buffer: [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
+            sprite_buffer: [0; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3],
         }
     }
 
@@ -41,6 +50,11 @@ impl PPUDebug {
     pub fn do_render_nametables<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
         self.fill_nametable_buffer();
         render(&self.nametable_buffer);
+    }
+
+    pub fn do_render_sprites<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
+        self.fill_sprite_buffer();
+        render(&self.sprite_buffer);
     }
 
     pub fn hydrate_pattern_tables(&mut self) {
@@ -92,6 +106,46 @@ impl PPUDebug {
                         PPUDebug::NAMETABLE_WIDTH as u16,
                     );
                 }
+            }
+        }
+    }
+
+    fn fill_sprite_buffer(&mut self) {
+        let ppu = self.ppu.borrow();
+        let source = &self.pattern_tables;
+        let target = &mut self.sprite_buffer;
+        for sprite_ix in 0 .. 64 {
+            let tile_byte = ppu.oam[(sprite_ix + 1) as usize];
+            let tall_sprites = ppu.ppuctrl.is_set(flags::PPUCTRL::H);
+            let (base, tile_ix) = match tall_sprites {
+                // Tall sprites.
+                true => (((tile_byte as u16) & 1) << 12, tile_byte & 0xFE),
+                
+                // Normal sprites.
+                false => (if ppu.ppuctrl.is_set(flags::PPUCTRL::S) { 0x1000 } else { 0x0000 }, tile_byte),
+            };
+            PPUDebug::copy_tile(
+                base,
+                (tile_ix >> 4) as u16,
+                (tile_ix & 0xF) as u16,
+                (sprite_ix % 32) * 8,
+                (sprite_ix / 32) * 16,
+                source,
+                target,
+                PPUDebug::SPRITE_WIDTH as u16,
+            );
+
+            if tall_sprites {
+                PPUDebug::copy_tile(
+                    base,
+                    (tile_ix >> 4) as u16,
+                    (tile_ix & 0xF) as u16 + 1,
+                    (sprite_ix % 32) * 8,
+                    (sprite_ix / 32) * 16 + 8,
+                    source,
+                    target,
+                    PPUDebug::SPRITE_WIDTH as u16,
+                );
             }
         }
     }
