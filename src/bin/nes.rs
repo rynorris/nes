@@ -2,19 +2,23 @@ extern crate mos_6500;
 
 use std::cell::RefCell;
 use std::env;
-use std::fs::File;
 use std::rc::Rc;
 use std::thread;
 use std::time::{Duration, Instant};
 
 use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
-use mos_6500::emulator::clock::Ticker;
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
-use mos_6500::emulator::io::event::{Event, EventBus, EventHandler, Key};
-use mos_6500::emulator::io::sdl;
+use mos_6500::emulator::io::event::EventBus;
+use mos_6500::emulator::ppu::debug::PPUDebug;
+
+use mos_6500::ui::controller::Controller;
+use mos_6500::ui::compositor::Compositor;
+use mos_6500::ui::input::InputPump;
 
 fn main() {
+    // -- Handle Args --
+
     let args: Vec<String> = env::args().collect();
 
     let rom_path = match args.get(2) {
@@ -22,18 +26,30 @@ fn main() {
         Some(path) => path,
     };
 
+
+    // -- Initialize --
+
     let rom = ines::ROM::load(rom_path);
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let io = Rc::new(RefCell::new(sdl::IO::new(event_bus.clone())));
-    let output = io::SimpleVideoOut::new(io.clone());
+    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
 
-    let nes = NES::new(event_bus.clone(), output, rom);
-    let lifecycle = Rc::new(RefCell::new(Lifecycle::new(nes)));
+    let nes = NES::new(event_bus.clone(), output.clone(), rom);
+    let ppu_debug = PPUDebug::new(nes.ppu.clone());
 
-    lifecycle.borrow_mut().start();
-    event_bus.borrow_mut().register(Box::new(lifecycle.clone()));
+    let sdl_context = sdl2::init().unwrap();
+    let video = sdl_context.video().unwrap();
+
+
+    let controller = Rc::new(RefCell::new(Controller::new(nes)));
+    let mut compositor = Compositor::new(video, output.clone(), ppu_debug);
+    let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
+
+    controller.borrow_mut().start();
+    event_bus.borrow_mut().register(Box::new(controller.clone()));
+
+    // -- Run --
 
     let started_instant = Instant::now();
     let frames_per_second = 30;
@@ -44,28 +60,30 @@ fn main() {
     let mut oversleep_ns = 0;
     let mut overwork_cycles = 0;
 
-    while lifecycle.borrow().is_running() {
-        let target_hz = lifecycle.borrow().target_hz();
+    while controller.borrow().is_running() {
+        let target_hz = controller.borrow().target_hz();
         let target_frame_cycles = target_hz / frames_per_second;
         let target_frame_ns = 1_000_000_000 / frames_per_second;
 
         let mut cycles_this_frame = 0;
         let target_ns_this_frame = target_frame_ns.saturating_sub(oversleep_ns);
-        let target_cycles_this_frame = target_frame_cycles - overwork_cycles;
+        let target_cycles_this_frame = target_frame_cycles.saturating_sub(overwork_cycles);
         let mut frame_ns = 0;
 
         while cycles_this_frame < target_cycles_this_frame && frame_ns < target_ns_this_frame {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
-            for _ in 1 .. batch_size {
-                cycles_this_frame += lifecycle.borrow_mut().tick();
+            for _ in 0 .. batch_size {
+                cycles_this_frame += controller.borrow_mut().tick();
             }
 
             let frame_time = frame_start.elapsed();
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
-        io.borrow_mut().tick();
+        compositor.set_debug(controller.borrow().show_debug());
+        compositor.render();
+        input.pump();
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
         if frame_ns < target_ns_this_frame {
@@ -104,76 +122,6 @@ fn main() {
 
             agg_cycles = 0;
         }
-    }
-}
-
-pub struct Lifecycle {
-    nes: NES,
-    is_running: bool,
-    is_tracing: bool,
-    target_hz: u64,
-}
-
-impl Lifecycle {
-    pub fn new(nes: NES) -> Lifecycle {
-        Lifecycle {
-            nes,
-            is_running: false,
-            is_tracing: false,
-            target_hz: NES_MASTER_CLOCK_HZ,
-        }
-    }
-
-    pub fn tick(&mut self) -> u64 {
-        self.nes.tick()
-    }
-
-    pub fn is_running(&self) -> bool {
-        self.is_running
-    }
-
-    pub fn start(&mut self) {
-        self.is_running = true;
-    }
-
-    pub fn target_hz(&self) -> u64 {
-        self.target_hz
-    }
-}
-
-impl EventHandler for Lifecycle {
-    fn handle_event(&mut self, event: Event) {
-        match event {
-            Event::KeyDown(key) => {
-                match key {
-                    Key::Escape => self.is_running = false,
-                    Key::Tab => {
-                        if self.is_tracing {
-                            self.nes.cpu.borrow_mut().stop_tracing();
-                            self.is_tracing = false;
-                        } else {
-                            self.is_tracing = true;
-                            self.nes.cpu.borrow_mut().start_tracing();
-                        }
-                        println!("CPU Tracing: {}", if self.is_tracing { "ON" } else { "OFF" });
-                    },
-                    Key::Return => {
-                        println!("Flushing CPU trace buffer to ./cpu.trace");
-                        let mut trace_file = match File::create("./cpu.trace") {
-                            Err(_) => panic!("Couldn't open trace file"),
-                            Ok(f) => f,
-                        };
-
-                        self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
-                    }
-                    Key::Minus => self.target_hz /= 2,
-                    Key::Equals => self.target_hz *= 2,
-                    Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ,
-                    _ => (),
-                };
-            },
-            _ => (),
-        };
     }
 }
 

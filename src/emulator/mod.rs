@@ -34,7 +34,7 @@ const NES_PPU_CLOCK_FACTOR: u32 = 4;
 pub struct NES {
     clock: clock::Clock,
     pub cpu: Rc<RefCell<cpu::CPU>>,
-    ppu: Rc<RefCell<ppu::PPU>>,
+    pub ppu: Rc<RefCell<ppu::PPU>>,
     apu: Rc<RefCell<apu::APU>>,
     nmi_pin: bool,
 }
