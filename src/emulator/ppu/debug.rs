@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::ppu::flags;
 use emulator::ppu::PPU;
 
 pub struct PPUDebug {
@@ -13,23 +14,33 @@ pub struct PPUDebug {
     // Layout as two 128x128 squares with a gap of 8 in the middle.
     // => 264 x 128
     pattern_buffer: [u8; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
+    nametable_buffer: [u8; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
 }
 
 impl PPUDebug {
-    pub const PATTERN_WIDTH: usize = 264;
+    pub const PATTERN_WIDTH: usize = 256;
     pub const PATTERN_HEIGHT: usize = 128;
+    pub const NAMETABLE_WIDTH: usize = 256 * 2;
+    pub const NAMETABLE_HEIGHT: usize = 240 * 2;
 
     pub fn new(ppu: Rc<RefCell<PPU>>) -> PPUDebug {
         PPUDebug {
             ppu,
             pattern_tables: [0; 0x2000],
-            pattern_buffer: [0; 264 * 128 * 3],
+
+            pattern_buffer: [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
+            nametable_buffer: [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
         }
     }
 
     pub fn do_render_pattern_tables<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
         self.fill_pattern_buffer();
         render(&self.pattern_buffer);
+    }
+
+    pub fn do_render_nametables<F : FnOnce(&[u8]) -> ()>(&mut self, render: F) {
+        self.fill_nametable_buffer();
+        render(&self.nametable_buffer);
     }
 
     pub fn hydrate_pattern_tables(&mut self) {
@@ -49,11 +60,36 @@ impl PPUDebug {
                         0x1000 * side,
                         row,
                         column,
-                        column * 8 + side * 136,
+                        column * 8 + side * 128,
                         row * 8,
                         source,
                         target,
                         PPUDebug::PATTERN_WIDTH as u16,
+                    );
+                }
+            }
+        }
+    }
+
+    fn fill_nametable_buffer(&mut self) {
+        let mut ppu = self.ppu.borrow_mut();
+        let source = &self.pattern_tables;
+        let target = &mut self.nametable_buffer;
+        let side = if ppu.ppuctrl.is_set(flags::PPUCTRL::B) { 1 } else { 0 };
+        for table in 0 .. 4 {
+            for row in 0 .. 30 {
+                for column in 0 .. 32 {
+                    let nt_addr = 0x2000 | (table << 10) | (row << 5) | column;
+                    let nt_byte = ppu.memory.read(nt_addr);
+                    PPUDebug::copy_tile(
+                        0x1000 * side,
+                        (nt_byte >> 4) as u16,
+                        (nt_byte & 0xF) as u16,
+                        ((table % 2) * 256) + column * 8,
+                        ((table / 2) * 240) + row * 8,
+                        source,
+                        target,
+                        PPUDebug::NAMETABLE_WIDTH as u16,
                     );
                 }
             }

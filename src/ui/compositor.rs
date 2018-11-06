@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use emulator::io::SimpleVideoOut;
 use emulator::ppu::debug::PPUDebug;
-use ui::sdl2::{pixels, render, video};
+use ui::sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
 
@@ -11,7 +11,8 @@ pub struct Compositor {
     canvas: render::Canvas<video::Window>,
     nes_texture: render::Texture,
     debug_canvas: render::Canvas<video::Window>,
-    debug_texture: render::Texture,
+    pattern_texture: render::Texture,
+    nametable_texture: render::Texture,
 
     nes_output: Rc<RefCell<SimpleVideoOut>>,
     ppu_debug: PPUDebug,
@@ -44,19 +45,25 @@ impl Compositor {
 
         let debug_window = video.window(
                 "NES (Debug)",
-                (PPUDebug::PATTERN_WIDTH as u32) * SCALE as u32,
-                (PPUDebug::PATTERN_HEIGHT as u32) * SCALE as u32)
+                256 * 2 as u32,
+                400 * 2 as u32)
             .opengl()
             .build()
             .unwrap();
 
-        let debug_canvas = debug_window.into_canvas()
+        let mut debug_canvas = debug_window.into_canvas()
             .accelerated()
             .build()
             .unwrap();
 
+        debug_canvas.set_scale(2.0, 2.0).unwrap();
+
         let debug_texture_creator = debug_canvas.texture_creator();
-        let debug_texture = match debug_texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 264, 128) {
+        let pattern_texture = match debug_texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 256, 128) {
+            Err(cause) => panic!("Failed to create texture: {}", cause),
+            Ok(t) => t,
+        };
+        let nametable_texture = match debug_texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 512, 512) {
             Err(cause) => panic!("Failed to create texture: {}", cause),
             Ok(t) => t,
         };
@@ -65,7 +72,8 @@ impl Compositor {
             canvas,
             nes_texture,
             debug_canvas,
-            debug_texture,
+            pattern_texture,
+            nametable_texture,
             nes_output,
             ppu_debug,
         }
@@ -88,12 +96,21 @@ impl Compositor {
 
     fn render_debug(&mut self) {
         self.debug_canvas.clear();
-        let texture = &mut self.debug_texture;
+        let pattern_texture = &mut self.pattern_texture;
+        let nametable_texture = &mut self.nametable_texture;
+
         self.ppu_debug.hydrate_pattern_tables();
+
         self.ppu_debug.do_render_pattern_tables(|data| {
-            let _ = texture.update(None, data, PPUDebug::PATTERN_WIDTH * 3);
+            pattern_texture.update(None, data, PPUDebug::PATTERN_WIDTH * 3).unwrap();
         });
-        let _ = self.debug_canvas.copy(&texture, None, None);
+
+        self.ppu_debug.do_render_nametables(|data| {
+            nametable_texture.update(None, data, PPUDebug::NAMETABLE_WIDTH * 3).unwrap();
+        });
+
+        let _ = self.debug_canvas.copy(&pattern_texture, None, rect::Rect::new(0, 0, 256, 128));
+        let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
         self.debug_canvas.present();
     }
 }
