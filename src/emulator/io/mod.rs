@@ -58,23 +58,25 @@ impl SimpleVideoOut {
 
 pub struct SimpleAudioOut {
     buffer: Vec<f32>,
-    counter: u16,
+    counter: f32,
     low_pass_filter: LowPassFilter,
     high_pass_filter_1: HighPassFilter,
     high_pass_filter_2: HighPassFilter,
 }
 
 impl SimpleAudioOut {
-    const BUF_SIZE: usize = 2000;
-    const DOWNSAMPLE_FACTOR: u16 = 20;
+    const BUF_SIZE: usize = 2048;
+    const APU_CLOCK: f32 = 1_789_773.0 / 2.0;
+    const SAMPLE_RATE: f32 = 44_100.0;
+    const SAMPLE_CYCLES: f32 = SimpleAudioOut::APU_CLOCK / SimpleAudioOut::SAMPLE_RATE;
 
     pub fn new() -> SimpleAudioOut {
         SimpleAudioOut {
             buffer: Vec::with_capacity(SimpleAudioOut::BUF_SIZE),
-            counter: 0,
-            low_pass_filter: LowPassFilter::new(14_000.0, 44_100.0),
-            high_pass_filter_1: HighPassFilter::new(440.0, 44_100.0),
-            high_pass_filter_2: HighPassFilter::new(90.0, 44_100.0),
+            counter: 0.0,
+            low_pass_filter: LowPassFilter::new(14_000.0, SimpleAudioOut::SAMPLE_RATE),
+            high_pass_filter_1: HighPassFilter::new(440.0, SimpleAudioOut::SAMPLE_RATE),
+            high_pass_filter_2: HighPassFilter::new(90.0, SimpleAudioOut::SAMPLE_RATE),
         }
     }
 
@@ -84,9 +86,9 @@ impl SimpleAudioOut {
     }
 
     fn queue_sample(&mut self, mut sample: f32) {
-        sample = self.high_pass_filter_2.process(sample);
-        sample = self.high_pass_filter_1.process(sample);
         sample = self.low_pass_filter.process(sample);
+        sample = self.high_pass_filter_1.process(sample);
+        sample = self.high_pass_filter_2.process(sample);
         // Just drop samples if our buffer is full.
         if self.buffer.len() <= SimpleAudioOut::BUF_SIZE {
             self.buffer.push(sample);
@@ -97,11 +99,10 @@ impl SimpleAudioOut {
 impl apu::AudioOut for SimpleAudioOut {
     fn emit(&mut self, sample: f32) {
         // Drop most samples.
-        if self.counter == 0 {
-            self.counter = SimpleAudioOut::DOWNSAMPLE_FACTOR;
+        self.counter += 1.0;
+        if self.counter > SimpleAudioOut::SAMPLE_CYCLES {
+            self.counter -= SimpleAudioOut::SAMPLE_CYCLES;
             self.queue_sample(sample);
-        } else {
-            self.counter -= 1;
         }
     }
 }
@@ -117,7 +118,7 @@ impl LowPassFilter {
         let dt = 1.0 / sample_rate;
         LowPassFilter {
             prev_out: 0.0,
-            alpha: dt / (rc + dt),
+            alpha: rc / (rc + dt),
         }
     }
 

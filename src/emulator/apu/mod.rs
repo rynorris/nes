@@ -6,7 +6,7 @@ use std::rc::Rc;
 use emulator::clock::Ticker;
 use emulator::memory::{Reader, Writer};
 
-use self::synth::{Pulse, Triangle};
+use self::synth::{Noise, Pulse, Triangle};
 
 pub trait AudioOut {
     fn emit(&mut self, sample: f32);
@@ -39,13 +39,8 @@ pub struct APU {
 
     pulse_1: Pulse,
     pulse_2: Pulse,
-
     triangle: Triangle,
-
-    noise_timer: u8,
-    noise_length: u8,
-    noise_envelope: u8,
-    noise_feedback: u8,
+    noise: Noise,
 }
 
 impl APU {
@@ -56,15 +51,11 @@ impl APU {
             sequence_mode: SequenceMode::FourStep,
             cycle_counter: 0,
             irq_flag: false,
+
             pulse_1: Pulse::new(),
             pulse_2: Pulse::new(),
-
             triangle: Triangle::new(),
-
-            noise_timer: 0,
-            noise_length: 0,
-            noise_envelope: 0,
-            noise_feedback: 0,
+            noise: Noise::new(),
         }
     }
 
@@ -76,12 +67,14 @@ impl APU {
         self.pulse_1.envelope.clock();
         self.pulse_2.envelope.clock();
         self.triangle.clock_linear();
+        self.noise.envelope.clock();
     }
 
     fn clock_length_counters(&mut self) {
         self.pulse_1.clock_length();
         self.pulse_2.clock_length();
-        self.triangle.clock_linear();
+        self.triangle.clock_length();
+        self.noise.clock_length();
     }
 }
 
@@ -123,10 +116,16 @@ impl Ticker for APU {
         self.pulse_1.clock();
         self.pulse_2.clock();
         self.triangle.clock();
+        self.noise.clock();
 
         // Mixer.
-        let pulse_out = 0.00752 * ((self.pulse_1.volume() + self.pulse_2.volume()) as f32);
-        let tnd_out = 0.00851 * (self.triangle.volume() as f32);// + 0.00494 * noise + 0.00335 * dmc
+        let p1 = self.pulse_1.volume() as f32;
+        let p2 = self.pulse_2.volume() as f32;
+        let t = self.triangle.volume() as f32;
+        let n = self.noise.volume() as f32;
+
+        let pulse_out = 0.00752 * (p1 + p2);
+        let tnd_out = 0.00851 * (t + 0.00494 * n);// + 0.00335 * dmc
         self.output.emit(pulse_out + tnd_out);
         1
     }
@@ -194,6 +193,45 @@ impl Writer for APU {
                 self.triangle.period |= ((byte & 0x7) as u16) << 8;
                 self.triangle.linear_reload_flag = true;
             },
+            0x400C => {
+                self.noise.halt_length = (byte & 0x20) != 0;
+                self.noise.envelope.constant_volume = (byte & 0x10) != 0;
+                self.noise.envelope.set_volume(byte & 0x0F);
+            },
+            0x400E => {
+                self.noise.mode = byte & 0x80 != 0;
+                self.noise.period = Noise::PERIOD_LOOKUP[(byte & 0x0F) as usize];
+            }
+            0x400F => {
+                self.noise.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
+                self.noise.envelope.restart();
+            },
+            0x4015 => {
+                if (byte >> 3) & 0x1 != 0 {
+                    self.noise.enabled = true;
+                } else {
+                    self.noise.enabled = false;
+                    self.noise.length = 0;
+                }
+                if (byte >> 2) & 0x1 != 0 {
+                    self.triangle.enabled = true;
+                } else {
+                    self.triangle.enabled = false;
+                    self.triangle.length = 0;
+                }
+                if (byte >> 1) & 0x1 != 0 {
+                    self.pulse_2.enabled = true;
+                } else {
+                    self.pulse_2.enabled = false;
+                    self.pulse_2.length = 0;
+                }
+                if byte & 0x1 != 0 {
+                    self.pulse_1.enabled = true;
+                } else {
+                    self.pulse_1.enabled = false;
+                    self.pulse_1.length = 0;
+                }
+            },
             0x4017 => {
                 self.sequence_mode = if byte & 0x80 == 0 {
                     SequenceMode::FourStep
@@ -213,6 +251,8 @@ impl Reader for APU {
                 let mut status = 0;
                 if self.pulse_1.length != 0 { status |= 1 };
                 if self.pulse_2.length != 0 { status |= 1 << 1 };
+                if self.triangle.length != 0 { status |= 1 << 2 };
+                if self.noise.length != 0 { status |= 1 << 3 };
                 if self.irq_flag { status |= 1 << 6 };
 
                 self.irq_flag = false;

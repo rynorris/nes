@@ -89,6 +89,7 @@ impl Envelope {
 }
 
 pub struct Pulse {
+    pub enabled: bool,
     pub period: u16,
     timer: u16,
     pub length: u8,
@@ -108,6 +109,7 @@ impl Pulse {
 
     pub fn new() -> Pulse {
         Pulse {
+            enabled: false,
             period: 0,
             length: 0,
             halt_length: false,
@@ -134,6 +136,10 @@ impl Pulse {
     }
 
     pub fn volume(&self) -> u8 {
+        if !self.enabled {
+            return 0;
+        }
+
         if self.timer < 8 {
             return 0;
         }
@@ -156,6 +162,7 @@ impl Pulse {
 }
 
 pub struct Triangle {
+    pub enabled: bool,
     pub period: u16,
     timer: u16,
     linear: u8,
@@ -175,6 +182,7 @@ impl Triangle {
 
     pub fn new() -> Triangle {
         Triangle {
+            enabled: false,
             period: 0,
             timer: 0,
             linear: 0,
@@ -216,10 +224,83 @@ impl Triangle {
     }
 
     pub fn volume(&self) -> u8 {
+        if !self.enabled {
+            return 0;
+        }
+
         if self.linear == 0 || self.length == 0 {
             return 0;
         }
 
         Triangle::SEQUENCE[self.sequence_ix as usize]
+    }
+}
+
+pub struct Noise {
+    pub enabled: bool,
+    pub envelope: Envelope,
+    shift_register: u16,
+    pub length: u8,
+    pub halt_length: bool,
+    pub mode: bool,
+    pub period: u16,
+    timer: u16,
+}
+
+impl Noise {
+    pub const PERIOD_LOOKUP: [u16; 16] = [
+        4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068,
+    ];
+
+    pub fn new() -> Noise {
+        Noise {
+            enabled: false,
+            envelope: Envelope::new(),
+            shift_register: 1,
+            length: 0,
+            halt_length: false,
+            mode: false,
+            period: 0,
+            timer: 0,
+        }
+    }
+
+    pub fn clock(&mut self) {
+        if self.timer == 0 {
+            self.timer = self.period;
+            let bit1 = self.shift_register & 0x1;
+            let bit2 = if self.mode {
+                (self.shift_register >> 5) & 0x1
+            } else {
+                (self.shift_register >> 1) & 0x1
+            };
+            let feedback = bit1 ^ bit2;
+            self.shift_register >>= 1;
+            self.shift_register |= feedback << 13;
+        } else {
+            self.timer = self.timer.saturating_sub(2);
+        }
+    }
+
+    pub fn clock_length(&mut self) {
+        if !self.halt_length {
+            self.length = self.length.saturating_sub(1);
+        }
+    }
+
+    pub fn volume(&self) -> u8 {
+        if !self.enabled {
+            return 0;
+        }
+
+        if self.shift_register & 0x1 != 0 {
+            return 0;
+        }
+
+        if self.length == 0 {
+            return 0;
+        }
+
+        self.envelope.volume()
     }
 }
