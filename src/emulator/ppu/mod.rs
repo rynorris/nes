@@ -1,8 +1,12 @@
+pub mod debug;
 mod flags;
 mod registers;
 
 #[cfg(test)]
 mod test;
+
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use emulator::clock;
 use emulator::components::bitfield::BitField;
@@ -42,6 +46,12 @@ pub struct Palette {
 
 pub trait VideoOut {
     fn emit(&mut self, c: Colour);
+}
+
+impl <V : VideoOut> VideoOut for Rc<RefCell<V>> {
+    fn emit(&mut self, c: Colour) {
+        self.borrow_mut().emit(c);
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -607,7 +617,7 @@ impl PPU {
 
         let (pattern_table_base, mut tile_index) = match tall_sprites {
             // Set = 8x16 mode, decided by bit 0.
-            true => (((tile_no as u16) & 1) << 7, tile_no & 0xFE),
+            true => (((tile_no as u16) & 1) << 12, tile_no & 0xFE),
 
             // Unset = 8x8 mode, table decided by S flag.
             false => (if self.ppuctrl.is_set(flags::PPUCTRL::S) { 0x1000 } else { 0x0000 }, tile_no),
