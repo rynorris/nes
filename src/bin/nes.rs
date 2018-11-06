@@ -12,6 +12,7 @@ use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
 use mos_6500::emulator::ppu::debug::PPUDebug;
 
+use mos_6500::ui::audio::AudioQueue;
 use mos_6500::ui::controller::Controller;
 use mos_6500::ui::compositor::Compositor;
 use mos_6500::ui::input::InputPump;
@@ -33,17 +34,19 @@ fn main() {
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let video_output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new()));
 
-    let nes = NES::new(event_bus.clone(), output.clone(), rom);
+    let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
     let ppu_debug = PPUDebug::new(nes.ppu.clone());
 
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
-
+    let audio = sdl_context.audio().unwrap();
 
     let controller = Rc::new(RefCell::new(Controller::new(nes)));
-    let mut compositor = Compositor::new(video, output.clone(), ppu_debug);
+    let mut compositor = Compositor::new(video, video_output.clone(), ppu_debug);
+    let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
     controller.borrow_mut().start();
@@ -83,6 +86,7 @@ fn main() {
 
         compositor.set_debug(controller.borrow().show_debug());
         compositor.render();
+        audio_queue.flush();
         input.pump();
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.

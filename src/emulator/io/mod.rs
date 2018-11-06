@@ -3,6 +3,7 @@ pub mod nop;
 pub mod palette;
 pub mod sdl;
 
+use emulator::apu;
 use emulator::ppu;
 
 pub trait Graphics {
@@ -50,5 +51,53 @@ impl SimpleVideoOut {
 
     pub fn do_render<F : FnOnce(&[u8]) -> ()>(&self, render: F) {
         render(&self.screen_buffer);
+    }
+}
+
+pub struct SimpleAudioOut {
+    buffer: Vec<f32>,
+    counter: u16,
+}
+
+impl SimpleAudioOut {
+    const BUF_SIZE: usize = 44700 / 4;
+    const DOWNSAMPLE_FACTOR: u16 = 20;
+
+    pub fn new() -> SimpleAudioOut {
+        SimpleAudioOut {
+            buffer: Vec::with_capacity(SimpleAudioOut::BUF_SIZE),
+            counter: 0,
+        }
+    }
+
+    pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, consume: F) {
+        print!("Consuming {} samples:", self.buffer.len());
+        for ix in 0 .. 8 {
+            if ix < self.buffer.len() {
+                print!(" {:.2}", self.buffer[ix]);
+            }
+        }
+        println!("");
+        consume(self.buffer.as_slice());
+        self.buffer.clear();
+    }
+
+    fn queue_sample(&mut self, sample: f32) {
+        // Just drop samples if our buffer is full.
+        if self.buffer.len() <= SimpleAudioOut::BUF_SIZE {
+            self.buffer.push(sample);
+        }
+    }
+}
+
+impl apu::AudioOut for SimpleAudioOut {
+    fn emit(&mut self, sample: f32) {
+        // Drop most samples.
+        if self.counter == 0 {
+            self.counter = SimpleAudioOut::DOWNSAMPLE_FACTOR;
+            self.queue_sample(sample);
+        } else {
+            self.counter -= 1;
+        }
     }
 }

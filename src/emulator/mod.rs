@@ -17,6 +17,7 @@ mod test;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::apu::AudioOut;
 use emulator::controller::Button;
 use emulator::io::event::{EventBus, Key};
 use emulator::memory::ReadWriter;
@@ -40,7 +41,8 @@ pub struct NES {
 }
 
 impl NES {
-    pub fn new<V: VideoOut + 'static>(event_bus: Rc<RefCell<EventBus>>, video: V, rom: ines::ROM) -> NES {
+    pub fn new<V, A>(event_bus: Rc<RefCell<EventBus>>, video: V, audio: A, rom: ines::ROM) -> NES where
+    V: VideoOut + 'static, A: AudioOut + 'static {
         // Create master clock.
         let mut clock = clock::Clock::new();
 
@@ -59,7 +61,7 @@ impl NES {
                     Box::new(video))));
 
         // Create APU.
-        let apu = Rc::new(RefCell::new(apu::APU::new()));
+        let apu = Rc::new(RefCell::new(apu::APU::new(Box::new(audio))));
 
         // Create controllers.
         let joy1 = Rc::new(RefCell::new(controller::Controller::new([
