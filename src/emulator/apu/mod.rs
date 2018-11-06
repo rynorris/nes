@@ -8,6 +8,11 @@ enum SequenceMode {
     FiveStep,
 }
 
+const LENGTH_COUNTER_LOOKUP: [u8; 0x20] = [
+    10,254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
+    12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30,
+];
+
 pub struct APU {
     sequence_mode: SequenceMode,
     cycle_counter: u64,
@@ -140,16 +145,16 @@ impl Writer for APU {
     fn write(&mut self, address: u16, byte: u8) {
         match address {
             0x4003 => {
-                self.pulse_1_length = byte >> 3;
+                self.pulse_1_length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
             },
             0x4007 => {
-                self.pulse_2_length = byte >> 3;
+                self.pulse_2_length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
             },
             0x400B => {
-                self.triangle_length = byte >> 3;
+                self.triangle_length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
             },
             0x400F => {
-                self.noise_length = byte >> 3;
+                self.noise_length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
             },
             _ => (),
         }
