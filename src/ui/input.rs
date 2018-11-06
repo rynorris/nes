@@ -70,7 +70,7 @@ fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
         Keycode::Y => Some(Key::Y),
         Keycode::Z => Some(Key::Z),
 
-        Keycode::Num0 => Some(Key::Num0),
+        Keycode::Backquote => Some(Key::Backquote),
         Keycode::Num1 => Some(Key::Num1),
         Keycode::Num2 => Some(Key::Num2),
         Keycode::Num3 => Some(Key::Num3),
@@ -80,6 +80,7 @@ fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
         Keycode::Num7 => Some(Key::Num7),
         Keycode::Num8 => Some(Key::Num8),
         Keycode::Num9 => Some(Key::Num9),
+        Keycode::Num0 => Some(Key::Num0),
         Keycode::Minus => Some(Key::Minus),
         Keycode::Equals => Some(Key::Equals),
 

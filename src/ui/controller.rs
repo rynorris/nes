@@ -68,10 +68,17 @@ impl EventHandler for Controller {
 
                         self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
                     }
-                    Key::Minus => self.target_hz /= 2,
-                    Key::Equals => self.target_hz *= 2,
-                    Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ,
-                    Key::Num1 => self.show_debug = !self.show_debug,
+                    Key::Backquote => self.show_debug = !self.show_debug,
+                    Key::Num1 => self.target_hz = 0,  // Paused
+                    Key::Num2 => self.target_hz = 20_000,  // Scanlines
+                    Key::Num3 => self.target_hz = 200_000,  // Frames
+                    Key::Num4 => self.target_hz = 2_000_000,  // 1/10 slow-mo
+                    Key::Num5 => self.target_hz = 10_000_000,  // 1/2 Slow-mo
+                    Key::Num6 => self.target_hz = NES_MASTER_CLOCK_HZ, // Normal
+                    Key::Num7 => self.target_hz = NES_MASTER_CLOCK_HZ * 2,  // Fast Forward
+                    Key::Num8 => self.target_hz = NES_MASTER_CLOCK_HZ * 3,
+                    Key::Num9 => self.target_hz = NES_MASTER_CLOCK_HZ * 4,
+                    Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ * 5,
                     _ => (),
                 };
             },
