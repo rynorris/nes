@@ -278,7 +278,7 @@ impl Noise {
             self.shift_register >>= 1;
             self.shift_register |= feedback << 13;
         } else {
-            self.timer = self.timer.saturating_sub(2);
+            self.timer = self.timer.saturating_sub(1);
         }
     }
 

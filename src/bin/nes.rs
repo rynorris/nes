@@ -55,7 +55,7 @@ fn main() {
     // -- Run --
 
     let started_instant = Instant::now();
-    let frames_per_second = 30;
+    let frames_per_second = 60;
     let mut frame_start = started_instant;
     let mut frame_ix = 0;
     let mut agg_cycles = 0;
@@ -84,9 +84,9 @@ fn main() {
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
+        audio_queue.flush();
         compositor.set_debug(controller.borrow().show_debug());
         compositor.render();
-        audio_queue.flush();
         input.pump();
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.

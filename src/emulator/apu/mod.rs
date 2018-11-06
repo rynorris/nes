@@ -195,8 +195,10 @@ impl Writer for APU {
             },
             0x400C => {
                 self.noise.halt_length = (byte & 0x20) != 0;
+                self.noise.envelope.loop_flag = (byte & 0x20) != 0;
                 self.noise.envelope.constant_volume = (byte & 0x10) != 0;
                 self.noise.envelope.set_volume(byte & 0x0F);
+                self.noise.envelope.restart();
             },
             0x400E => {
                 self.noise.mode = byte & 0x80 != 0;

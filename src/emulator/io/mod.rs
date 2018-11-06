@@ -65,14 +65,13 @@ pub struct SimpleAudioOut {
 }
 
 impl SimpleAudioOut {
-    const BUF_SIZE: usize = 2048;
-    const APU_CLOCK: f32 = 1_789_773.0 / 2.0;
+    const APU_CLOCK: f32 = 1_789_773.0;
     const SAMPLE_RATE: f32 = 44_100.0;
-    const SAMPLE_CYCLES: f32 = SimpleAudioOut::APU_CLOCK / SimpleAudioOut::SAMPLE_RATE;
+    const SAMPLES_PER_FRAME: usize = (SimpleAudioOut::SAMPLE_RATE / 30.0) as usize;
 
     pub fn new() -> SimpleAudioOut {
         SimpleAudioOut {
-            buffer: Vec::with_capacity(SimpleAudioOut::BUF_SIZE),
+            buffer: Vec::new(),
             counter: 0.0,
             low_pass_filter: LowPassFilter::new(14_000.0, SimpleAudioOut::SAMPLE_RATE),
             high_pass_filter_1: HighPassFilter::new(440.0, SimpleAudioOut::SAMPLE_RATE),
@@ -80,30 +79,36 @@ impl SimpleAudioOut {
         }
     }
 
-    pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, consume: F) {
-        consume(self.buffer.as_slice());
+    pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, num_samples: usize, consume: F) {
+        if self.buffer.len() == 0 || num_samples == 0 {
+            return;
+        }
+
+        let mut buf = Vec::with_capacity(num_samples);
+
+        // Need to downsample all the samples we collected this frame.
+        let total = self.buffer.len();
+        let step = total / num_samples;
+        for ix in 0 .. num_samples {
+            let mut sample = self.buffer[ix * step];
+            sample = self.high_pass_filter_2.process(sample);
+            sample = self.high_pass_filter_1.process(sample);
+            sample = self.low_pass_filter.process(sample);
+            buf.push(sample);
+        }
+        
+        consume(&buf);
         self.buffer.clear();
     }
 
-    fn queue_sample(&mut self, mut sample: f32) {
-        sample = self.low_pass_filter.process(sample);
-        sample = self.high_pass_filter_1.process(sample);
-        sample = self.high_pass_filter_2.process(sample);
-        // Just drop samples if our buffer is full.
-        if self.buffer.len() <= SimpleAudioOut::BUF_SIZE {
-            self.buffer.push(sample);
-        }
+    fn queue_sample(&mut self, sample: f32) {
+        self.buffer.push(sample);
     }
 }
 
 impl apu::AudioOut for SimpleAudioOut {
     fn emit(&mut self, sample: f32) {
-        // Drop most samples.
-        self.counter += 1.0;
-        if self.counter > SimpleAudioOut::SAMPLE_CYCLES {
-            self.counter -= SimpleAudioOut::SAMPLE_CYCLES;
-            self.queue_sample(sample);
-        }
+        self.queue_sample(sample);
     }
 }
 

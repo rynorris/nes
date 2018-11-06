@@ -33,7 +33,7 @@ impl AudioQueue {
     }
 
     pub fn flush(&mut self) {
-        self.output.borrow_mut().consume(|data| {
+        self.output.borrow_mut().consume((44_100 / 60) as usize, |data| {
             self.queue.queue(&data);
         });
     }
