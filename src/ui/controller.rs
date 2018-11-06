@@ -8,6 +8,7 @@ pub struct Controller {
     is_running: bool,
     is_tracing: bool,
     target_hz: u64,
+    show_debug: bool,
 }
 
 impl Controller {
@@ -17,6 +18,7 @@ impl Controller {
             is_running: false,
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
+            show_debug: false,
         }
     }
 
@@ -34,6 +36,10 @@ impl Controller {
 
     pub fn target_hz(&self) -> u64 {
         self.target_hz
+    }
+
+    pub fn show_debug(&self) -> bool {
+        self.show_debug
     }
 }
 
@@ -65,6 +71,7 @@ impl EventHandler for Controller {
                     Key::Minus => self.target_hz /= 2,
                     Key::Equals => self.target_hz *= 2,
                     Key::Num0 => self.target_hz = NES_MASTER_CLOCK_HZ,
+                    Key::Num1 => self.show_debug = !self.show_debug,
                     _ => (),
                 };
             },

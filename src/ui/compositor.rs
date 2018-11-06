@@ -17,6 +17,7 @@ pub struct Compositor {
 
     nes_output: Rc<RefCell<SimpleVideoOut>>,
     ppu_debug: PPUDebug,
+    debug_is_on: bool,
 }
 
 impl Compositor {
@@ -49,6 +50,7 @@ impl Compositor {
                 256 * 2 as u32,
                 432 * 2 as u32)
             .opengl()
+            .hidden()
             .build()
             .unwrap();
 
@@ -85,12 +87,25 @@ impl Compositor {
             sprite_texture,
             nes_output,
             ppu_debug,
+            debug_is_on: false,
         }
     }
 
     pub fn render(&mut self) {
         self.render_main();
-        self.render_debug();
+
+        if self.debug_is_on {
+            self.render_debug();
+        }
+    }
+
+    pub fn set_debug(&mut self, on: bool) {
+        self.debug_is_on = on;
+        if self.debug_is_on {
+            self.debug_canvas.window_mut().show();
+        } else {
+            self.debug_canvas.window_mut().hide();
+        }
     }
 
     fn render_main(&mut self) {

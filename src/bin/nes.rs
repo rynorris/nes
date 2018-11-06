@@ -81,6 +81,7 @@ fn main() {
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
+        compositor.set_debug(controller.borrow().show_debug());
         compositor.render();
         input.pump();
 
