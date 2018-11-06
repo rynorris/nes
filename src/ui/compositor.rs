@@ -89,6 +89,7 @@ impl Compositor {
     fn render_debug(&mut self) {
         self.debug_canvas.clear();
         let texture = &mut self.debug_texture;
+        self.ppu_debug.hydrate_pattern_tables();
         self.ppu_debug.do_render_pattern_tables(|data| {
             let _ = texture.update(None, data, PPUDebug::PATTERN_WIDTH * 3);
         });
