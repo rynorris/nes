@@ -464,7 +464,7 @@ impl DMC {
         }
 
         self.shift_register >>= 1;
-        self.bits_remaining -= 1;
+        self.bits_remaining = self.bits_remaining.saturating_sub(1);
 
         if self.bits_remaining == 0 {
             self.bits_remaining = 8;
