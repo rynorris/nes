@@ -65,17 +65,15 @@ pub struct SimpleAudioOut {
 }
 
 impl SimpleAudioOut {
-    const APU_CLOCK: f32 = 1_789_773.0;
     const SAMPLE_RATE: f32 = 44_100.0;
-    const SAMPLES_PER_FRAME: usize = (SimpleAudioOut::SAMPLE_RATE / 30.0) as usize;
 
-    pub fn new() -> SimpleAudioOut {
+    pub fn new(sample_rate: f32) -> SimpleAudioOut {
         SimpleAudioOut {
             buffer: Vec::new(),
             counter: 0.0,
-            low_pass_filter: LowPassFilter::new(14_000.0, SimpleAudioOut::SAMPLE_RATE),
-            high_pass_filter_1: HighPassFilter::new(440.0, SimpleAudioOut::SAMPLE_RATE),
-            high_pass_filter_2: HighPassFilter::new(90.0, SimpleAudioOut::SAMPLE_RATE),
+            low_pass_filter: LowPassFilter::new(14_000.0, sample_rate),
+            high_pass_filter_1: HighPassFilter::new(440.0, sample_rate),
+            high_pass_filter_2: HighPassFilter::new(90.0, sample_rate),
         }
     }
 

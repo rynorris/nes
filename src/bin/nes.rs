@@ -12,7 +12,7 @@ use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
 use mos_6500::emulator::ppu::debug::PPUDebug;
 
-use mos_6500::ui::audio::AudioQueue;
+use mos_6500::ui::audio::{AudioQueue, SAMPLE_RATE};
 use mos_6500::ui::controller::Controller;
 use mos_6500::ui::compositor::Compositor;
 use mos_6500::ui::input::InputPump;
@@ -35,7 +35,7 @@ fn main() {
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
     let video_output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
-    let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new()));
+    let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
 
     let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
     let ppu_debug = PPUDebug::new(nes.ppu.clone());
