@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use emulator::io::SimpleAudioOut;
 
+use ui::RENDER_FPS;
 use ui::sdl2::audio;
 
 pub const SAMPLE_RATE: f32 = 44_100.0;
@@ -35,7 +36,7 @@ impl AudioQueue {
     }
 
     pub fn flush(&mut self) {
-        self.output.borrow_mut().consume((SAMPLE_RATE / 60.0) as usize, |data| {
+        self.output.borrow_mut().consume((SAMPLE_RATE / (RENDER_FPS as f32)) as usize, |data| {
             self.queue.queue(&data);
         });
     }

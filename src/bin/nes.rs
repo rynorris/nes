@@ -12,6 +12,7 @@ use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
 use mos_6500::emulator::ppu::debug::PPUDebug;
 
+use mos_6500::ui::RENDER_FPS;
 use mos_6500::ui::audio::{AudioQueue, SAMPLE_RATE};
 use mos_6500::ui::controller::Controller;
 use mos_6500::ui::compositor::Compositor;
@@ -55,7 +56,7 @@ fn main() {
     // -- Run --
 
     let started_instant = Instant::now();
-    let frames_per_second = 60;
+    let frames_per_second = RENDER_FPS;
     let mut frame_start = started_instant;
     let mut frame_ix = 0;
     let mut agg_cycles = 0;
