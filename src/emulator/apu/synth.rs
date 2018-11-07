@@ -128,7 +128,7 @@ impl Sweep {
     pub fn get_updated_period(&mut self, current_period: u16) -> u16 {
         if self.divider.clock() {
             self.reload_flag = false;
-            if self.enabled && !self.is_muting(current_period) {
+            if self.shift_count != 0 && self.enabled && !self.is_muting(current_period) {
                 return self.target_period;
             }
         }
