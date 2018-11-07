@@ -61,7 +61,10 @@ impl NES {
                     Box::new(video))));
 
         // Create APU.
-        let apu = Rc::new(RefCell::new(apu::APU::new(Box::new(audio))));
+        let apu = Rc::new(RefCell::new(apu::APU::new(
+                    Box::new(audio),
+                    Box::new(memory::PrgMapper::new(mapper.clone())),
+                    )));
 
         // Create controllers.
         let joy1 = Rc::new(RefCell::new(controller::Controller::new([

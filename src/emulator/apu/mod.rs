@@ -6,7 +6,7 @@ use std::rc::Rc;
 use emulator::clock::Ticker;
 use emulator::memory::{Reader, Writer};
 
-use self::synth::{Noise, Pulse, Triangle};
+use self::synth::{DMC, Noise, Pulse, Triangle};
 
 pub trait AudioOut {
     fn emit(&mut self, sample: f32);
@@ -41,10 +41,11 @@ pub struct APU {
     pulse_2: Pulse,
     triangle: Triangle,
     noise: Noise,
+    dmc: DMC,
 }
 
 impl APU {
-    pub fn new(output: Box<AudioOut>) -> APU {
+    pub fn new(output: Box<dyn AudioOut>, prg_rom: Box<dyn Reader>) -> APU {
         APU {
             output,
 
@@ -56,11 +57,12 @@ impl APU {
             pulse_2: Pulse::new(),
             triangle: Triangle::new(),
             noise: Noise::new(),
+            dmc: DMC::new(prg_rom),
         }
     }
 
     pub fn irq_triggered(&mut self) -> bool {
-        self.irq_flag
+        self.irq_flag || self.dmc.irq_flag
     }
 
     fn clock_linear_and_envelope(&mut self) {
@@ -117,15 +119,17 @@ impl Ticker for APU {
         self.pulse_2.clock();
         self.triangle.clock();
         self.noise.clock();
+        self.dmc.clock();
 
         // Mixer.
         let p1 = self.pulse_1.volume() as f32;
         let p2 = self.pulse_2.volume() as f32;
         let t = self.triangle.volume() as f32;
         let n = self.noise.volume() as f32;
+        let dmc = self.dmc.volume as f32;
 
         let pulse_out = 0.00752 * (p1 + p2);
-        let tnd_out = 0.00851 * (t + 0.00494 * n);// + 0.00335 * dmc
+        let tnd_out = (0.00851 * t) + (0.00494 * n) + (0.00335 * dmc);
         self.output.emit(pulse_out + tnd_out);
         1
     }
@@ -208,6 +212,20 @@ impl Writer for APU {
                 self.noise.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
                 self.noise.envelope.restart();
             },
+            0x4010 => {
+                self.dmc.irq_enabled = byte & 0x80 != 0;
+                self.dmc.loop_flag = byte & 0x40 != 0;
+                self.dmc.period = DMC::PERIOD_LOOKUP[(byte & 0x0F) as usize];
+            },
+            0x4011 => {
+                self.dmc.volume = byte & 0x7F;
+            },
+            0x4012 => {
+                self.dmc.sample_addr = 0xC000 | ((byte as u16) << 6);
+            },
+            0x4013 => {
+                self.dmc.sample_len = ((byte as u16) << 4) + 1;
+            },
             0x4015 => {
                 if (byte >> 3) & 0x1 != 0 {
                     self.noise.enabled = true;
@@ -255,6 +273,7 @@ impl Reader for APU {
                 if self.pulse_2.length != 0 { status |= 1 << 1 };
                 if self.triangle.length != 0 { status |= 1 << 2 };
                 if self.noise.length != 0 { status |= 1 << 3 };
+                if self.dmc.irq_flag { status |= 1 << 5 };
                 if self.irq_flag { status |= 1 << 6 };
 
                 self.irq_flag = false;

@@ -1,3 +1,4 @@
+use emulator::memory::Reader;
 
 pub struct Divider {
     period: u8,
@@ -302,5 +303,108 @@ impl Noise {
         }
 
         self.envelope.volume()
+    }
+}
+
+pub struct DMC {
+    // Config.
+    pub irq_enabled: bool,
+    pub loop_flag: bool,
+    silence_flag: bool,
+    pub period: u16,
+    pub volume: u8,
+    pub sample_addr: u16,
+    pub sample_len: u16,
+
+    // State.
+    prg_rom: Box<dyn Reader>,  // Read-only access to ROM.
+    timer: u16,
+    sample_buffer: Option<u8>,
+    current_addr: u16,
+    bytes_remaining: u16,
+    pub irq_flag: bool,
+
+    shift_register: u8,
+    bits_remaining: u8,
+}
+
+impl DMC {
+    pub const PERIOD_LOOKUP: [u16; 16] = [428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106,  84,  72,  54];
+
+    pub fn new(prg_rom: Box<dyn Reader>) -> DMC {
+        DMC {
+            irq_enabled: false,
+            loop_flag: false,
+            silence_flag: false,
+            period: 0,
+            volume: 0,
+            sample_addr: 0,
+            sample_len: 0,
+
+            prg_rom,
+            timer: 0,
+            sample_buffer: None,
+            current_addr: 0,
+            bytes_remaining: 0,
+            irq_flag: false,
+
+            shift_register: 0,
+            bits_remaining: 0,
+        }
+    }
+
+    pub fn clock(&mut self) {
+        if self.timer == 0 {
+            self.timer = self.period;
+            self.clock_memory_reader();
+            self.clock_output_unit();
+        } else {
+            // Period values are in cpu cycles, so decrement in 2s.
+            self.timer -= 2;
+        }
+    }
+
+    fn clock_memory_reader(&mut self) {
+        if self.sample_buffer.is_none() && self.bytes_remaining != 0 {
+            // TODO: Stall the CPU by 4 (or 2) clocks.
+            let byte = self.prg_rom.read(self.current_addr);
+            self.sample_buffer = Some(byte);
+            self.current_addr = self.current_addr.wrapping_add(1);
+            if self.current_addr == 0 { self.current_addr = 0x8000 };
+
+            self.bytes_remaining = self.bytes_remaining.saturating_sub(1);
+            if self.bytes_remaining == 0 {
+                if self.loop_flag {
+                    self.bytes_remaining = self.sample_len;
+                    self.current_addr = self.sample_addr;
+                } else if self.irq_enabled {
+                    self.irq_flag = true;
+                }
+            }
+        }
+    }
+
+    fn clock_output_unit(&mut self) {
+        if !self.silence_flag {
+            let bit = self.shift_register & 0x01;
+            if bit == 1 && self.volume <= 125 {
+                self.volume += 2;
+            } else if bit == 0 && self.volume >= 2 {
+                self.volume -= 2;
+            }
+        }
+
+        self.shift_register >>= 1;
+        self.bits_remaining -= 1;
+
+        if self.bits_remaining == 0 {
+            self.bits_remaining = 8;
+            if self.sample_buffer.is_none() {
+                self.silence_flag = true;
+            } else {
+                self.silence_flag = false;
+                self.shift_register = self.sample_buffer.take().unwrap();
+            }
+        }
     }
 }
