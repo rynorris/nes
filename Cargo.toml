@@ -11,5 +11,8 @@ sdl2 = { version = "0.31", features = ["unsafe_textures"] }
 [profile.release]
 debug = true
 
+[profile.dev]
+opt-level = 3
+
 [profile.test]
 opt-level = 3
