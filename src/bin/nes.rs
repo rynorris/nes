@@ -117,12 +117,13 @@ fn main() {
             let current_hz = (agg_cycles * 1_000_000_000) / agg_ns;
 
             println!(
-                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.",
+                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.  Audio queue: {}",
                 (target_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / (NES_MASTER_CLOCK_HZ as f64),
                 agg_ns,
                 agg_cycles,
+                audio_queue.size(),
             );
 
             agg_cycles = 0;

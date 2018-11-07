@@ -3,6 +3,7 @@ pub mod nop;
 pub mod palette;
 pub mod sdl;
 
+use std::collections::VecDeque;
 use std::f32::consts::PI;
 
 use emulator::apu;
@@ -59,7 +60,7 @@ impl SimpleVideoOut {
 pub struct SimpleAudioOut {
     buffer: Vec<f32>,
     counter: f32,
-    pre_downsample_filter: LowPassFilter,
+    fir_filter: FIRFilter,
     low_pass_filter: LowPassFilter,
     high_pass_filter_1: HighPassFilter,
     high_pass_filter_2: HighPassFilter,
@@ -72,8 +73,66 @@ impl SimpleAudioOut {
         SimpleAudioOut {
             buffer: Vec::new(),
             counter: 0.0,
-            pre_downsample_filter: LowPassFilter::new(22_050.0, SimpleAudioOut::APU_CLOCK),
-            low_pass_filter: LowPassFilter::new(14_000.0, sample_rate),
+            fir_filter: FIRFilter::new(vec![
+               -0.01340311369837813,
+                0.01476507963675876,
+                -0.03353697526740505,
+                0.04458701449082413,
+                -0.07594796939730486,
+                0.10084297887139906,
+                -0.14794808614326035,
+                0.1935159059359888,
+                -0.2583565898359244,
+                0.331357362915934,
+                -0.4139186418164375,
+                0.5197548135657892,
+                -0.6172899443686382,
+                0.7587263074056847,
+                -0.8653362574271454,
+                1.0413647050134642,
+                -1.1480883817029024,
+                1.3533150306146828,
+                -1.448821790556084,
+                1.6735321544125024,
+                -1.7453277479968867,
+                1.9763013415115769,
+                -2.0123870774857764,
+                2.2343748714588205,
+                -2.2250387308801765,
+                2.4226887590369417,
+                -2.362125669030104,
+                2.5220512596448814,
+                -2.4094838495067536,
+                2.5220512596448814,
+                -2.362125669030104,
+                2.4226887590369417,
+                -2.2250387308801765,
+                2.2343748714588205,
+                -2.0123870774857764,
+                1.9763013415115769,
+                -1.7453277479968867,
+                1.6735321544125024,
+                -1.448821790556084,
+                1.3533150306146828,
+                -1.1480883817029024,
+                1.0413647050134642,
+                -0.8653362574271454,
+                0.7587263074056847,
+                -0.6172899443686382,
+                0.5197548135657892,
+                -0.4139186418164375,
+                0.331357362915934,
+                -0.2583565898359244,
+                0.1935159059359888,
+                -0.14794808614326035,
+                0.10084297887139906,
+                -0.07594796939730486,
+                0.04458701449082413,
+                -0.03353697526740505,
+                0.01476507963675876,
+                -0.01340311369837813,
+            ]),
+            low_pass_filter: LowPassFilter::new(35_000.0, SimpleAudioOut::APU_CLOCK),
             high_pass_filter_1: HighPassFilter::new(440.0, sample_rate),
             high_pass_filter_2: HighPassFilter::new(90.0, sample_rate),
         }
@@ -88,13 +147,17 @@ impl SimpleAudioOut {
 
         // Need to downsample all the samples we collected this frame.
         let total = self.buffer.len();
-        let step = total / num_samples;
-        for ix in 0 .. num_samples {
-            let mut sample = self.buffer[ix * step];
-            sample = self.high_pass_filter_2.process(sample);
-            sample = self.high_pass_filter_1.process(sample);
-            sample = self.low_pass_filter.process(sample);
-            buf.push(sample);
+        let step = (total as f32) / (num_samples as f32);
+        let mut counter = 0.0;
+        for ix in 0 .. total {
+            self.fir_filter.shift(self.buffer[ix]);
+
+            counter += 1.0;
+            if counter >= step {
+                counter -= step;
+                let sample = self.fir_filter.compute();
+                buf.push(sample);
+            }
         }
         
         consume(&buf);
@@ -107,8 +170,7 @@ impl SimpleAudioOut {
 }
 
 impl apu::AudioOut for SimpleAudioOut {
-    fn emit(&mut self, mut sample: f32) {
-        sample = self.pre_downsample_filter.process(sample);
+    fn emit(&mut self, sample: f32) {
         self.queue_sample(sample);
     }
 }
@@ -124,7 +186,7 @@ impl LowPassFilter {
         let dt = 1.0 / sample_rate;
         LowPassFilter {
             prev_out: 0.0,
-            alpha: rc / (rc + dt),
+            alpha: dt / (rc + dt),
         }
     }
 
@@ -159,5 +221,42 @@ impl HighPassFilter {
         self.prev_in = sample;
         self.prev_out = out;
         out
+    }
+}
+
+struct FIRFilter {
+    impulse_response: Vec<f32>,
+    buffer: VecDeque<f32>,
+}
+
+impl FIRFilter {
+    pub fn new(impulse_response: Vec<f32>) -> FIRFilter  {
+        let order = impulse_response.len();
+        let mut buffer = VecDeque::with_capacity(order);
+        for _ in 0 .. order {
+            buffer.push_back(0.0);
+        }
+
+        FIRFilter {
+            impulse_response,
+            buffer,
+        }
+    }
+
+    pub fn shift(&mut self, sample: f32) {
+        self.buffer.pop_front();
+        self.buffer.push_back(sample);
+    }
+
+    pub fn compute(&self) -> f32 {
+        self.compute_sample()
+    }
+
+    fn compute_sample(&self) -> f32 {
+        let mut sample = 0.0;
+        for ix in 0 .. self.impulse_response.len() {
+            sample += self.buffer[ix] * self.impulse_response[ix];
+        }
+        sample
     }
 }
