@@ -6,7 +6,7 @@ use std::rc::Rc;
 use emulator::clock::Ticker;
 use emulator::memory::{Reader, Writer};
 
-use self::synth::{DMC, Noise, Pulse, Triangle};
+use self::synth::{DMC, Noise, Pulse, Sweep, Triangle};
 
 pub trait AudioOut {
     fn emit(&mut self, sample: f32);
@@ -53,8 +53,8 @@ impl APU {
             cycle_counter: 0,
             irq_flag: false,
 
-            pulse_1: Pulse::new(),
-            pulse_2: Pulse::new(),
+            pulse_1: Pulse::new(Sweep::new(false)),
+            pulse_2: Pulse::new(Sweep::new(true)),
             triangle: Triangle::new(),
             noise: Noise::new(),
             dmc: DMC::new(prg_rom),
@@ -148,7 +148,11 @@ impl Writer for APU {
                 self.pulse_1.envelope.restart();
             },
             0x4001 => {
-                // TODO: Sweep.
+                let sweep = &mut self.pulse_1.sweep;
+                sweep.enabled = byte & 0x80 != 0;
+                sweep.divider.set_period((byte & 0x70) >> 4);
+                sweep.negate_flag = byte & 0x08 != 0;
+                sweep.shift_count = byte & 0x07;
             }
             0x4002 => {
                 self.pulse_1.period &= 0xFF00;
@@ -169,8 +173,12 @@ impl Writer for APU {
                 self.pulse_2.envelope.set_volume(byte & 0x0F);
                 self.pulse_2.envelope.restart();
             },
-            0x4001 => {
-                // TODO: Sweep.
+            0x4005 => {
+                let sweep = &mut self.pulse_2.sweep;
+                sweep.enabled = byte & 0x80 != 0;
+                sweep.divider.set_period((byte & 0x70) >> 4);
+                sweep.negate_flag = byte & 0x08 != 0;
+                sweep.shift_count = byte & 0x07;
             }
             0x4006 => {
                 self.pulse_2.period &= 0xFF00;

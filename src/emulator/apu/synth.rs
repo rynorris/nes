@@ -89,6 +89,63 @@ impl Envelope {
     }
 }
 
+pub struct Sweep {
+    twos_complement: bool,
+    pub enabled: bool,
+    pub divider: Divider,
+    pub negate_flag: bool,
+    pub shift_count: u8,
+    reload_flag: bool,
+    target_period: u16,
+}
+
+impl Sweep {
+    pub fn new(twos_complement: bool) -> Sweep {
+        Sweep {
+            twos_complement,
+            enabled: true,
+            divider: Divider::new(0),
+            negate_flag: false,
+            shift_count: 0,
+            reload_flag: false,
+            target_period: 0,
+        }
+    }
+
+    pub fn clock(&mut self, current_period: u16) {
+        let change_amount = current_period >> self.shift_count;
+        self.target_period = if self.negate_flag {
+            if self.twos_complement {
+                current_period.saturating_sub(change_amount + 1)
+            } else {
+                current_period.saturating_sub(change_amount)
+            }
+        } else {
+            current_period.saturating_add(change_amount)
+        };
+    }
+
+    pub fn get_updated_period(&mut self, current_period: u16) -> u16 {
+        if self.divider.clock() {
+            self.reload_flag = false;
+            if self.enabled && !self.is_muting(current_period) {
+                return self.target_period;
+            }
+        }
+
+        if self.reload_flag {
+            self.divider.reload();
+            self.reload_flag = false;
+        }
+
+        current_period
+    }
+
+    pub fn is_muting(&self, current_period: u16) -> bool {
+        self.target_period > 0x7FF || current_period < 8
+    }
+}
+
 pub struct Pulse {
     pub enabled: bool,
     pub period: u16,
@@ -98,6 +155,7 @@ pub struct Pulse {
     pub sequence: u8,
     sequence_ix: u8,
     pub envelope: Envelope,
+    pub sweep: Sweep,
 }
 
 impl Pulse {
@@ -108,7 +166,7 @@ impl Pulse {
         [1, 1, 1, 1, 1, 1, 0, 0],
     ];
 
-    pub fn new() -> Pulse {
+    pub fn new(sweep: Sweep) -> Pulse {
         Pulse {
             enabled: false,
             period: 0,
@@ -116,6 +174,7 @@ impl Pulse {
             halt_length: false,
             sequence: 0,
             envelope: Envelope::new(),
+            sweep,
             timer: 0,
             sequence_ix: 0,
         }
@@ -128,12 +187,16 @@ impl Pulse {
         } else {
             self.timer -= 1;
         }
+
+        self.sweep.clock(self.period);
     }
 
     pub fn clock_length(&mut self) {
         if !self.halt_length {
             self.length = self.length.saturating_sub(1);
         }
+
+        self.period = self.sweep.get_updated_period(self.period);
     }
 
     pub fn volume(&self) -> u8 {
@@ -150,6 +213,10 @@ impl Pulse {
         }
 
         if Pulse::SEQUENCES[self.sequence as usize][self.sequence_ix as usize] == 0 {
+            return 0;
+        }
+
+        if self.sweep.is_muting(self.period) {
             return 0;
         }
 
