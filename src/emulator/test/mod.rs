@@ -24,12 +24,13 @@ fn test_nestest_visual() {
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
     let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
     let mut image = ImageCapture::new(output.clone());
-    let mut nes = NES::new(event_bus.clone(), output.clone(), rom);
+    let audio = io::nop::DummyAudio{};
+    let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);
 
     let tmp_dir = env::temp_dir();
 
     // Wait for main menu to load.
-    for _ in 1 .. 500_000 {
+    for _ in 1 .. 550_000 {
         nes.tick();
     }
 
@@ -101,7 +102,8 @@ fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cy
     let rom = ines::ROM::load(rom_path);
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
     let output = io::SimpleVideoOut::new();
-    let mut nes = NES::new(event_bus.clone(), output, rom);
+    let audio = io::nop::DummyAudio{};
+    let mut nes = NES::new(event_bus.clone(), output, audio, rom);
 
     run_blargg_test_rom(&mut nes, max_cycles)
 }

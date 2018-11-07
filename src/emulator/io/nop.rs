@@ -1,8 +1,7 @@
-use emulator::io::Graphics;
+use emulator::apu::AudioOut;
 
-pub struct DummyGraphics;
+pub struct DummyAudio;
 
-impl Graphics for DummyGraphics {
-    fn draw_screen(&mut self, _pixel_data: &[u8]) {
-    }
+impl AudioOut for DummyAudio {
+    fn emit(&mut self, _sample: f32) { }
 }
