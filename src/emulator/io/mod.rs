@@ -59,18 +59,20 @@ impl SimpleVideoOut {
 pub struct SimpleAudioOut {
     buffer: Vec<f32>,
     counter: f32,
+    pre_downsample_filter: LowPassFilter,
     low_pass_filter: LowPassFilter,
     high_pass_filter_1: HighPassFilter,
     high_pass_filter_2: HighPassFilter,
 }
 
 impl SimpleAudioOut {
-    const SAMPLE_RATE: f32 = 44_100.0;
+    const APU_CLOCK: f32 = 1_789_772.0 / 2.0;
 
     pub fn new(sample_rate: f32) -> SimpleAudioOut {
         SimpleAudioOut {
             buffer: Vec::new(),
             counter: 0.0,
+            pre_downsample_filter: LowPassFilter::new(22_050.0, SimpleAudioOut::APU_CLOCK),
             low_pass_filter: LowPassFilter::new(14_000.0, sample_rate),
             high_pass_filter_1: HighPassFilter::new(440.0, sample_rate),
             high_pass_filter_2: HighPassFilter::new(90.0, sample_rate),
@@ -105,7 +107,8 @@ impl SimpleAudioOut {
 }
 
 impl apu::AudioOut for SimpleAudioOut {
-    fn emit(&mut self, sample: f32) {
+    fn emit(&mut self, mut sample: f32) {
+        sample = self.pre_downsample_filter.process(sample);
         self.queue_sample(sample);
     }
 }
