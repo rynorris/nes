@@ -73,6 +73,10 @@ impl SimpleAudioOut {
         SimpleAudioOut {
             buffer: Vec::new(),
             counter: 0.0,
+            // This FIR filter generated from http://t-filter.engineerjs.com/
+            // Using the parameters:
+            //   - from: 0Hz,   to: 20kHz,    gain: 1, ripple/att: 5dB
+            //   - from: 40kHz, to: 446443Hz, gain: 0, ripple/att: -50dB
             fir_filter: FIRFilter::new(vec![
                -0.01340311369837813,
                 0.01476507963675876,
