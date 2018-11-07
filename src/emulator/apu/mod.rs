@@ -235,6 +235,12 @@ impl Writer for APU {
                 self.dmc.sample_len = ((byte as u16) << 4) + 1;
             },
             0x4015 => {
+                if (byte >> 4) & 0x1 != 0 {
+                    self.dmc.enabled = true;
+                } else {
+                    self.dmc.enabled = false;
+                    self.dmc.bytes_remaining = 0;
+                }
                 if (byte >> 3) & 0x1 != 0 {
                     self.noise.enabled = true;
                 } else {
@@ -266,6 +272,7 @@ impl Writer for APU {
                 } else {
                     SequenceMode::FiveStep
                 };
+                self.cycle_counter = 0;
             },
             _ => (),
         }
@@ -281,6 +288,7 @@ impl Reader for APU {
                 if self.pulse_2.length != 0 { status |= 1 << 1 };
                 if self.triangle.length != 0 { status |= 1 << 2 };
                 if self.noise.length != 0 { status |= 1 << 3 };
+                if self.dmc.bytes_remaining != 0 { status |= 1 << 4 };
                 if self.dmc.irq_flag { status |= 1 << 5 };
                 if self.irq_flag { status |= 1 << 6 };
 

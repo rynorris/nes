@@ -375,6 +375,7 @@ impl Noise {
 
 pub struct DMC {
     // Config.
+    pub enabled: bool,
     pub irq_enabled: bool,
     pub loop_flag: bool,
     silence_flag: bool,
@@ -388,7 +389,7 @@ pub struct DMC {
     timer: u16,
     sample_buffer: Option<u8>,
     current_addr: u16,
-    bytes_remaining: u16,
+    pub bytes_remaining: u16,
     pub irq_flag: bool,
 
     shift_register: u8,
@@ -400,6 +401,7 @@ impl DMC {
 
     pub fn new(prg_rom: Box<dyn Reader>) -> DMC {
         DMC {
+            enabled: false,
             irq_enabled: false,
             loop_flag: false,
             silence_flag: false,
