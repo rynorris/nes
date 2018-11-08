@@ -142,56 +142,28 @@ impl Writer for APU {
     fn write(&mut self, address: u16, byte: u8) {
         match address {
             0x4000 => {
-                self.pulse_1.sequence = byte >> 6;
-                // These 2 flags share the same bit.
-                self.pulse_1.envelope.loop_flag = (byte & 0x20) != 0;
-                self.pulse_1.halt_length = (byte & 0x20) != 0;
-                self.pulse_1.envelope.constant_volume = (byte & 0x10) != 0;
-                self.pulse_1.envelope.set_volume(byte & 0x0F);
-                self.pulse_1.envelope.restart();
+                write_first_pulse_register(&mut self.pulse_1, byte);
             },
             0x4001 => {
-                let sweep = &mut self.pulse_1.sweep;
-                sweep.enabled = byte & 0x80 != 0;
-                sweep.divider.set_period(((byte & 0x70) >> 4) as u16);
-                sweep.negate_flag = byte & 0x08 != 0;
-                sweep.shift_count = byte & 0x07;
+                write_sweep_register(&mut self.pulse_1.sweep, byte);
             }
             0x4002 => {
-                let new_period = (self.pulse_1.timer.period() & 0xFF00) | (byte as u16);
-                self.pulse_1.timer.set_period(new_period);
+                write_second_pulse_register(&mut self.pulse_1, byte);
             },
             0x4003 => {
-                self.pulse_1.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
-                let new_period = (self.pulse_1.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
-                self.pulse_1.timer.set_period(new_period);
-                self.pulse_1.restart();
+                write_third_pulse_register(&mut self.pulse_1, byte);
             },
             0x4004 => {
-                self.pulse_2.sequence = byte >> 6;
-                // These 2 flags share the same bit.
-                self.pulse_2.envelope.loop_flag = (byte & 0x20) != 0;
-                self.pulse_2.halt_length = (byte & 0x20) != 0;
-                self.pulse_2.envelope.constant_volume = (byte & 0x10) != 0;
-                self.pulse_2.envelope.set_volume(byte & 0x0F);
-                self.pulse_2.envelope.restart();
+                write_first_pulse_register(&mut self.pulse_2, byte);
             },
             0x4005 => {
-                let sweep = &mut self.pulse_2.sweep;
-                sweep.enabled = byte & 0x80 != 0;
-                sweep.divider.set_period(((byte & 0x70) >> 4) as u16);
-                sweep.negate_flag = byte & 0x08 != 0;
-                sweep.shift_count = byte & 0x07;
+                write_sweep_register(&mut self.pulse_2.sweep, byte);
             }
             0x4006 => {
-                let new_period = (self.pulse_2.timer.period() & 0xFF00) | (byte as u16);
-                self.pulse_2.timer.set_period(new_period);
+                write_second_pulse_register(&mut self.pulse_2, byte);
             },
             0x4007 => {
-                self.pulse_2.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
-                let new_period = (self.pulse_2.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
-                self.pulse_2.timer.set_period(new_period);
-                self.pulse_2.restart();
+                write_third_pulse_register(&mut self.pulse_2, byte);
             },
             0x4008 => {
                 self.triangle.linear_reload_value = byte & 0x7F;
@@ -301,4 +273,33 @@ impl Reader for APU {
             _ => 0,
         }
     }
+}
+
+fn write_first_pulse_register(pulse: &mut Pulse, byte: u8) {
+    pulse.sequence = byte >> 6;
+    // These 2 flags share the same bit.
+    pulse.envelope.loop_flag = (byte & 0x20) != 0;
+    pulse.halt_length = (byte & 0x20) != 0;
+    pulse.envelope.constant_volume = (byte & 0x10) != 0;
+    pulse.envelope.set_volume(byte & 0x0F);
+    pulse.envelope.restart();
+}
+
+fn write_sweep_register(sweep: &mut Sweep, byte: u8) {
+    sweep.enabled = byte & 0x80 != 0;
+    sweep.divider.set_period(((byte & 0x70) >> 4) as u16);
+    sweep.negate_flag = byte & 0x08 != 0;
+    sweep.shift_count = byte & 0x07;
+}
+
+fn write_second_pulse_register(pulse: &mut Pulse, byte: u8) {
+    let new_period = (pulse.timer.period() & 0xFF00) | (byte as u16);
+    pulse.timer.set_period(new_period);
+}
+
+fn write_third_pulse_register(pulse: &mut Pulse, byte: u8) {
+    pulse.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
+    let new_period = (pulse.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
+    pulse.timer.set_period(new_period);
+    pulse.restart();
 }
