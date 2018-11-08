@@ -54,7 +54,20 @@ fn main() {
     event_bus.borrow_mut().register(Box::new(controller.clone()));
 
     // -- Run --
+    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        main_loop(controller.clone(), &mut compositor, &mut audio_queue, &mut input);
+    }));
 
+    match res {
+        Ok(_) => (),
+        Err(_) => {
+            controller.borrow_mut().dump_trace();
+            println!("Panic in main loop.  Exiting.");
+        },
+    }
+}
+
+fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, audio_queue: &mut AudioQueue, input: &mut InputPump) {
     let started_instant = Instant::now();
     let frames_per_second = RENDER_FPS;
     let mut frame_start = started_instant;
@@ -131,10 +144,3 @@ fn main() {
     }
 }
 
-fn debug_print(nes: &mut NES, start: u16, len: u16) {
-    println!("CPU Memory starting from ${:X}", start);
-    for ix in 0 .. len {
-        print!("{:X} ", nes.cpu.borrow_mut().load_memory(start + ix));
-    }
-    println!("");
-}
