@@ -318,7 +318,7 @@ impl PPU {
             self.ppustatus.set(flags::PPUSTATUS::V);
         }
         // Otherwise idle.
-        1
+        if self.cycle == 0 { 1 } else { 340 }
     }
 
     fn tick_idle_cycle(&mut self) -> u16 {
