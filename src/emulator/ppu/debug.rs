@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::memory::Reader;
 use emulator::ppu::flags;
 use emulator::ppu::PPU;
 

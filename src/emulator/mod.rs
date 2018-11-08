@@ -50,11 +50,11 @@ impl NES {
         let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
-        let ppu_memory = Box::new(memory::PPUMemory::new(
+        let ppu_memory = memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
             Box::new(mapper.clone()),
             Box::new(memory::RAM::new()),
-        ));
+        );
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
                     ppu_memory,
