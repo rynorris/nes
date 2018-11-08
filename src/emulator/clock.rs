@@ -39,7 +39,7 @@ pub struct Clock {
     elapsed_cycles: u64,
 
     // Tickers.
-    tickers: Vec<Box<dyn Ticker>>,
+    tickers: Vec<ScaledTicker>,
     turn_order: BinaryHeap<TickNode>,
 }
 
@@ -52,6 +52,7 @@ impl Clock {
         }
     }
 
+    #[inline]
     pub fn tick(&mut self) -> u64 {
         match self.turn_order.peek_mut() {
             Some(mut node) => {
@@ -65,7 +66,7 @@ impl Clock {
         }
     }
 
-    pub fn manage(&mut self, ticker: Box<Ticker>) {
+    pub fn manage(&mut self, ticker: ScaledTicker) {
         self.tickers.push(ticker);
         let node = TickNode {
             ticker_ix: self.tickers.len() - 1,
@@ -124,7 +125,7 @@ mod test {
     fn test_single_ticker() {
         let mut clock = Clock::new();
         let ticker = Rc::new(RefCell::new(DummyTicker::new()));
-        clock.manage(Box::new(ticker.clone()));
+        clock.manage(ScaledTicker::new(Box::new(ticker.clone()), 1));
 
         clock.tick();
         assert_eq!(ticker.borrow().value, 1);
@@ -139,10 +140,9 @@ mod test {
         let mut clock = Clock::new();
         let ticker1 = Rc::new(RefCell::new(DummyTicker::new()));
         let ticker3 = Rc::new(RefCell::new(DummyTicker::new()));
-        let scaled_ticker3 = Rc::new(RefCell::new(ScaledTicker::new(Box::new(ticker3.clone()), 3)));
 
-        clock.manage(Box::new(ticker1.clone()));
-        clock.manage(Box::new(scaled_ticker3.clone()));
+        clock.manage(ScaledTicker::new(Box::new(ticker1.clone()), 1));
+        clock.manage(ScaledTicker::new(Box::new(ticker3.clone()), 3));
 
         // Tick twice first since the initial order is undefined.
         clock.tick();

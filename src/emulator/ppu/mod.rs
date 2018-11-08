@@ -11,7 +11,7 @@ use std::rc::Rc;
 use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
-use emulator::memory::ReadWriter;
+use emulator::memory::{PPUMemory, Reader};
 use emulator::util;
 
 // Colours represented as a single byte:
@@ -36,12 +36,6 @@ impl Colour {
     pub fn as_byte(&self) -> u8 {
         self.byte
     }
-}
-
-pub struct Palette {
-    c1: Colour,
-    c2: Colour,
-    c3: Colour,
 }
 
 pub trait VideoOut {
@@ -97,7 +91,7 @@ pub struct PPU {
     // $3000-$3EFF = mirrors of $2000-$2EFF
     // $3F00-$3F1F = palette RAM indexes
     // $3F20-$3FFF = mirrors of $3F00-$3F1F
-    memory: Box<dyn ReadWriter>,
+    memory: PPUMemory,
 
     // -- Background State --
 
@@ -135,7 +129,6 @@ pub struct PPU {
     // $01-$0D = Sprite tile #
     // $02-$0E = Sprite attribute
     // $03-$0F = Sprite X coordinate
-    // TODO: What does this actually mean?
     oam: [u8; 256],
 
     // Secondary OAM holds 8 sprites to be rendered on the current scanline.
@@ -194,7 +187,7 @@ impl clock::Ticker for PPU {
 }
 
 impl PPU {
-    pub fn new(memory: Box<ReadWriter>, output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: PPUMemory, output: Box<VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),
@@ -318,7 +311,7 @@ impl PPU {
             self.ppustatus.set(flags::PPUSTATUS::V);
         }
         // Otherwise idle.
-        1
+        if self.cycle == 0 { 1 } else { 340 }
     }
 
     fn tick_idle_cycle(&mut self) -> u16 {

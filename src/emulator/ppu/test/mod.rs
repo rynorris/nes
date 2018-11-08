@@ -2,12 +2,16 @@ mod background;
 mod data;
 
 use emulator::memory;
-use emulator::ppu::Colour;
-use emulator::ppu::PPU;
-use emulator::ppu::VideoOut;
+use emulator::memory::Writer;
+use emulator::ppu::{Colour, Mirrorer, MirrorMode, PPU, VideoOut};
 
 fn new_ppu(output: Box<VideoOut>) -> PPU {
-    PPU::new(Box::new(memory::RAM::new()), output)
+    let ppu_memory = memory::PPUMemory::new(
+        Box::new(memory::RAM::new()),
+        Box::new(DummyMirrorer{}),
+        Box::new(memory::RAM::new()),
+    );
+    PPU::new(ppu_memory, output)
 }
 
 fn load_data_into_vram(ppu: &mut PPU, addr: u16, bytes: &[u8]) {
@@ -35,5 +39,13 @@ impl VideoOut for ImageCapture {
         if self.dot % 256 == 0 {
             println!();
         }
+    }
+}
+
+struct DummyMirrorer;
+
+impl Mirrorer for DummyMirrorer {
+    fn mirror_mode(&self) -> MirrorMode {
+        MirrorMode::Horizontal
     }
 }

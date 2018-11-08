@@ -50,11 +50,11 @@ impl NES {
         let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
-        let ppu_memory = Box::new(memory::PPUMemory::new(
+        let ppu_memory = memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
             Box::new(mapper.clone()),
             Box::new(memory::RAM::new()),
-        ));
+        );
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
                     ppu_memory,
@@ -112,9 +112,9 @@ impl NES {
         let cpu_ticker = clock::ScaledTicker::new(Box::new(dma_controller), NES_CPU_CLOCK_FACTOR);
         let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
         let apu_ticker = clock::ScaledTicker::new(Box::new(apu.clone()), NES_APU_CLOCK_FACTOR);
-        clock.manage(Box::new(cpu_ticker));
-        clock.manage(Box::new(ppu_ticker));
-        clock.manage(Box::new(apu_ticker));
+        clock.manage(cpu_ticker);
+        clock.manage(apu_ticker);
+        clock.manage(ppu_ticker);
 
         NES {
             clock,
@@ -125,6 +125,7 @@ impl NES {
         }
     }
 
+    #[inline]
     pub fn tick(&mut self) -> u64 {
         let cycles = self.clock.tick();
         if self.ppu.borrow().nmi_triggered() {
