@@ -17,7 +17,8 @@ pub struct SimpleVideoOut {
     scanline: u32,
     dot: u32,
     screen_buffer: [u8; 256 * 240 * 3],
-    render_tile_grid: bool,
+    backup_buffer: [u8; 256 * 240 * 3],
+    double_buffering: bool,
 }
 
 impl ppu::VideoOut for SimpleVideoOut {
@@ -25,11 +26,7 @@ impl ppu::VideoOut for SimpleVideoOut {
         let x = self.dot;
         let y = self.scanline;
 
-        let (r, g, b) = if self.render_tile_grid && (x % 8 == 0 || y % 8 == 0) {
-            (255, 0, 0)
-        } else {
-            palette::convert_colour(c)
-        };
+        let (r, g, b) = palette::convert_colour(c);
 
         self.screen_buffer[((x + y * 256) * 3) as usize] = r;
         self.screen_buffer[((x + y * 256) * 3 + 1) as usize] = g;
@@ -38,6 +35,10 @@ impl ppu::VideoOut for SimpleVideoOut {
         self.dot = (self.dot + 1) % 256;
         if self.dot == 0 {
             self.scanline = (self.scanline + 1) % 240;
+            if self.scanline == 0 && self.double_buffering {
+                // Flip the buffer.s
+                std::mem::swap(&mut self.screen_buffer, &mut self.backup_buffer);
+            }
         }
     }
 }
@@ -48,12 +49,18 @@ impl SimpleVideoOut {
             scanline: 0,
             dot: 0,
             screen_buffer: [0; 256 * 240 * 3],
-            render_tile_grid: false,
+            backup_buffer: [0; 256 * 240 * 3],
+            double_buffering: true,
         }
     }
 
     pub fn do_render<F : FnOnce(&[u8]) -> ()>(&self, render: F) {
-        render(&self.screen_buffer);
+        let buffer = if self.double_buffering { &self.backup_buffer } else { &self.screen_buffer };
+        render(buffer);
+    }
+
+    pub fn set_double_buffering(&mut self, on: bool) {
+        self.double_buffering = on;
     }
 }
 

@@ -45,7 +45,7 @@ fn main() {
     let video = sdl_context.video().unwrap();
     let audio = sdl_context.audio().unwrap();
 
-    let controller = Rc::new(RefCell::new(Controller::new(nes)));
+    let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone())));
     let mut compositor = Compositor::new(video, video_output.clone(), ppu_debug);
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
