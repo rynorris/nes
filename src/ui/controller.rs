@@ -32,6 +32,8 @@ impl Controller {
 
     pub fn start(&mut self) {
         self.is_running = true;
+        self.is_tracing = true;
+        self.nes.cpu.borrow_mut().start_tracing();
     }
 
     pub fn target_hz(&self) -> u64 {
@@ -40,6 +42,18 @@ impl Controller {
 
     pub fn show_debug(&self) -> bool {
         self.show_debug
+    }
+
+    pub fn dump_trace(&mut self) {
+        if self.is_tracing {
+            println!("Flushing CPU trace buffer to ./cpu.trace");
+            let mut trace_file = match File::create("./cpu.trace") {
+                Err(_) => panic!("Couldn't open trace file"),
+                Ok(f) => f,
+            };
+
+            self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
+        }
     }
 }
 
@@ -60,13 +74,7 @@ impl EventHandler for Controller {
                         println!("CPU Tracing: {}", if self.is_tracing { "ON" } else { "OFF" });
                     },
                     Key::Return => {
-                        println!("Flushing CPU trace buffer to ./cpu.trace");
-                        let mut trace_file = match File::create("./cpu.trace") {
-                            Err(_) => panic!("Couldn't open trace file"),
-                            Ok(f) => f,
-                        };
-
-                        self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
+                        self.dump_trace();
                     }
                     Key::Backquote => self.show_debug = !self.show_debug,
                     Key::Num1 => self.target_hz = 0,  // Paused
