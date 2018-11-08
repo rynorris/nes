@@ -1,9 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::io::palette;
 use emulator::memory::Reader;
 use emulator::ppu::flags;
-use emulator::ppu::PPU;
+use emulator::ppu::{Colour, PPU};
 
 pub struct PPUDebug {
     ppu: Rc<RefCell<PPU>>,
@@ -16,6 +17,8 @@ impl PPUDebug {
     pub const NAMETABLE_HEIGHT: usize = 240 * 2;
     pub const SPRITE_WIDTH: usize = 256;
     pub const SPRITE_HEIGHT: usize = 32;
+    pub const PALETTE_WIDTH: usize = 256;
+    pub const PALETTE_HEIGHT: usize = 32;
 
     pub fn new(ppu: Rc<RefCell<PPU>>) -> PPUDebug {
         PPUDebug {
@@ -23,10 +26,11 @@ impl PPUDebug {
         }
     }
 
-    pub fn do_render<F, G, H>(&mut self, render_pattern: F, render_nametable: G, render_sprites: H) where
+    pub fn do_render<F, G, H, I>(&mut self, render_pattern: F, render_nametable: G, render_sprites: H, render_palette: I) where
         F : FnOnce(&[u8]) -> (),
         G : FnOnce(&[u8]) -> (),
-        H : FnOnce(&[u8]) -> () {
+        H : FnOnce(&[u8]) -> (),
+        I : FnOnce(&[u8]) -> () {
 
         let mut pattern_tables = [0; 0x2000];
         self.hydrate_pattern_tables(&mut pattern_tables);
@@ -34,13 +38,16 @@ impl PPUDebug {
         let mut pattern_buffer = [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3];
         let mut nametable_buffer = [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3];
         let mut sprite_buffer = [0; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3];
+        let mut palette_buffer = [0; PPUDebug::PALETTE_WIDTH * PPUDebug::PALETTE_HEIGHT * 3];
 
         PPUDebug::fill_pattern_buffer(&mut pattern_buffer, &pattern_tables);
         PPUDebug::fill_nametable_buffer(self.ppu.clone(), &mut nametable_buffer, &pattern_tables);
         PPUDebug::fill_sprite_buffer(self.ppu.clone(), &mut sprite_buffer, &pattern_tables);
+        PPUDebug::fill_palette_buffer(self.ppu.clone(), &mut palette_buffer);
         render_pattern(&pattern_buffer);
         render_nametable(&nametable_buffer);
         render_sprites(&sprite_buffer);
+        render_palette(&palette_buffer);
     }
 
     fn hydrate_pattern_tables(&mut self, target: &mut[u8]) {
@@ -130,6 +137,25 @@ impl PPUDebug {
         }
     }
 
+    fn fill_palette_buffer(ppu_cell: Rc<RefCell<PPU>>, buffer: &mut[u8]) {
+        let mut ppu = ppu_cell.borrow_mut();
+        for palette_ix in 0 .. 8 {
+            for colour_ix in 0 .. 4 {
+                let addr = 0x3F00 | (palette_ix << 2) | colour_ix;
+                let colour = Colour { byte: ppu.memory.read(addr) };
+                PPUDebug::fill_rect(
+                    buffer,
+                    256,
+                    (((palette_ix * 4) + colour_ix) % 16) * 16,
+                    (((palette_ix * 4) + colour_ix) / 16) * 16,
+                    16,
+                    16,
+                    colour
+                );
+            }
+        }
+    }
+
     fn copy_tile(base: u16, row: u16, column: u16, x: u16, y: u16,
                  source: &[u8], target: &mut [u8], pitch: u16) {
         for line in 0 .. 8 {
@@ -147,6 +173,17 @@ impl PPUDebug {
                 target[(pixel_y * (pitch as usize) + pixel_x) * 3] = colour;
                 target[(pixel_y * (pitch as usize) + pixel_x) * 3 + 1] = colour;
                 target[(pixel_y * (pitch as usize) + pixel_x) * 3 + 2] = colour;
+            }
+        }
+    }
+
+    fn fill_rect(target: &mut [u8], pitch: u16, x: u16, y: u16, width: u16, height: u16, colour: Colour) {
+        let (r, g, b) = palette::convert_colour(colour);
+        for row in 0 .. height {
+            for col in 0 .. width {
+                target[(((y + row) * pitch + (x + col)) * 3) as usize] = r;
+                target[((((y + row) * pitch + (x + col)) * 3) + 1) as usize] = g;
+                target[((((y + row) * pitch + (x + col)) * 3) + 2) as usize] = b;
             }
         }
     }
