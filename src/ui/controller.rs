@@ -2,13 +2,14 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::rc::Rc;
 
-use emulator::io::SimpleVideoOut;
+use emulator::io::{SimpleAudioOut, SimpleVideoOut};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
 
 pub struct Controller {
     nes: NES,
-    output: Rc<RefCell<SimpleVideoOut>>,
+    video_output: Rc<RefCell<SimpleVideoOut>>,
+    audio_output: Rc<RefCell<SimpleAudioOut>>,
     is_running: bool,
     is_tracing: bool,
     target_hz: u64,
@@ -16,10 +17,13 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn new(nes: NES, output: Rc<RefCell<SimpleVideoOut>>) -> Controller {
+    pub fn new(nes: NES,
+               video_output: Rc<RefCell<SimpleVideoOut>>,
+               audio_output: Rc<RefCell<SimpleAudioOut>>) -> Controller {
         Controller {
             nes,
-            output,
+            video_output,
+            audio_output,
             is_running: false,
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
@@ -41,7 +45,8 @@ impl Controller {
 
     pub fn set_target_hz(&mut self, hz: u64) {
         self.target_hz = hz;
-        self.output.borrow_mut().set_double_buffering(hz > 200_000);
+        self.video_output.borrow_mut().set_double_buffering(hz > 200_000);
+        self.audio_output.borrow_mut().set_enabled(hz >= 10_000_000 && hz <= 50_000_000);
     }
 
     pub fn target_hz(&self) -> u64 {

@@ -71,6 +71,7 @@ pub struct SimpleAudioOut {
     low_pass_filter: LowPassFilter,
     high_pass_filter_1: HighPassFilter,
     high_pass_filter_2: HighPassFilter,
+    enabled: bool,
 }
 
 impl SimpleAudioOut {
@@ -306,11 +307,12 @@ impl SimpleAudioOut {
             low_pass_filter: LowPassFilter::new(35_000.0, SimpleAudioOut::APU_CLOCK),
             high_pass_filter_1: HighPassFilter::new(440.0, sample_rate),
             high_pass_filter_2: HighPassFilter::new(90.0, sample_rate),
+            enabled: true,
         }
     }
 
     pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, num_samples: usize, consume: F) {
-        if self.buffer.len() == 0 || num_samples == 0 {
+        if self.buffer.len() == 0 || num_samples == 0 || !self.enabled {
             return;
         }
 
@@ -333,6 +335,10 @@ impl SimpleAudioOut {
         
         consume(&buf);
         self.buffer.clear();
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
     }
 
     fn queue_sample(&mut self, sample: f32) {
