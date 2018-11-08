@@ -14,12 +14,23 @@ NES emulator written in Rust
   - [x] Palettes
   - [X] Sprites
   
- **IO**
+**APU**
+  - [x] Synthesizer
+  - [x] High quality downsampling
+  
+**IO**
   - [x] Graphics output
   - [ ] Properly emulate NTSC video signal
   - [X] Controller input
   
- **Other**
+**Debug Tools**
+  - [x] CPU instruction tracing
+  - [x] Granular speed controls.
+  - [x] PPU debug window
+  - [ ] APU debug window
+  - [ ] Proper debugger capabilities (step/trap/breakpoints)
+  
+**Other**
   - [x] Basic iNES file loading
   - [ ] Support common mappers (~NROM~, ~MMC1~, MMC3)
   - [x] Clock to drive all components at the correct speed
