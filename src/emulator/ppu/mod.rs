@@ -506,7 +506,7 @@ impl PPU {
         }
 
         let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::H) { 16 } else { 8 };
-        let min_y = self.scanline.saturating_sub(sprite_height) + 1;
+        let min_y = self.scanline.saturating_sub(sprite_height - 1);
         let max_y = self.scanline;
 
         match self.sprite_eval_phase {
