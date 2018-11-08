@@ -125,6 +125,7 @@ impl NES {
         }
     }
 
+    #[inline]
     pub fn tick(&mut self) -> u64 {
         let cycles = self.clock.tick();
         if self.ppu.borrow().nmi_triggered() {

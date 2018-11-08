@@ -52,6 +52,7 @@ impl Clock {
         }
     }
 
+    #[inline]
     pub fn tick(&mut self) -> u64 {
         match self.turn_order.peek_mut() {
             Some(mut node) => {
