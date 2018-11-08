@@ -38,12 +38,6 @@ impl Colour {
     }
 }
 
-pub struct Palette {
-    c1: Colour,
-    c2: Colour,
-    c3: Colour,
-}
-
 pub trait VideoOut {
     fn emit(&mut self, c: Colour);
 }
@@ -135,7 +129,6 @@ pub struct PPU {
     // $01-$0D = Sprite tile #
     // $02-$0E = Sprite attribute
     // $03-$0F = Sprite X coordinate
-    // TODO: What does this actually mean?
     oam: [u8; 256],
 
     // Secondary OAM holds 8 sprites to be rendered on the current scanline.
