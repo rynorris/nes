@@ -1,12 +1,12 @@
 use emulator::memory::Reader;
 
 pub struct Divider {
-    period: u8,
-    counter: u8,
+    period: u16,
+    counter: u16,
 }
 
 impl Divider {
-    pub fn new(period: u8) -> Divider {
+    pub fn new(period: u16) -> Divider {
         Divider {
             period,
             counter: 0,
@@ -27,8 +27,16 @@ impl Divider {
         self.counter = self.period;
     }
 
-    pub fn set_period(&mut self, period: u8) {
+    pub fn set_period(&mut self, period: u16) {
         self.period = period;
+    }
+
+    pub fn period(&self) -> u16 {
+        self.period
+    }
+
+    pub fn counter(&self) -> u16 {
+        self.counter
     }
 }
 
@@ -81,7 +89,7 @@ impl Envelope {
 
     pub fn set_volume(&mut self, volume: u8) {
         self.volume = volume;
-        self.divider.set_period(volume);
+        self.divider.set_period(volume as u16);
     }
 
     pub fn restart(&mut self) {
@@ -148,8 +156,7 @@ impl Sweep {
 
 pub struct Pulse {
     pub enabled: bool,
-    pub period: u16,
-    timer: u16,
+    pub timer: Divider,
     pub length: u8,
     pub halt_length: bool,
     pub sequence: u8,
@@ -169,26 +176,22 @@ impl Pulse {
     pub fn new(sweep: Sweep) -> Pulse {
         Pulse {
             enabled: false,
-            period: 0,
+            timer: Divider::new(0),
             length: 0,
             halt_length: false,
             sequence: 0,
             envelope: Envelope::new(),
             sweep,
-            timer: 0,
             sequence_ix: 0,
         }
     }
 
     pub fn clock(&mut self) {
-        if self.timer == 0 {
-            self.timer = self.period;
+        if self.timer.clock() {
             self.sequence_ix = if self.sequence_ix == 0 { 7 } else { self.sequence_ix - 1 }
-        } else {
-            self.timer -= 1;
         }
 
-        self.sweep.clock(self.period);
+        self.sweep.clock(self.timer.period());
     }
 
     pub fn clock_length(&mut self) {
@@ -196,7 +199,8 @@ impl Pulse {
             self.length = self.length.saturating_sub(1);
         }
 
-        self.period = self.sweep.get_updated_period(self.period);
+        let new_period = self.sweep.get_updated_period(self.timer.period());
+        self.timer.set_period(new_period);
     }
 
     pub fn volume(&self) -> u8 {
@@ -204,7 +208,7 @@ impl Pulse {
             return 0;
         }
 
-        if self.timer < 8 {
+        if self.timer.counter() < 8 {
             return 0;
         }
 
@@ -216,7 +220,7 @@ impl Pulse {
             return 0;
         }
 
-        if self.sweep.is_muting(self.period) {
+        if self.sweep.is_muting(self.timer.period()) {
             return 0;
         }
 
@@ -231,8 +235,7 @@ impl Pulse {
 
 pub struct Triangle {
     pub enabled: bool,
-    pub period: u16,
-    timer: u16,
+    pub timer: Divider,
     linear: u8,
     pub length: u8,
     pub halt_length: bool,
@@ -251,8 +254,7 @@ impl Triangle {
     pub fn new() -> Triangle {
         Triangle {
             enabled: false,
-            period: 0,
-            timer: 0,
+            timer: Divider::new(0),
             linear: 0,
             length: 0,
             halt_length: false,
@@ -264,12 +266,8 @@ impl Triangle {
     }
 
     pub fn clock(&mut self) {
-        if self.timer == 0 {
+        if self.timer.clock() {
             self.sequence_ix = (self.sequence_ix + 1) % 32;
-            self.timer = self.period;
-        } else {
-            // Triangle timer clocks twice as fast as the other components.
-            self.timer = self.timer.saturating_sub(2);
         }
     }
 
@@ -311,8 +309,7 @@ pub struct Noise {
     pub length: u8,
     pub halt_length: bool,
     pub mode: bool,
-    pub period: u16,
-    timer: u16,
+    pub timer: Divider,
 }
 
 impl Noise {
@@ -328,14 +325,12 @@ impl Noise {
             length: 0,
             halt_length: false,
             mode: false,
-            period: 0,
-            timer: 0,
+            timer: Divider::new(0),
         }
     }
 
     pub fn clock(&mut self) {
-        if self.timer == 0 {
-            self.timer = self.period;
+        if self.timer.clock() {
             let bit1 = self.shift_register & 0x1;
             let bit2 = if self.mode {
                 (self.shift_register >> 5) & 0x1
@@ -345,8 +340,6 @@ impl Noise {
             let feedback = bit1 ^ bit2;
             self.shift_register >>= 1;
             self.shift_register |= feedback << 13;
-        } else {
-            self.timer = self.timer.saturating_sub(1);
         }
     }
 
@@ -379,14 +372,13 @@ pub struct DMC {
     pub irq_enabled: bool,
     pub loop_flag: bool,
     silence_flag: bool,
-    pub period: u16,
+    pub timer: Divider,
     pub volume: u8,
     pub sample_addr: u16,
     pub sample_len: u16,
 
     // State.
     prg_rom: Box<dyn Reader>,  // Read-only access to ROM.
-    timer: u16,
     sample_buffer: Option<u8>,
     current_addr: u16,
     pub bytes_remaining: u16,
@@ -405,13 +397,12 @@ impl DMC {
             irq_enabled: false,
             loop_flag: false,
             silence_flag: false,
-            period: 0,
+            timer: Divider::new(0),
             volume: 0,
             sample_addr: 0,
             sample_len: 0,
 
             prg_rom,
-            timer: 0,
             sample_buffer: None,
             current_addr: 0,
             bytes_remaining: 0,
@@ -423,13 +414,9 @@ impl DMC {
     }
 
     pub fn clock(&mut self) {
-        if self.timer == 0 {
-            self.timer = self.period;
+        if self.timer.clock() {
             self.clock_memory_reader();
             self.clock_output_unit();
-        } else {
-            // Period values are in cpu cycles, so decrement in 2s.
-            self.timer -= 2;
         }
     }
 

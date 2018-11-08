@@ -117,8 +117,11 @@ impl Ticker for APU {
 
         self.pulse_1.clock();
         self.pulse_2.clock();
-        self.triangle.clock();
         self.noise.clock();
+        // Triangle and DMC clock twice as fast as the other components.
+        self.triangle.clock();
+        self.triangle.clock();
+        self.dmc.clock();
         self.dmc.clock();
 
         // Mixer.
@@ -150,18 +153,18 @@ impl Writer for APU {
             0x4001 => {
                 let sweep = &mut self.pulse_1.sweep;
                 sweep.enabled = byte & 0x80 != 0;
-                sweep.divider.set_period((byte & 0x70) >> 4);
+                sweep.divider.set_period(((byte & 0x70) >> 4) as u16);
                 sweep.negate_flag = byte & 0x08 != 0;
                 sweep.shift_count = byte & 0x07;
             }
             0x4002 => {
-                self.pulse_1.period &= 0xFF00;
-                self.pulse_1.period |= byte as u16;
+                let new_period = (self.pulse_1.timer.period() & 0xFF00) | (byte as u16);
+                self.pulse_1.timer.set_period(new_period);
             },
             0x4003 => {
                 self.pulse_1.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
-                self.pulse_1.period &= 0x00FF;
-                self.pulse_1.period |= ((byte & 0x7) as u16) << 8;
+                let new_period = (self.pulse_1.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
+                self.pulse_1.timer.set_period(new_period);
                 self.pulse_1.restart();
             },
             0x4004 => {
@@ -176,18 +179,18 @@ impl Writer for APU {
             0x4005 => {
                 let sweep = &mut self.pulse_2.sweep;
                 sweep.enabled = byte & 0x80 != 0;
-                sweep.divider.set_period((byte & 0x70) >> 4);
+                sweep.divider.set_period(((byte & 0x70) >> 4) as u16);
                 sweep.negate_flag = byte & 0x08 != 0;
                 sweep.shift_count = byte & 0x07;
             }
             0x4006 => {
-                self.pulse_2.period &= 0xFF00;
-                self.pulse_2.period |= byte as u16;
+                let new_period = (self.pulse_2.timer.period() & 0xFF00) | (byte as u16);
+                self.pulse_2.timer.set_period(new_period);
             },
             0x4007 => {
                 self.pulse_2.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
-                self.pulse_2.period &= 0x00FF;
-                self.pulse_2.period |= ((byte & 0x7) as u16) << 8;
+                let new_period = (self.pulse_2.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
+                self.pulse_2.timer.set_period(new_period);
                 self.pulse_2.restart();
             },
             0x4008 => {
@@ -196,13 +199,13 @@ impl Writer for APU {
                 self.triangle.control_flag = (byte & 0x80) != 0;
             },
             0x400A => {
-                self.triangle.period &= 0xFF00;
-                self.triangle.period |= byte as u16;
+                let new_period = (self.triangle.timer.period() & 0xFF00) | (byte as u16);
+                self.triangle.timer.set_period(new_period);
             },
             0x400B => {
                 self.triangle.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
-                self.triangle.period &= 0x00FF;
-                self.triangle.period |= ((byte & 0x7) as u16) << 8;
+                let new_period = (self.triangle.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
+                self.triangle.timer.set_period(new_period);
                 self.triangle.linear_reload_flag = true;
             },
             0x400C => {
@@ -214,7 +217,7 @@ impl Writer for APU {
             },
             0x400E => {
                 self.noise.mode = byte & 0x80 != 0;
-                self.noise.period = Noise::PERIOD_LOOKUP[(byte & 0x0F) as usize];
+                self.noise.timer.set_period(Noise::PERIOD_LOOKUP[(byte & 0x0F) as usize]);
             }
             0x400F => {
                 self.noise.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
@@ -223,7 +226,7 @@ impl Writer for APU {
             0x4010 => {
                 self.dmc.irq_enabled = byte & 0x80 != 0;
                 self.dmc.loop_flag = byte & 0x40 != 0;
-                self.dmc.period = DMC::PERIOD_LOOKUP[(byte & 0x0F) as usize];
+                self.dmc.timer.set_period(DMC::PERIOD_LOOKUP[(byte & 0x0F) as usize]);
             },
             0x4011 => {
                 self.dmc.volume = byte & 0x7F;
