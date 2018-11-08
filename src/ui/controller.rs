@@ -55,6 +55,14 @@ impl Controller {
             self.nes.cpu.borrow_mut().flush_trace(&mut trace_file);
         }
     }
+
+    pub fn debug_print(&mut self, start: u16, len: u16) {
+        println!("CPU Memory starting from ${:X}", start);
+        for ix in 0 .. len {
+            print!("{:02X} ", self.nes.cpu.borrow_mut().load_memory(start + ix));
+        }
+        println!("");
+    }
 }
 
 impl EventHandler for Controller {

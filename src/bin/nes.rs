@@ -144,10 +144,3 @@ fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, a
     }
 }
 
-fn debug_print(nes: &mut NES, start: u16, len: u16) {
-    println!("CPU Memory starting from ${:X}", start);
-    for ix in 0 .. len {
-        print!("{:X} ", nes.cpu.borrow_mut().load_memory(start + ix));
-    }
-    println!("");
-}
