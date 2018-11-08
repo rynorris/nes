@@ -14,6 +14,7 @@ pub struct Compositor {
     pattern_texture: render::Texture,
     nametable_texture: render::Texture,
     sprite_texture: render::Texture,
+    palette_texture: render::Texture,
 
     nes_output: Rc<RefCell<SimpleVideoOut>>,
     ppu_debug: PPUDebug,
@@ -48,7 +49,7 @@ impl Compositor {
         let debug_window = video.window(
                 "NES (Debug)",
                 256 * 2 as u32,
-                432 * 2 as u32)
+                472 * 2 as u32)
             .opengl()
             .hidden()
             .build()
@@ -78,6 +79,11 @@ impl Compositor {
             Ok(t) => t,
         };
 
+        let palette_texture = match debug_texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 256, 32) {
+            Err(cause) => panic!("Failed to create texture: {}", cause),
+            Ok(t) => t,
+        };
+
         Compositor {
             canvas,
             nes_texture,
@@ -85,6 +91,7 @@ impl Compositor {
             pattern_texture,
             nametable_texture,
             sprite_texture,
+            palette_texture,
             nes_output,
             ppu_debug,
             debug_is_on: false,
@@ -123,16 +130,19 @@ impl Compositor {
         let pattern_texture = &mut self.pattern_texture;
         let nametable_texture = &mut self.nametable_texture;
         let sprite_texture = &mut self.sprite_texture;
+        let palette_texture = &mut self.palette_texture;
 
         self.ppu_debug.do_render(
             |patterns| pattern_texture.update(None, patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap(),
             |nametables| nametable_texture.update(None, nametables, PPUDebug::NAMETABLE_WIDTH * 3).unwrap(),
             |sprites| sprite_texture.update(None, sprites, PPUDebug::SPRITE_WIDTH * 3).unwrap(),
+            |palettes| palette_texture.update(None, palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap(),
         );
 
         let _ = self.debug_canvas.copy(&pattern_texture, None, rect::Rect::new(0, 0, 256, 128));
         let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
         let _ = self.debug_canvas.copy(&sprite_texture, None, rect::Rect::new(0, 400, 256, 32));
+        let _ = self.debug_canvas.copy(&palette_texture, None, rect::Rect::new(0, 440, 256, 32));
         self.debug_canvas.present();
     }
 }
