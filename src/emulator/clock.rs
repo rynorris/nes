@@ -39,7 +39,7 @@ pub struct Clock {
     elapsed_cycles: u64,
 
     // Tickers.
-    tickers: Vec<Box<dyn Ticker>>,
+    tickers: Vec<ScaledTicker>,
     turn_order: BinaryHeap<TickNode>,
 }
 
@@ -65,7 +65,7 @@ impl Clock {
         }
     }
 
-    pub fn manage(&mut self, ticker: Box<Ticker>) {
+    pub fn manage(&mut self, ticker: ScaledTicker) {
         self.tickers.push(ticker);
         let node = TickNode {
             ticker_ix: self.tickers.len() - 1,
