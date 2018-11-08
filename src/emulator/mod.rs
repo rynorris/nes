@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+pub mod apu;
 pub mod clock;
 pub mod components;
 pub mod controller;
@@ -16,6 +17,7 @@ mod test;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use emulator::apu::AudioOut;
 use emulator::controller::Button;
 use emulator::io::event::{EventBus, Key};
 use emulator::memory::ReadWriter;
@@ -26,22 +28,21 @@ use emulator::ppu::VideoOut;
 // CPU clock = 12 master clocks.
 // PPU clock = 4 master clocks.
 pub const NES_MASTER_CLOCK_HZ: u64 = 21_477_272;
-pub const NES_MASTER_CLOCK_TIME_PS: u64 = 1_000_000_000_000 / NES_MASTER_CLOCK_HZ;
 const NES_CPU_CLOCK_FACTOR: u32 = 12;
+const NES_APU_CLOCK_FACTOR: u32 = 24;
 const NES_PPU_CLOCK_FACTOR: u32 = 4;
-
-// Pause operation if we drift more than 20ms.
-const PAUSE_THRESHOLD_NS: u64 = 20_000_000;
 
 pub struct NES {
     clock: clock::Clock,
     pub cpu: Rc<RefCell<cpu::CPU>>,
     pub ppu: Rc<RefCell<ppu::PPU>>,
+    apu: Rc<RefCell<apu::APU>>,
     nmi_pin: bool,
 }
 
 impl NES {
-    pub fn new<V: VideoOut + 'static>(event_bus: Rc<RefCell<EventBus>>, video: V, rom: ines::ROM) -> NES {
+    pub fn new<V, A>(event_bus: Rc<RefCell<EventBus>>, video: V, audio: A, rom: ines::ROM) -> NES where
+    V: VideoOut + 'static, A: AudioOut + 'static {
         // Create master clock.
         let mut clock = clock::Clock::new();
 
@@ -58,6 +59,12 @@ impl NES {
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
                     ppu_memory,
                     Box::new(video))));
+
+        // Create APU.
+        let apu = Rc::new(RefCell::new(apu::APU::new(
+                    Box::new(audio),
+                    Box::new(memory::PrgMapper::new(mapper.clone())),
+                    )));
 
         // Create controllers.
         let joy1 = Rc::new(RefCell::new(controller::Controller::new([
@@ -79,6 +86,7 @@ impl NES {
 
         // Create CPU.
         let io_registers = Rc::new(RefCell::new(memory::IORegisters::new(
+            Box::new(apu.clone()),
             Box::new(joy1.clone()),
             Box::new(joy2.clone()),
         )));
@@ -103,13 +111,16 @@ impl NES {
         // Wire up the clock timings.
         let cpu_ticker = clock::ScaledTicker::new(Box::new(dma_controller), NES_CPU_CLOCK_FACTOR);
         let ppu_ticker = clock::ScaledTicker::new(Box::new(ppu.clone()), NES_PPU_CLOCK_FACTOR);
+        let apu_ticker = clock::ScaledTicker::new(Box::new(apu.clone()), NES_APU_CLOCK_FACTOR);
         clock.manage(Box::new(cpu_ticker));
         clock.manage(Box::new(ppu_ticker));
+        clock.manage(Box::new(apu_ticker));
 
         NES {
             clock,
             cpu,
             ppu,
+            apu,
             nmi_pin: false,
         }
     }
@@ -123,6 +134,10 @@ impl NES {
             }
         } else {
             self.nmi_pin = false;
+        }
+
+        if self.apu.borrow_mut().irq_triggered() {
+            self.cpu.borrow_mut().trigger_irq();
         }
 
         cycles

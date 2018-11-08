@@ -12,6 +12,8 @@ use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
 use mos_6500::emulator::ppu::debug::PPUDebug;
 
+use mos_6500::ui::RENDER_FPS;
+use mos_6500::ui::audio::{AudioQueue, SAMPLE_RATE};
 use mos_6500::ui::controller::Controller;
 use mos_6500::ui::compositor::Compositor;
 use mos_6500::ui::input::InputPump;
@@ -33,17 +35,19 @@ fn main() {
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let video_output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
 
-    let nes = NES::new(event_bus.clone(), output.clone(), rom);
+    let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
     let ppu_debug = PPUDebug::new(nes.ppu.clone());
 
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
-
+    let audio = sdl_context.audio().unwrap();
 
     let controller = Rc::new(RefCell::new(Controller::new(nes)));
-    let mut compositor = Compositor::new(video, output.clone(), ppu_debug);
+    let mut compositor = Compositor::new(video, video_output.clone(), ppu_debug);
+    let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
     controller.borrow_mut().start();
@@ -52,7 +56,7 @@ fn main() {
     // -- Run --
 
     let started_instant = Instant::now();
-    let frames_per_second = 30;
+    let frames_per_second = RENDER_FPS;
     let mut frame_start = started_instant;
     let mut frame_ix = 0;
     let mut agg_cycles = 0;
@@ -81,6 +85,7 @@ fn main() {
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
+        audio_queue.flush();
         compositor.set_debug(controller.borrow().show_debug());
         compositor.render();
         input.pump();
@@ -112,12 +117,13 @@ fn main() {
             let current_hz = (agg_cycles * 1_000_000_000) / agg_ns;
 
             println!(
-                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.",
+                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.  Audio queue: {}",
                 (target_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / (NES_MASTER_CLOCK_HZ as f64),
                 agg_ns,
                 agg_cycles,
+                audio_queue.size(),
             );
 
             agg_cycles = 0;

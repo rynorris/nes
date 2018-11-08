@@ -67,6 +67,9 @@ pub struct CPU {
     // Decimal arithmetic enabled?
     dec_arith_on: bool,
 
+    // IRQ triggered?
+    irq_flip_flop: bool,
+
     // NMI triggered?
     nmi_flip_flop: bool,
 
@@ -88,6 +91,7 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
         pc: 0,
         p,
         dec_arith_on: true,
+        irq_flip_flop: false,
         nmi_flip_flop: false,
         is_tracing: false,
         trace_buffer: RingBuffer::new(MAX_TRACE_FRAMES),
@@ -101,6 +105,7 @@ impl clock::Ticker for CPU {
             self.nmi_flip_flop = false;
             self.non_maskable_interrupt()
         } else if self.should_interrupt() {
+            self.irq_flip_flop = false;
             self.interrupt()
         } else {
             self.execute_next_instruction()
@@ -130,6 +135,10 @@ impl CPU {
 
     pub fn enable_bcd(&mut self) {
         self.dec_arith_on = true;
+    }
+
+    pub fn trigger_irq(&mut self) {
+        self.irq_flip_flop = true;
     }
 
     pub fn trigger_nmi(&mut self) {
@@ -198,7 +207,7 @@ impl CPU {
     }
 
     fn should_interrupt(&self) -> bool {
-        false
+        self.irq_flip_flop && !self.p.is_set(flags::Flag::I)
     }
 
     fn should_non_maskable_interrupt(&self) -> bool {
