@@ -470,6 +470,9 @@ impl PPU {
             colour_byte &= 0x30;
         }
 
+        // Modify with emphasis bits.
+        colour_byte |= self.ppumask.as_byte() & 0xE0;
+
         Colour {
             byte: colour_byte,
         }
