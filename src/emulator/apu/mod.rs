@@ -36,6 +36,7 @@ pub struct APU {
     sequence_mode: SequenceMode,
     cycle_counter: u64,
     irq_flag: bool,
+    irq_enabled: bool,
 
     pulse_1: Pulse,
     pulse_2: Pulse,
@@ -52,6 +53,7 @@ impl APU {
             sequence_mode: SequenceMode::FourStep,
             cycle_counter: 0,
             irq_flag: false,
+            irq_enabled: true,
 
             pulse_1: Pulse::new(Sweep::new(false)),
             pulse_2: Pulse::new(Sweep::new(true)),
@@ -95,7 +97,7 @@ impl Ticker for APU {
                     self.clock_linear_and_envelope();
                     self.clock_length_counters();
                     self.cycle_counter = 0;
-                    self.irq_flag = true;
+                    self.irq_flag = self.irq_enabled;
                 },
                 _ => (),
             },
@@ -210,6 +212,7 @@ impl Writer for APU {
                 self.dmc.sample_len = ((byte as u16) << 4) + 1;
             },
             0x4015 => {
+                self.dmc.irq_flag = false;
                 if (byte >> 4) & 0x1 != 0 {
                     self.dmc.enabled = true;
                     if self.dmc.bytes_remaining == 0 {
@@ -250,6 +253,15 @@ impl Writer for APU {
                 } else {
                     SequenceMode::FiveStep
                 };
+
+                // IRQ inhibit.
+                if byte & 0x70 != 0 {
+                    self.irq_enabled = false;
+                    self.irq_flag = false;
+                } else {
+                    self.irq_enabled = true;
+                }
+
                 self.cycle_counter = 0;
             },
             _ => (),
