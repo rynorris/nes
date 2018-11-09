@@ -83,6 +83,7 @@ fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
         Keycode::Num0 => Some(Key::Num0),
         Keycode::Minus => Some(Key::Minus),
         Keycode::Equals => Some(Key::Equals),
+        Keycode::Backspace => Some(Key::Backspace),
 
         Keycode::Up => Some(Key::Up),
         Keycode::Down => Some(Key::Down),

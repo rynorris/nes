@@ -45,6 +45,10 @@ impl Controller {
         self.nes.cpu.borrow_mut().start_tracing();
     }
 
+    pub fn reset(&mut self) {
+        self.nes.reset();
+    }
+
     pub fn set_target_hz(&mut self, hz: u64) {
         self.target_hz = hz;
         self.video_output.borrow_mut().set_double_buffering(hz > 200_000);
@@ -110,6 +114,7 @@ impl EventHandler for Controller {
                     Key::Num8 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 3),
                     Key::Num9 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 4),
                     Key::Num0 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 5),
+                    Key::Backspace => self.reset(),
                     _ => (),
                 };
             },
