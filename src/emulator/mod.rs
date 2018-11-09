@@ -20,7 +20,7 @@ use std::rc::Rc;
 use emulator::apu::AudioOut;
 use emulator::controller::Button;
 use emulator::io::event::{EventBus, Key};
-use emulator::memory::ReadWriter;
+use emulator::memory::{ReadWriter, Writer};
 use emulator::ppu::VideoOut;
 
 // Timings (NTSC).
@@ -154,6 +154,14 @@ impl NES {
             1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
             _ => panic!("Unknown mapper: {}", rom.mapper_number()),
         }
+    }
+
+    pub fn reset(&mut self) {
+        // Silence APU.
+        self.apu.borrow_mut().write(0x4015, 0x00);
+        
+        // Restart CPU.
+        self.cpu.borrow_mut().startup_sequence();
     }
 }
 
