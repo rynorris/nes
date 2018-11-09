@@ -192,7 +192,7 @@ impl clock::Ticker for DMAController {
 
         if self.copies_remaining > 0 {
             // CPU is suspended during copy.
-            let byte = self.cpu.borrow_mut().load_memory(self.base_address + 256 - self.copies_remaining);
+            let byte = self.cpu.borrow_mut().load_memory(self.base_address.wrapping_add(256 - self.copies_remaining));
             self.cpu.borrow_mut().store_memory(0x2004, byte);
             self.copies_remaining -= 1;
             2

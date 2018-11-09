@@ -177,6 +177,10 @@ pub struct PPU {
 
     // Bytes read from $2007 are delayed in this buffer.
     ppudata_read_buffer: u8,
+
+    // Internal memory latch, causes reads from write-only registers to return the previously read
+    // value.
+    bus_latch: u8,
 }
 
 impl clock::Ticker for PPU {
@@ -227,6 +231,7 @@ impl PPU {
             sprite_0_next_line: false,
             sprite_0_this_line: false,
             ppudata_read_buffer: 0,
+            bus_latch: 0,
         }
     }
 
