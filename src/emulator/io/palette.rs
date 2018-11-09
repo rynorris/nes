@@ -133,7 +133,10 @@ pub const PALETTE: [u8; 1536] = [
 ];
 
 pub fn convert_colour(c: Colour) -> (u8, u8, u8) {
-    let byte = c.as_byte() as usize;
+    let mut byte = c.as_byte() as usize;
+    if c.em_r { byte |= 0x40 };
+    if c.em_g { byte |= 0x80 };
+    if c.em_b { byte |= 0x100 };
     let r = PALETTE[byte * 3];
     let g = PALETTE[byte * 3 + 1];
     let b = PALETTE[byte * 3 + 2];

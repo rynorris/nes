@@ -22,6 +22,11 @@ use emulator::util;
 // ++------- Unimplemented, reads back as 0
 pub struct Colour {
     byte: u8,
+
+    // Emphasis bits.
+    pub em_r: bool,
+    pub em_b: bool,
+    pub em_g: bool,
 }
 
 impl Colour {
@@ -470,11 +475,11 @@ impl PPU {
             colour_byte &= 0x30;
         }
 
-        // Modify with emphasis bits.
-        colour_byte |= self.ppumask.as_byte() & 0xE0;
-
         Colour {
             byte: colour_byte,
+            em_r: self.ppumask.is_set(flags::PPUMASK::R),
+            em_g: self.ppumask.is_set(flags::PPUMASK::G),
+            em_b: self.ppumask.is_set(flags::PPUMASK::B),
         }
     }
 
