@@ -464,8 +464,14 @@ impl PPU {
             0x3F00
         };
 
+        let mut colour_byte = self.memory.read(colour_addr);
+        if self.ppumask.is_set(flags::PPUMASK::GR) {
+            // Grescale mode.
+            colour_byte &= 0x30;
+        }
+
         Colour {
-            byte: self.memory.read(colour_addr),
+            byte: colour_byte,
         }
     }
 

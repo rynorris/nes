@@ -77,7 +77,12 @@ impl Reader for PPU {
                     // Reading from palettes, return immediately, but grab the nametable byte
                     // "behind" the palettes into the buffer.
                     self.ppudata_read_buffer = self.memory.read(addr & 0x2FFF);
-                    byte
+                    if self.ppumask.is_set(flags::PPUMASK::GR) {
+                        // In greyscale mode, palette bytes read through PPUDATA also go grey.
+                        byte & 0x30
+                    } else {
+                        byte
+                    }
                 }
             },
 
