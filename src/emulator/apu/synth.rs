@@ -420,6 +420,11 @@ impl DMC {
         }
     }
 
+    pub fn restart_sample(&mut self) {
+        self.bytes_remaining = self.sample_len;
+        self.current_addr = self.sample_addr;
+    }
+
     fn clock_memory_reader(&mut self) {
         if self.sample_buffer.is_none() && self.bytes_remaining != 0 {
             // TODO: Stall the CPU by 4 (or 2) clocks.
@@ -431,8 +436,7 @@ impl DMC {
             self.bytes_remaining = self.bytes_remaining.saturating_sub(1);
             if self.bytes_remaining == 0 {
                 if self.loop_flag {
-                    self.bytes_remaining = self.sample_len;
-                    self.current_addr = self.sample_addr;
+                    self.restart_sample();
                 } else if self.irq_enabled {
                     self.irq_flag = true;
                 }

@@ -212,6 +212,9 @@ impl Writer for APU {
             0x4015 => {
                 if (byte >> 4) & 0x1 != 0 {
                     self.dmc.enabled = true;
+                    if self.dmc.bytes_remaining == 0 {
+                        self.dmc.restart_sample();
+                    }
                 } else {
                     self.dmc.enabled = false;
                     self.dmc.bytes_remaining = 0;
