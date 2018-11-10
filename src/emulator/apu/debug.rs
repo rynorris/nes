@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::apu::APU;
-use emulator::apu::synth::{Pulse};
+use emulator::apu::synth::{Pulse, Triangle};
 
 pub struct APUDebug {
     apu: Rc<RefCell<APU>>,
@@ -31,6 +31,7 @@ impl APUDebug {
         let apu = self.apu.borrow();
         APUDebug::draw_pulse_wave(buffer, &apu.pulse_1, 0, 0);
         APUDebug::draw_pulse_wave(buffer, &apu.pulse_2, 0, 32);
+        APUDebug::draw_triangle_wave(buffer, &apu.triangle, 0, 64);
     }
 
     fn draw_pulse_wave(buffer: &mut [u8], pulse: &Pulse, x: usize, y: usize) {
@@ -61,6 +62,20 @@ impl APUDebug {
                 }
             }
             prev_y = dy;
+
+            buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+        }
+    }
+
+    fn draw_triangle_wave(buffer: &mut [u8], triangle: &Triangle, x: usize, y: usize) {
+        let period = triangle.timer.period();
+        if period == 0 {
+            return;
+        }
+
+        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+            let seq_ix = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
+            let dy = (Triangle::SEQUENCE[seq_ix % 32] + 8) as usize;
 
             buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
         }
