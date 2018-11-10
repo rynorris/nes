@@ -2,10 +2,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::io::SimpleVideoOut;
+use emulator::apu::debug::APUDebug;
 use emulator::ppu::debug::PPUDebug;
 use ui::sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum DebugMode {
+    OFF,
+    PPU,
+    APU,
+}
 
 pub struct Compositor {
     canvas: render::Canvas<video::Window>,
@@ -15,10 +23,12 @@ pub struct Compositor {
     nametable_texture: render::Texture,
     sprite_texture: render::Texture,
     palette_texture: render::Texture,
+    waveform_texture: render::Texture,
 
     nes_output: Rc<RefCell<SimpleVideoOut>>,
     ppu_debug: PPUDebug,
-    debug_is_on: bool,
+    apu_debug: APUDebug,
+    debug_mode: DebugMode,
 }
 
 impl Compositor {
@@ -26,6 +36,7 @@ impl Compositor {
         video: sdl2::VideoSubsystem,
         nes_output: Rc<RefCell<SimpleVideoOut>>,
         ppu_debug: PPUDebug,
+        apu_debug: APUDebug,
     ) -> Compositor {
         let mut main_window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
             .position_centered()
@@ -85,6 +96,11 @@ impl Compositor {
             Ok(t) => t,
         };
 
+        let waveform_texture = match debug_texture_creator.create_texture_static(Some(pixels::PixelFormatEnum::RGB24), 256, 160) {
+            Err(cause) => panic!("Failed to create texture: {}", cause),
+            Ok(t) => t,
+        };
+
         Compositor {
             canvas,
             nes_texture,
@@ -93,26 +109,33 @@ impl Compositor {
             nametable_texture,
             sprite_texture,
             palette_texture,
+            waveform_texture,
             nes_output,
             ppu_debug,
-            debug_is_on: false,
+            apu_debug,
+            debug_mode: DebugMode::OFF,
         }
     }
 
     pub fn render(&mut self) {
         self.render_main();
 
-        if self.debug_is_on {
-            self.render_debug();
+        match self.debug_mode {
+            DebugMode::PPU => self.render_ppu_debug(),
+            DebugMode::APU => self.render_apu_debug(),
+            _ => (),
         }
     }
 
-    pub fn set_debug(&mut self, on: bool) {
-        self.debug_is_on = on;
-        if self.debug_is_on {
-            self.debug_canvas.window_mut().show();
-        } else {
-            self.debug_canvas.window_mut().hide();
+    pub fn set_debug(&mut self, mode: DebugMode) {
+        if mode == self.debug_mode {
+            return;
+        }
+
+        self.debug_mode = mode;
+        match self.debug_mode {
+            DebugMode::PPU | DebugMode::APU => self.debug_canvas.window_mut().show(),
+            _ => self.debug_canvas.window_mut().hide(),
         }
     }
 
@@ -126,7 +149,7 @@ impl Compositor {
         self.canvas.present();
     }
 
-    fn render_debug(&mut self) {
+    fn render_ppu_debug(&mut self) {
         self.debug_canvas.clear();
         let pattern_texture = &mut self.pattern_texture;
         let nametable_texture = &mut self.nametable_texture;
@@ -144,6 +167,18 @@ impl Compositor {
         let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
         let _ = self.debug_canvas.copy(&sprite_texture, None, rect::Rect::new(0, 400, 256, 32));
         let _ = self.debug_canvas.copy(&palette_texture, None, rect::Rect::new(0, 440, 256, 32));
+        self.debug_canvas.present();
+    }
+
+    fn render_apu_debug(&mut self) {
+        self.debug_canvas.clear();
+        let waveform_texture = &mut self.waveform_texture;
+
+        self.apu_debug.do_render(
+            |waveforms| waveform_texture.update(None, waveforms, APUDebug::WAVEFORM_WIDTH * 3).unwrap(),
+        );
+
+        let _ = self.debug_canvas.copy(&waveform_texture, None, rect::Rect::new(0, 0, 256, 160));
         self.debug_canvas.present();
     }
 }

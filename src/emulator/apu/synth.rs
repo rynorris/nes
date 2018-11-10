@@ -166,7 +166,7 @@ pub struct Pulse {
 }
 
 impl Pulse {
-    const SEQUENCES: [[u8; 8]; 4] = [
+    pub const SEQUENCES: [[u8; 8]; 4] = [
         [0, 0, 0, 0, 0, 0, 0, 1],
         [0, 0, 0, 0, 0, 0, 1, 1],
         [0, 0, 0, 0, 1, 1, 1, 1],
@@ -236,7 +236,7 @@ impl Pulse {
 pub struct Triangle {
     pub enabled: bool,
     pub timer: Divider,
-    linear: u8,
+    pub linear: u8,
     pub length: u8,
     pub halt_length: bool,
     pub linear_reload_flag: bool,
@@ -246,7 +246,7 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    const SEQUENCE: [u8; 32] = [
+    pub const SEQUENCE: [u8; 32] = [
         15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
          0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
     ];
