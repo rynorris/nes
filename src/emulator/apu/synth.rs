@@ -236,7 +236,7 @@ impl Pulse {
 pub struct Triangle {
     pub enabled: bool,
     pub timer: Divider,
-    linear: u8,
+    pub linear: u8,
     pub length: u8,
     pub halt_length: bool,
     pub linear_reload_flag: bool,

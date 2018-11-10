@@ -55,6 +55,7 @@ impl APUDebug {
         let seq = Pulse::SEQUENCES[pulse.sequence as usize];
 
         if period <= 8 || pulse.length == 0 {
+            APUDebug::draw_silence(buffer, x, y);
             return;
         }
 
@@ -62,7 +63,7 @@ impl APUDebug {
         for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
             // Draw one column at a time.
             let seq_ix = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
-            let dy = (16 - seq[seq_ix % 8] * amplitude + 8) as usize;
+            let dy = (15 - seq[seq_ix % 8] * amplitude + 8) as usize;
 
             if prev_y != 0 && dy != prev_y {
                 // Draw vertical connecting bar.
@@ -84,13 +85,14 @@ impl APUDebug {
 
     fn draw_triangle_wave(buffer: &mut [u8], triangle: &Triangle, x: usize, y: usize) {
         let period = triangle.timer.period();
-        if period == 0 || triangle.length == 0 {
+        if period == 0 || triangle.length == 0 || triangle.linear == 0 || !triangle.enabled {
+            APUDebug::draw_silence(buffer, x, y);
             return;
         }
 
         for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
             let seq_ix = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
-            let dy = (16 - Triangle::SEQUENCE[seq_ix % 32] + 8) as usize;
+            let dy = (15 - Triangle::SEQUENCE[seq_ix % 32] + 8) as usize;
 
             buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
         }
@@ -98,11 +100,9 @@ impl APUDebug {
 
     fn draw_noise(buffer: &mut [u8], noise: &Noise, dummy_noise: &mut Noise, x: usize, y: usize) {
         let period = noise.timer.period();
-        if period == 0 {
-            return;
-        }
 
-        if noise.length == 0 || noise.envelope.volume() == 0 {
+        if period == 0 || noise.length == 0 || noise.envelope.volume() == 0 {
+            APUDebug::draw_silence(buffer, x, y);
             return;
         }
 
@@ -118,7 +118,7 @@ impl APUDebug {
             }
             // hack back in the volume from the real noise.
             let amplitude = if dummy_noise.volume() > 0 { noise.envelope.volume() } else { 0 };
-            let dy = (16 - amplitude) as usize;
+            let dy = (15 - amplitude + 8) as usize;
             if prev_y != 0 && dy != prev_y {
                 // Draw vertical connecting bar.
                 let (from, to) = if dy > prev_y {
@@ -155,6 +155,13 @@ impl APUDebug {
             }
             buffer[(((y + 14) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
             buffer[(((y + 18) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+        }
+    }
+
+    fn draw_silence(buffer: &mut [u8], x: usize, y: usize) {
+        // Base volume level is at 15, +8 to center it in the 32px tall box.
+        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+            buffer[(((y + 15 + 8) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
         }
     }
 }
