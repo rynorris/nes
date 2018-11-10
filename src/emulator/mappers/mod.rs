@@ -4,6 +4,10 @@
 mod nrom;
 pub use self::nrom::NROM;
 
+// #2 UxROM
+mod uxrom;
+pub use self::uxrom::UXROM;
+
 // #3 CNROM
 mod cnrom;
 pub use self::cnrom::CNROM;
@@ -11,3 +15,7 @@ pub use self::cnrom::CNROM;
 // #4 MMC1
 mod mmc1;
 pub use self::mmc1::MMC1;
+
+// #7 AxROM
+mod axrom;
+pub use self::axrom::AXROM;
