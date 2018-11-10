@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::apu::APU;
-use emulator::apu::synth::{Noise, Pulse, Triangle};
+use emulator::apu::synth::{DMC, Noise, Pulse, Triangle};
 
 pub struct APUDebug {
     apu: Rc<RefCell<APU>>,
@@ -46,6 +46,7 @@ impl APUDebug {
         APUDebug::draw_pulse_wave(buffer, &apu.pulse_2, 0, 32);
         APUDebug::draw_triangle_wave(buffer, &apu.triangle, 0, 64);
         APUDebug::draw_noise(buffer, &apu.noise, dummy_noise, 0, 96);
+        APUDebug::draw_dmc(buffer, &apu.dmc, 0, 128);
     }
 
     fn draw_pulse_wave(buffer: &mut [u8], pulse: &Pulse, x: usize, y: usize) {
@@ -131,6 +132,22 @@ impl APUDebug {
                 }
             }
             prev_y = dy;
+            buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+        }
+    }
+
+    fn draw_dmc(buffer: &mut [u8], dmc: &DMC, x: usize, y: usize) {
+        // Drawing the actual sample seems too complex for little value.
+        // For now just display an indicator of how much time is left on the sample.
+        let bar_width = (dmc.bytes_remaining / 8) as usize;
+        let inverse_width = APUDebug::WAVEFORM_WIDTH / 2 - bar_width;
+        
+        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+            if dx < inverse_width || APUDebug::WAVEFORM_WIDTH - dx < inverse_width {
+                continue;
+            }
+
+            let dy = 16;
             buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
         }
     }

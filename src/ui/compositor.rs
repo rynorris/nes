@@ -157,7 +157,7 @@ impl Compositor {
         );
 
         let _ = self.debug_canvas.copy(&waveform_texture, None, rect::Rect::new(0, 0, 256, 160));
-        let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
+        //let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
         let _ = self.debug_canvas.copy(&sprite_texture, None, rect::Rect::new(0, 400, 256, 32));
         let _ = self.debug_canvas.copy(&palette_texture, None, rect::Rect::new(0, 440, 256, 32));
         self.debug_canvas.present();
