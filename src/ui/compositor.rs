@@ -163,6 +163,7 @@ impl Compositor {
             |palettes| palette_texture.update(None, palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap(),
         );
 
+        let _ = self.debug_canvas.copy(&pattern_texture, None, rect::Rect::new(0, 0, 256, 128));
         let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
         let _ = self.debug_canvas.copy(&sprite_texture, None, rect::Rect::new(0, 400, 256, 32));
         let _ = self.debug_canvas.copy(&palette_texture, None, rect::Rect::new(0, 440, 256, 32));
