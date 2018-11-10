@@ -3,6 +3,7 @@ extern crate md5;
 
 mod instr_misc;
 mod instr_test_v5;
+mod instr_timing;
 mod nestest;
 
 use std::cell::RefCell;
@@ -20,14 +21,15 @@ use emulator::io::sdl::ImageCapture;
 use emulator::io::event::EventBus;
 use emulator::NES;
 
-fn run_for(nes: &mut NES, cycles: u32) {
-    for _ in 0 .. cycles {
-        nes.tick();
+fn run_for(nes: &mut NES, cycles: u64) {
+    let mut n = 0;
+    while n <= cycles {
+        n += nes.tick();
     }
 }
 
 fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
-    load_and_run_blargg_test_rom_with_cycles(rom_path, 20_000_000)
+    load_and_run_blargg_test_rom_with_cycles(rom_path, 100_000_000)
 }
 
 fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cycles: u64) -> (u8, String) {
