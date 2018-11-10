@@ -30,14 +30,20 @@ impl <M : Writer> Writer for Rc<RefCell<M>> {
 
 pub struct IORegisters {
     apu: Box<dyn ReadWriter>,
-    oamdma: u8,
+    oamdma: Option<u8>,
     joy1: Box<dyn ReadWriter>,
     joy2: Box<dyn ReadWriter>,
 }
 
 impl IORegisters {
     pub fn new(apu: Box<dyn ReadWriter>, joy1: Box<dyn ReadWriter>, joy2: Box<dyn ReadWriter>) -> IORegisters {
-        IORegisters { apu, oamdma: 0, joy1, joy2 }
+        IORegisters { apu, oamdma: None, joy1, joy2 }
+    }
+
+    pub fn get_oamdma(&mut self) -> Option<u8> {
+        let res = self.oamdma;
+        self.oamdma = None;
+        res
     }
 }
 
@@ -45,7 +51,7 @@ impl Reader for IORegisters {
     fn read(&mut self, address: u16) -> u8 {
         match address {
             0x4000 ... 0x4013 | 0x4015 => self.apu.read(address),
-            0x4014 => self.oamdma,
+            0x4014 => self.oamdma.unwrap_or(0),
             0x4016 => self.joy1.read(address),
             0x4017 => self.joy2.read(address),
             _ => 0,
@@ -57,7 +63,7 @@ impl Writer for IORegisters {
     fn write(&mut self, address: u16, byte: u8) {
         match address {
             0x4000 ... 0x4013 | 0x4015 => self.apu.write(address, byte),
-            0x4014 => self.oamdma = byte,
+            0x4014 => self.oamdma = Some(byte),
             0x4016 => self.joy1.write(address, byte),
             0x4017 => {
                 // This address half drives the APU and half the joypad.

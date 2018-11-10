@@ -19,12 +19,12 @@ impl Reader for PPU {
         // There are only 8 registers, mirrorred every 8 bytes, so we only care about the 3 low
         // bits of the address.
         // TODO: Reads of write-only registers should return the contents of an internal latch.
-        match address % 8 {
+        let byte = match address % 8 {
             // PPUCTRL - write-only
-            0 => 0,
+            0 => None,
 
             // PPUMASK - write-only
-            1 => 0,
+            1 => None,
 
             // PPUSTATUS
             // Only top 3 bits contain data.
@@ -34,28 +34,28 @@ impl Reader for PPU {
 
                 // After reading PPUSTATUS, vblank flag is cleared.
                 self.ppustatus.clear(flags::PPUSTATUS::V);
-                byte
+                Some(byte)
             },
 
             // OAMADDR - write-only
-            3 => 0,
+            3 => None,
 
             // OAMDATA
             4 => {
                 // Reads during vblank read from OAM but do not increment OAMADDR.
                 if self.is_vblanking() {
                     let addr = self.oamaddr;
-                    self.oam[addr as usize]
+                    Some(self.oam[addr as usize])
                 } else {
-                    0
+                    None
                 }
             },
 
             // PPUSCROLL - write-only
-            5 => 0,
+            5 => None,
 
             // PPUADDR - write-only
-            6 => 0,
+            6 => None,
 
             // PPUDATA
             7 => {
@@ -72,27 +72,36 @@ impl Reader for PPU {
                     // Reading from before palettes, buffer the read.
                     let byte_to_return = self.ppudata_read_buffer;
                     self.ppudata_read_buffer = byte;
-                    byte_to_return
+                    Some(byte_to_return)
                 } else {
                     // Reading from palettes, return immediately, but grab the nametable byte
                     // "behind" the palettes into the buffer.
                     self.ppudata_read_buffer = self.memory.read(addr & 0x2FFF);
                     if self.ppumask.is_set(flags::PPUMASK::GR) {
                         // In greyscale mode, palette bytes read through PPUDATA also go grey.
-                        byte & 0x30
+                        Some(byte & 0x30)
                     } else {
-                        byte
+                        Some(byte)
                     }
                 }
             },
 
             _ => panic!("Unexpected PPU register address: {}", address),
+        };
+
+        match byte {
+            Some(b) => {
+                self.bus_latch = b;
+                b
+            },
+            None => self.bus_latch,
         }
     }
 }
 
 impl Writer for PPU {
     fn write(&mut self, address: u16, byte: u8) {
+        self.bus_latch = byte;
         match address % 8 {
             // PPUCTRL
             0 => {

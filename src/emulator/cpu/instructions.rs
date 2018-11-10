@@ -653,12 +653,15 @@ fn shift_set_flags(cpu: &mut cpu::CPU, res: u8, carry: bool) {
 
 // LSR: Logical Shift Right
 pub fn lsr(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.load_memory(addr);
     let (res, carry) = util::shift_right(byte);
     shift_set_flags(cpu, res, carry);
     cpu.store_memory(addr, res);
-    addr_cycles
+
+    // Ignore whether the addressing added a whoops cycle since it's always triggered on write
+    // instructions.
+    0
 }
 
 pub fn lsra(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
@@ -671,12 +674,15 @@ pub fn lsra(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 
 // ASL: Arithmetic Shift Left
 pub fn asl(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.load_memory(addr);
     let (res, carry) = util::shift_left(byte);
     shift_set_flags(cpu, res, carry);
     cpu.store_memory(addr, res);
-    addr_cycles
+
+    // Ignore whether the addressing added a whoops cycle since it's always triggered on write
+    // instructions.
+    0
 }
 
 pub fn asla(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
@@ -689,12 +695,15 @@ pub fn asla(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 
 // ROR: Rotate Right
 pub fn ror(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.load_memory(addr);
     let (res, carry) = util::rotate_right(byte, cpu.p.is_set(cpu::flags::Flag::C));
     shift_set_flags(cpu, res, carry);
     cpu.store_memory(addr, res);
-    addr_cycles
+
+    // Ignore whether the addressing added a whoops cycle since it's always triggered on write
+    // instructions.
+    0
 }
 
 pub fn rora(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
@@ -707,12 +716,15 @@ pub fn rora(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 
 // ROL: Rotate Left
 pub fn rol(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.load_memory(addr);
     let (res, carry) = util::rotate_left(byte, cpu.p.is_set(cpu::flags::Flag::C));
     shift_set_flags(cpu, res, carry);
     cpu.store_memory(addr, res);
-    addr_cycles
+
+    // Ignore whether the addressing added a whoops cycle since it's always triggered on write
+    // instructions.
+    0
 }
 
 pub fn rola(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
@@ -726,25 +738,31 @@ pub fn rola(cpu: &mut cpu::CPU, _: cpu::addressing::AddressingMode) -> u32 {
 // INC: Increment Memory by One
 // M + 1 -> M
 pub fn inc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.load_memory(addr);
     let res = byte.wrapping_add(1);
     cpu.store_memory(addr, res);
     update_zero_flag(cpu, res);
     update_negative_flag(cpu, res);
-    addr_cycles
+
+    // Ignore whether the addressing added a whoops cycle since it's always triggered on write
+    // instructions.
+    0
 }
 
 // DEC: Decrement Memory by One
 // M - 1 -> M
 pub fn dec(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u32 {
-    let (addr, addr_cycles) = load_addr(cpu);
+    let (addr, _) = load_addr(cpu);
     let byte = cpu.load_memory(addr);
     let res = byte.wrapping_sub(1);
     cpu.store_memory(addr, res);
     update_zero_flag(cpu, res);
     update_negative_flag(cpu, res);
-    addr_cycles
+
+    // Ignore whether the addressing added a whoops cycle since it's always triggered on write
+    // instructions.
+    0
 }
 
 // NOP: No operation

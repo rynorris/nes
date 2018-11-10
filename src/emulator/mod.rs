@@ -20,7 +20,7 @@ use std::rc::Rc;
 use emulator::apu::AudioOut;
 use emulator::controller::Button;
 use emulator::io::event::{EventBus, Key};
-use emulator::memory::{ReadWriter, Writer};
+use emulator::memory::{IORegisters, Writer};
 use emulator::ppu::VideoOut;
 
 // Timings (NTSC).
@@ -104,7 +104,7 @@ impl NES {
         cpu.borrow_mut().startup_sequence();
 
         let dma_controller = DMAController::new(
-            Box::new(io_registers.clone()),
+            io_registers.clone(),
             cpu.clone()
         );
 
@@ -171,12 +171,12 @@ impl NES {
 pub struct DMAController {
     copies_remaining: u16,
     base_address: u16,
-    io_registers: Box<dyn ReadWriter>,
+    io_registers: Rc<RefCell<IORegisters>>,
     cpu: Rc<RefCell<cpu::CPU>>,
 }
 
 impl DMAController {
-    pub fn new(io_registers: Box<dyn ReadWriter>, cpu: Rc<RefCell<cpu::CPU>>) -> DMAController {
+    pub fn new(io_registers: Rc<RefCell<IORegisters>>, cpu: Rc<RefCell<cpu::CPU>>) -> DMAController {
         DMAController {
             copies_remaining: 0,
             base_address: 0,
@@ -184,26 +184,22 @@ impl DMAController {
             cpu, 
         }
     }
-
-    pub fn trigger_dma(&mut self, base_address: u16) {
-        self.copies_remaining = 256;
-        self.base_address = base_address;
-    }
 }
 
 impl clock::Ticker for DMAController {
     fn tick(&mut self) -> u32 {
-        let byte = self.io_registers.read(0x4014);
-        if byte != 0 {
-            // DMA triggered.
-            self.base_address = (byte as u16) << 8;
-            self.copies_remaining = 256;
-            self.io_registers.write(0x4014, 0);
+        match self.io_registers.borrow_mut().get_oamdma() {
+            None => (),
+            Some(byte) => {
+                // DMA triggered.
+                self.base_address = (byte as u16) << 8;
+                self.copies_remaining = 256;
+            },
         }
 
         if self.copies_remaining > 0 {
             // CPU is suspended during copy.
-            let byte = self.cpu.borrow_mut().load_memory(self.base_address + 256 - self.copies_remaining);
+            let byte = self.cpu.borrow_mut().load_memory(self.base_address.wrapping_add(256 - self.copies_remaining));
             self.cpu.borrow_mut().store_memory(0x2004, byte);
             self.copies_remaining -= 1;
             2
