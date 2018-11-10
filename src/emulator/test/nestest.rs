@@ -23,14 +23,14 @@ fn test_nestest_visual() {
     let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);
 
     // Check the menu load.
-    run_for(&mut nes, 550_000);
+    run_for(&mut nes, 2_000_000);
     assert_image(&mut image, test_resource_path("nestest/capture_01_menu.bmp"));
 
     // Start tests.
     event_bus.borrow_mut().broadcast(Event::KeyDown(Key::A));
    
     // Wait for tests to finish and check they pass.
-    run_for(&mut nes, 2_000_000);
+    run_for(&mut nes, 7_000_000);
     assert_image(&mut image, test_resource_path("nestest/capture_02_passed.bmp"));
 }
 
