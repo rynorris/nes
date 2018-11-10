@@ -1,8 +1,11 @@
 extern crate base64;
 extern crate md5;
 
+mod instr_misc;
+mod instr_test_v5;
+mod nestest;
+
 use std::cell::RefCell;
-use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -12,87 +15,8 @@ use self::md5::{Md5, Digest};
 
 use emulator::ines;
 use emulator::io;
-use emulator::io::event::{Event, EventBus, Key};
-use emulator::io::sdl::ImageCapture;
+use emulator::io::event::EventBus;
 use emulator::NES;
-
-// -- Visual nestest.
-#[test]
-fn test_nestest_visual() {
-    let path = test_resource_path("nestest/nestest.nes");
-    let rom = ines::ROM::load(&path.into_os_string().into_string().unwrap());
-    let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
-    let mut image = ImageCapture::new(output.clone());
-    let audio = io::nop::DummyAudio{};
-    let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);
-
-    let tmp_dir = env::temp_dir();
-
-    // Wait for main menu to load.
-    for _ in 1 .. 550_000 {
-        nes.tick();
-    }
-
-    // Check the menu loaded properly.
-    let mut bmp_01_path = tmp_dir.clone();
-    bmp_01_path.push("01.bmp");
-    image.save_bmp(&bmp_01_path);
-    println!("Saving image to tempfile at: {}", bmp_01_path.display());
-    assert_eq!(file_digest(bmp_01_path), file_digest(test_resource_path("nestest/capture_01_menu.bmp")));
-
-    // Start tests.
-    event_bus.borrow_mut().broadcast(Event::KeyDown(Key::A));
-   
-    // Wait for tests to finish.
-    for _ in 1 .. 2_000_000 {
-        nes.tick();
-    }
-
-    // Check the tests passed.
-    let mut bmp_02_path = tmp_dir.clone();
-    bmp_02_path.push("02.bmp");
-    println!("Saving image to tempfile at: {}", bmp_02_path.display());
-    image.save_bmp(&bmp_02_path);
-    assert_eq!(file_digest(bmp_02_path), file_digest(test_resource_path("nestest/capture_02_passed.bmp")));
-}
-
-#[test]
-fn test_instr_test_v5_official_only() {
-    let path = test_resource_path("instr_test-v5/official_only.nes");
-    let (status, output) = load_and_run_blargg_test_rom_with_cycles(path, 1_000_000_000);
-
-    assert_eq!(status, 0x00);
-    assert_eq!(output, "All 16 tests passed\n\n\n");
-}
-
-// -- instr_misc test ROMs --
-// TODO: Get 03 and 04 to pass and add tests for them.
-#[test]
-fn test_instr_misc_01() {
-    let path = test_resource_path("instr_misc/rom_singles/01-abs_x_wrap.nes");
-    let (status, output) = load_and_run_blargg_test_rom(path);
-
-    assert_eq!(status, 0x00);
-    assert_eq!(output, "\n01-abs_x_wrap\n\nPassed\n");
-}
-
-#[test]
-fn test_instr_misc_02() {
-    let path = test_resource_path("instr_misc/rom_singles/02-branch_wrap.nes");
-    let (status, output) = load_and_run_blargg_test_rom(path);
-
-    assert_eq!(status, 0x00);
-    assert_eq!(output, "\n02-branch_wrap\n\nPassed\n");
-}
-
-fn test_instr_misc_03() {
-    let path = test_resource_path("instr_misc/rom_singles/03-dummy_reads.nes");
-    let (status, output) = load_and_run_blargg_test_rom(path);
-
-    assert_eq!(status, 0x00);
-    assert_eq!(output, "\n02-branch_wrap\n\nPassed\n");
-}
 
 fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
     load_and_run_blargg_test_rom_with_cycles(rom_path, 20_000_000)
