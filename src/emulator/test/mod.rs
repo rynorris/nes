@@ -6,6 +6,7 @@ mod instr_test_v5;
 mod nestest;
 
 use std::cell::RefCell;
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -15,8 +16,15 @@ use self::md5::{Md5, Digest};
 
 use emulator::ines;
 use emulator::io;
+use emulator::io::sdl::ImageCapture;
 use emulator::io::event::EventBus;
 use emulator::NES;
+
+fn run_for(nes: &mut NES, cycles: u32) {
+    for _ in 0 .. cycles {
+        nes.tick();
+    }
+}
 
 fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
     load_and_run_blargg_test_rom_with_cycles(rom_path, 20_000_000)
@@ -79,6 +87,15 @@ fn collect_test_output(nes: &mut NES) -> String {
         Err(cause) => panic!("Error converting output to string: {}", cause),
         Ok(string) => string,
     }
+}
+
+pub fn assert_image(capture: &mut ImageCapture, exp_file: PathBuf) {
+    let tmp_dir = env::temp_dir();
+    let mut out_file = tmp_dir.clone();
+    out_file.push(exp_file.file_name().unwrap());
+    capture.save_bmp(&out_file);
+    println!("Saving image to tempfile at: {}", out_file.display());
+    assert_eq!(file_digest(out_file), file_digest(exp_file));
 }
 
 pub fn test_resource_path(name: &str) -> PathBuf {
