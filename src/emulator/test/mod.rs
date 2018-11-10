@@ -5,6 +5,7 @@ mod instr_misc;
 mod instr_test_v5;
 mod instr_timing;
 mod nestest;
+mod ppu_sprite_overflow;
 
 use std::cell::RefCell;
 use std::env;

@@ -583,8 +583,10 @@ impl PPU {
                 } else {
                     if (self.tmp_oam_byte as u16) < min_y || self.tmp_oam_byte as u16 > max_y {
                         // Erroneously increment m, causing sprite overflow bug.
+                        // Note that m wraps itself here.
                         self.sprite_n += 1;
                         self.sprite_m += 1;
+                        self.sprite_m %= 4;
                     } else {
                         // In range, set sprite overflow flag.
                         self.ppustatus.set(flags::PPUSTATUS::O);
