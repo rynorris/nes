@@ -1,3 +1,4 @@
+pub mod debug;
 mod synth;
 
 use std::cell::RefCell;

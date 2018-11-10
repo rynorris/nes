@@ -10,6 +10,7 @@ use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
 use mos_6500::emulator::ines;
 use mos_6500::emulator::io;
 use mos_6500::emulator::io::event::EventBus;
+use mos_6500::emulator::apu::debug::APUDebug;
 use mos_6500::emulator::ppu::debug::PPUDebug;
 
 use mos_6500::ui::RENDER_FPS;
@@ -40,13 +41,14 @@ fn main() {
 
     let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
     let ppu_debug = PPUDebug::new(nes.ppu.clone());
+    let apu_debug = APUDebug::new(nes.apu.clone());
 
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
     let audio = sdl_context.audio().unwrap();
 
     let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone(), audio_output.clone())));
-    let mut compositor = Compositor::new(video, video_output.clone(), ppu_debug);
+    let mut compositor = Compositor::new(video, video_output.clone(), ppu_debug, apu_debug);
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
@@ -99,7 +101,7 @@ fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, a
         }
 
         audio_queue.flush();
-        compositor.set_debug(controller.borrow().show_debug());
+        compositor.set_debug(controller.borrow().debug_mode());
         compositor.render();
         input.pump();
 

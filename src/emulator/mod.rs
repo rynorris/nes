@@ -36,7 +36,7 @@ pub struct NES {
     clock: clock::Clock,
     pub cpu: Rc<RefCell<cpu::CPU>>,
     pub ppu: Rc<RefCell<ppu::PPU>>,
-    apu: Rc<RefCell<apu::APU>>,
+    pub apu: Rc<RefCell<apu::APU>>,
     nmi_pin: bool,
 }
 
