@@ -291,8 +291,8 @@ impl PPU {
         };
 
         // Sprite evaluation.
-        // Does not occur on the pre-render scanline.
-        if self.scanline != 261 {
+        // Does not occur on the pre-render scanline or if rendering totally disabled.
+        if self.scanline != 261 && self.rendering_is_enabled() {
             self.sprite_evaluation();
         }
 
