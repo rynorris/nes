@@ -5,6 +5,7 @@ use std::rc::Rc;
 use emulator::io::{SimpleAudioOut, SimpleVideoOut};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
+use ui::compositor::DebugMode;
 
 pub struct Controller {
     nes: NES,
@@ -13,7 +14,7 @@ pub struct Controller {
     is_running: bool,
     is_tracing: bool,
     target_hz: u64,
-    show_debug: bool,
+    debug_mode: DebugMode,
 }
 
 impl Controller {
@@ -27,7 +28,7 @@ impl Controller {
             is_running: false,
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
-            show_debug: false,
+            debug_mode: DebugMode::OFF,
         }
     }
 
@@ -59,8 +60,8 @@ impl Controller {
         self.target_hz
     }
 
-    pub fn show_debug(&self) -> bool {
-        self.show_debug
+    pub fn debug_mode(&self) -> DebugMode {
+        self.debug_mode
     }
 
     pub fn dump_trace(&mut self) {
@@ -103,7 +104,11 @@ impl EventHandler for Controller {
                     Key::Return => {
                         self.dump_trace();
                     }
-                    Key::Backquote => self.show_debug = !self.show_debug,
+                    Key::Backquote => self.debug_mode = match self.debug_mode {
+                        DebugMode::OFF => DebugMode::PPU,
+                        DebugMode::PPU => DebugMode::APU,
+                        DebugMode::APU => DebugMode::OFF,
+                    },
                     Key::Num1 => self.set_target_hz(0),  // Paused
                     Key::Num2 => self.set_target_hz(20_000),  // Scanlines
                     Key::Num3 => self.set_target_hz(200_000),  // Frames

@@ -8,6 +8,13 @@ use ui::sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum DebugMode {
+    OFF,
+    PPU,
+    APU,
+}
+
 pub struct Compositor {
     canvas: render::Canvas<video::Window>,
     nes_texture: render::Texture,
@@ -21,7 +28,7 @@ pub struct Compositor {
     nes_output: Rc<RefCell<SimpleVideoOut>>,
     ppu_debug: PPUDebug,
     apu_debug: APUDebug,
-    debug_is_on: bool,
+    debug_mode: DebugMode,
 }
 
 impl Compositor {
@@ -106,24 +113,29 @@ impl Compositor {
             nes_output,
             ppu_debug,
             apu_debug,
-            debug_is_on: false,
+            debug_mode: DebugMode::OFF,
         }
     }
 
     pub fn render(&mut self) {
         self.render_main();
 
-        if self.debug_is_on {
-            self.render_debug();
+        match self.debug_mode {
+            DebugMode::PPU => self.render_ppu_debug(),
+            DebugMode::APU => self.render_apu_debug(),
+            _ => (),
         }
     }
 
-    pub fn set_debug(&mut self, on: bool) {
-        self.debug_is_on = on;
-        if self.debug_is_on {
-            self.debug_canvas.window_mut().show();
-        } else {
-            self.debug_canvas.window_mut().hide();
+    pub fn set_debug(&mut self, mode: DebugMode) {
+        if mode == self.debug_mode {
+            return;
+        }
+
+        self.debug_mode = mode;
+        match self.debug_mode {
+            DebugMode::PPU | DebugMode::APU => self.debug_canvas.window_mut().show(),
+            _ => self.debug_canvas.window_mut().hide(),
         }
     }
 
@@ -137,13 +149,12 @@ impl Compositor {
         self.canvas.present();
     }
 
-    fn render_debug(&mut self) {
+    fn render_ppu_debug(&mut self) {
         self.debug_canvas.clear();
         let pattern_texture = &mut self.pattern_texture;
         let nametable_texture = &mut self.nametable_texture;
         let sprite_texture = &mut self.sprite_texture;
         let palette_texture = &mut self.palette_texture;
-        let waveform_texture = &mut self.waveform_texture;
 
         self.ppu_debug.do_render(
             |patterns| pattern_texture.update(None, patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap(),
@@ -152,14 +163,21 @@ impl Compositor {
             |palettes| palette_texture.update(None, palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap(),
         );
 
+        let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
+        let _ = self.debug_canvas.copy(&sprite_texture, None, rect::Rect::new(0, 400, 256, 32));
+        let _ = self.debug_canvas.copy(&palette_texture, None, rect::Rect::new(0, 440, 256, 32));
+        self.debug_canvas.present();
+    }
+
+    fn render_apu_debug(&mut self) {
+        self.debug_canvas.clear();
+        let waveform_texture = &mut self.waveform_texture;
+
         self.apu_debug.do_render(
             |waveforms| waveform_texture.update(None, waveforms, APUDebug::WAVEFORM_WIDTH * 3).unwrap(),
         );
 
         let _ = self.debug_canvas.copy(&waveform_texture, None, rect::Rect::new(0, 0, 256, 160));
-        //let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
-        let _ = self.debug_canvas.copy(&sprite_texture, None, rect::Rect::new(0, 400, 256, 32));
-        let _ = self.debug_canvas.copy(&palette_texture, None, rect::Rect::new(0, 440, 256, 32));
         self.debug_canvas.present();
     }
 }

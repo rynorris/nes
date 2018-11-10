@@ -101,7 +101,7 @@ fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, a
         }
 
         audio_queue.flush();
-        compositor.set_debug(controller.borrow().show_debug());
+        compositor.set_debug(controller.borrow().debug_mode());
         compositor.render();
         input.pump();
 
