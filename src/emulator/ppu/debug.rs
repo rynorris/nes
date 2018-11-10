@@ -142,7 +142,12 @@ impl PPUDebug {
         for palette_ix in 0 .. 8 {
             for colour_ix in 0 .. 4 {
                 let addr = 0x3F00 | (palette_ix << 2) | colour_ix;
-                let colour = Colour { byte: ppu.memory.read(addr) };
+                let colour = Colour {
+                    byte: ppu.memory.read(addr),
+                    em_r: false,
+                    em_g: false,
+                    em_b: false,
+                };
                 PPUDebug::fill_rect(
                     buffer,
                     256,

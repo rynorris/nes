@@ -22,6 +22,11 @@ use emulator::util;
 // ++------- Unimplemented, reads back as 0
 pub struct Colour {
     byte: u8,
+
+    // Emphasis bits.
+    pub em_r: bool,
+    pub em_b: bool,
+    pub em_g: bool,
 }
 
 impl Colour {
@@ -438,13 +443,17 @@ impl PPU {
     // --- RENDERING
     // Put all rendering logic in one place.
     fn render_pixel(&mut self) -> Colour {
-        let (bg_colour, bg_palette) = if self.ppumask.is_set(flags::PPUMASK::BG) {
+        let should_render_background = self.ppumask.is_set(flags::PPUMASK::BG)
+            && (self.ppumask.is_set(flags::PPUMASK::BGL) || self.cycle > 8);
+        let (bg_colour, bg_palette) = if should_render_background {
             (self.bg_colour(), self.bg_palette_index())
         } else {
             (0, 0)
         };
 
-        let (sprite_colour, sprite_attribute, sprite_ix) = if self.ppumask.is_set(flags::PPUMASK::S) {
+        let should_render_sprites = self.ppumask.is_set(flags::PPUMASK::S)
+            && (self.ppumask.is_set(flags::PPUMASK::SL) || self.cycle > 8);
+        let (sprite_colour, sprite_attribute, sprite_ix) = if should_render_sprites {
             self.sprite_colour()
         } else {
             (0, 0, 0)
@@ -465,8 +474,17 @@ impl PPU {
             0x3F00
         };
 
+        let mut colour_byte = self.memory.read(colour_addr);
+        if self.ppumask.is_set(flags::PPUMASK::GR) {
+            // Grescale mode.
+            colour_byte &= 0x30;
+        }
+
         Colour {
-            byte: self.memory.read(colour_addr),
+            byte: colour_byte,
+            em_r: self.ppumask.is_set(flags::PPUMASK::R),
+            em_g: self.ppumask.is_set(flags::PPUMASK::G),
+            em_b: self.ppumask.is_set(flags::PPUMASK::B),
         }
     }
 
