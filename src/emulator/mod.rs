@@ -152,6 +152,7 @@ impl NES {
         match rom.mapper_number() {
             0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom, mirror_mode))),
             1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
+            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_rom, mirror_mode))),
             3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_rom, mirror_mode))),
             _ => panic!("Unknown mapper: {}", rom.mapper_number()),
         }
