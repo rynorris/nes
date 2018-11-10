@@ -27,7 +27,7 @@ NES emulator written in Rust
   - [x] CPU instruction tracing
   - [x] Granular speed controls.
   - [x] PPU debug window
-  - [ ] APU debug window
+  - [x] APU debug window
   - [ ] Proper debugger capabilities (step/trap/breakpoints)
   
 **Other**
