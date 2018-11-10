@@ -140,7 +140,7 @@ impl APUDebug {
         // Drawing the actual sample seems too complex for little value.
         // For now just display an indicator of how much time is left on the sample.
         let bar_width = (dmc.bytes_remaining / 8) as usize;
-        let inverse_width = APUDebug::WAVEFORM_WIDTH / 2 - bar_width;
+        let inverse_width = (APUDebug::WAVEFORM_WIDTH / 2).saturating_sub(bar_width);
         
         for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
             if dx < inverse_width || APUDebug::WAVEFORM_WIDTH - dx < inverse_width {
