@@ -54,7 +54,7 @@ impl APUDebug {
         let amplitude = pulse.envelope.volume();
         let seq = Pulse::SEQUENCES[pulse.sequence as usize];
 
-        if period <= 8 {
+        if period <= 8 || pulse.length == 0 {
             return;
         }
 
@@ -84,7 +84,7 @@ impl APUDebug {
 
     fn draw_triangle_wave(buffer: &mut [u8], triangle: &Triangle, x: usize, y: usize) {
         let period = triangle.timer.period();
-        if period == 0 {
+        if period == 0 || triangle.length == 0 {
             return;
         }
 
@@ -117,7 +117,7 @@ impl APUDebug {
                 prev_seq = seq;
             }
             // hack back in the volume from the real noise.
-            let amplitude = if dummy_noise.volume() > 0 { noise.volume() } else { 0 };
+            let amplitude = if dummy_noise.volume() > 0 { noise.envelope.volume() } else { 0 };
             let dy = (16 - amplitude) as usize;
             if prev_y != 0 && dy != prev_y {
                 // Draw vertical connecting bar.
