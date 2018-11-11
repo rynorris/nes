@@ -459,6 +459,21 @@ impl PPU {
             (0, 0, 0)
         };
 
+        /*  -- DEBUG RENDER --
+        if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line {
+            return Colour { byte: 0x30, em_r: false, em_g: false, em_b: false };
+        } else if sprite_colour != 0 && (sprite_attribute & 0x20 == 0 || bg_colour == 0) {
+            // Render sprite.
+            return Colour { byte: 0x2A, em_r: false, em_g: false, em_b: false };
+        } else if bg_colour != 0 {
+            // Render BG.
+            return Colour { byte: 0x06, em_r: false, em_g: false, em_b: false };
+        } else {
+            // Universal BG.
+            return Colour { byte: 0x00, em_r: false, em_g: false, em_b: false };
+        };
+        */
+
         if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line {
             self.ppustatus.set(flags::PPUSTATUS::S);
         }
