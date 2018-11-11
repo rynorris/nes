@@ -1,5 +1,5 @@
 [package]
-name = "mos-6500"
+name = "nes"
 version = "0.1.0"
 authors = ["Ryan Norris <rynorris@gmail.com>"]
 

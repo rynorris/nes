@@ -1,4 +1,4 @@
-extern crate mos_6500;
+extern crate nes;
 
 use std::cell::RefCell;
 use std::env;
@@ -6,18 +6,18 @@ use std::rc::Rc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use mos_6500::emulator::{NES, NES_MASTER_CLOCK_HZ};
-use mos_6500::emulator::ines;
-use mos_6500::emulator::io;
-use mos_6500::emulator::io::event::EventBus;
-use mos_6500::emulator::apu::debug::APUDebug;
-use mos_6500::emulator::ppu::debug::PPUDebug;
+use nes::emulator::{NES, NES_MASTER_CLOCK_HZ};
+use nes::emulator::ines;
+use nes::emulator::io;
+use nes::emulator::io::event::EventBus;
+use nes::emulator::apu::debug::APUDebug;
+use nes::emulator::ppu::debug::PPUDebug;
 
-use mos_6500::ui::RENDER_FPS;
-use mos_6500::ui::audio::{AudioQueue, SAMPLE_RATE};
-use mos_6500::ui::controller::Controller;
-use mos_6500::ui::compositor::Compositor;
-use mos_6500::ui::input::InputPump;
+use nes::ui::RENDER_FPS;
+use nes::ui::audio::{AudioQueue, SAMPLE_RATE};
+use nes::ui::controller::Controller;
+use nes::ui::compositor::Compositor;
+use nes::ui::input::InputPump;
 
 fn main() {
     // -- Handle Args --
