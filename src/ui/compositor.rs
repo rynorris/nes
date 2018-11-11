@@ -48,7 +48,6 @@ impl Compositor {
 
         let canvas = main_window.into_canvas()
             .accelerated()
-            .present_vsync()
             .build()
             .unwrap();
 
