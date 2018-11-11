@@ -1,7 +1,7 @@
-# mos-6500
+# nes
 NES emulator written in Rust
 
-[![Build Status](https://travis-ci.org/DiscoViking/mos-6500.svg?branch=master)](https://travis-ci.org/DiscoViking/mos-6500) [![codecov](https://codecov.io/gh/DiscoViking/mos-6500/branch/master/graph/badge.svg)](https://codecov.io/gh/DiscoViking/mos-6500)
+[![Build Status](https://travis-ci.org/DiscoViking/nes.svg?branch=master)](https://travis-ci.org/DiscoViking/nes) [![codecov](https://codecov.io/gh/DiscoViking/nes/branch/master/graph/badge.svg)](https://codecov.io/gh/DiscoViking/nes)
 
 ## Emulator Status
 
