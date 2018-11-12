@@ -39,7 +39,7 @@ impl memory::Mapper for AXROM {
     }
 
     fn write_prg(&mut self, _address: u16, byte: u8) {
-        self.prg_bank = byte & 0x3;
+        self.prg_bank = byte & 0x7;
         self.mirror_mode = if byte & 0x10 == 0 {
             MirrorMode::SingleLower
         } else {

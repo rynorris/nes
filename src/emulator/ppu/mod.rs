@@ -159,6 +159,9 @@ pub struct PPU {
     // Each scanline takes 341 cycles to render.
     cycle: u16,
 
+    // Every odd frame is one cycle short.
+    is_odd_frame: bool,
+
     // -- Internal State --
 
     // Byte fetched from nametable indicating which tile to fetch from pattern table.
@@ -224,6 +227,7 @@ impl PPU {
             sprites_x: [0; 8],
             scanline: 261,
             cycle:  0,
+            is_odd_frame: false,
             tmp_pattern_coords: 0,
             tmp_attribute_byte: 0,
             tmp_oam_byte: 0,
@@ -262,6 +266,14 @@ impl PPU {
         if self.cycle == 341 {
             self.cycle = 0;
             self.scanline = (self.scanline + 1) % 262;
+
+            if self.scanline == 0 {
+                self.is_odd_frame = !self.is_odd_frame;
+                // Skip scanline 0, cycle 0 on odd frames, only if rendering is enabled.
+                if self.is_odd_frame && self.rendering_is_enabled() {
+                    self.cycle += 1;
+                }
+            }
         }
 
         cycles
@@ -459,7 +471,24 @@ impl PPU {
             (0, 0, 0)
         };
 
+        /*  -- DEBUG RENDER --
         if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line {
+            return Colour { byte: 0x30, em_r: false, em_g: false, em_b: false };
+        } else if sprite_colour != 0 && (sprite_attribute & 0x20 == 0 || bg_colour == 0) {
+            // Render sprite.
+            return Colour { byte: 0x2A, em_r: false, em_g: false, em_b: false };
+        } else if bg_colour != 0 {
+            // Render BG.
+            return Colour { byte: 0x06, em_r: false, em_g: false, em_b: false };
+        } else {
+            // Universal BG.
+            return Colour { byte: 0x00, em_r: false, em_g: false, em_b: false };
+        };
+        */
+
+        // Trigger sprite 0-hit.
+        // Note it does not occur if x = 255 for obscure reasons.
+        if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line  && self.cycle != 256 {
             self.ppustatus.set(flags::PPUSTATUS::S);
         }
 
