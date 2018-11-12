@@ -486,7 +486,9 @@ impl PPU {
         };
         */
 
-        if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line {
+        // Trigger sprite 0-hit.
+        // Note it does not occur if x = 255 for obscure reasons.
+        if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line  && self.cycle != 256 {
             self.ppustatus.set(flags::PPUSTATUS::S);
         }
 
