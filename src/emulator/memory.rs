@@ -179,6 +179,9 @@ pub trait Mapper {
     fn read_prg(&mut self, address: u16) -> u8;
     fn write_prg(&mut self, address: u16, byte: u8);
     fn mirror_mode(&self) -> MirrorMode;
+    fn irq_triggered(&mut self) -> bool {
+        false
+    }
 }
 
 pub type MapperRef = Rc<RefCell<dyn Mapper>>;

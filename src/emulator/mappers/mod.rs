@@ -1,8 +1,12 @@
 // In iNES mapper number order.
 
-// #1 NROM
+// #0 NROM
 mod nrom;
 pub use self::nrom::NROM;
+
+// #1 MMC1
+mod mmc1;
+pub use self::mmc1::MMC1;
 
 // #2 UxROM
 mod uxrom;
@@ -12,9 +16,9 @@ pub use self::uxrom::UXROM;
 mod cnrom;
 pub use self::cnrom::CNROM;
 
-// #4 MMC1
-mod mmc1;
-pub use self::mmc1::MMC1;
+// #4 MMC3
+mod mmc3;
+pub use self::mmc3::MMC3;
 
 // #7 AxROM
 mod axrom;
