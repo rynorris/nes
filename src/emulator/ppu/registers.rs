@@ -64,9 +64,15 @@ impl Reader for PPU {
                 let addr = self.v;
                 let byte = self.memory.read(addr);
 
-                // Amount to increment by is determined by PPUCTRL.
-                let inc = self.ppuaddr_increment();
-                self.v = self.v.wrapping_add(inc);
+                if self.is_rendering() {
+                    // v is modified strangely if we're accessing it during rendering.
+                    self.increment_coarse_x();
+                    self.increment_y();
+                } else {
+                    // Amount to increment by is determined by PPUCTRL.
+                    let inc = self.ppuaddr_increment();
+                    self.v = self.v.wrapping_add(inc);
+                }
 
                 if addr < 0x3F00 {
                     // Reading from before palettes, buffer the read.
@@ -189,9 +195,15 @@ impl Writer for PPU {
                 // Write byte and increment VRAM address.
                 self.memory.write(self.v, byte);
 
-                // Amount to increment by is determined by PPUCTRL.
-                let inc = self.ppuaddr_increment();
-                self.v = self.v.wrapping_add(inc);
+                if self.is_rendering() {
+                    // v is modified strangely if we're accessing it during rendering.
+                    self.increment_coarse_x();
+                    self.increment_y();
+                } else {
+                    // Amount to increment by is determined by PPUCTRL.
+                    let inc = self.ppuaddr_increment();
+                    self.v = self.v.wrapping_add(inc);
+                }
             },
 
             _ => panic!("Unexpected PPU register address: {}", address),
