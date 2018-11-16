@@ -102,10 +102,8 @@ impl clock::Ticker for CPU {
     #[inline]
     fn tick(&mut self) -> u32 {
         return if self.should_non_maskable_interrupt() {
-            self.nmi_flip_flop = false;
             self.non_maskable_interrupt()
         } else if self.should_interrupt() {
-            self.irq_flip_flop = false;
             self.interrupt()
         } else {
             self.execute_next_instruction()
@@ -206,12 +204,16 @@ impl CPU {
         8
     }
 
-    fn should_interrupt(&self) -> bool {
-        self.irq_flip_flop && !self.p.is_set(flags::Flag::I)
+    fn should_interrupt(&mut self) -> bool {
+        let should = self.irq_flip_flop && !self.p.is_set(flags::Flag::I);
+        self.irq_flip_flop = false;
+        should
     }
 
-    fn should_non_maskable_interrupt(&self) -> bool {
-        self.nmi_flip_flop
+    fn should_non_maskable_interrupt(&mut self) -> bool {
+        let should = self.nmi_flip_flop;
+        self.nmi_flip_flop = false;
+        should
     }
 
     fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode, u32) {

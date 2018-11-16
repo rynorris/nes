@@ -95,6 +95,7 @@ impl Mapper for MMC3 {
             self.ppu_a12_low_counter = 0;
         }
         self.ppu_a12 = a12;
+
         self.chr_rom[base + offset]
     }
 
@@ -115,9 +116,6 @@ impl Mapper for MMC3 {
         let base = self.bank_registers[bank_ix];
         let offset = (address % bank_size) as usize;
 
-        if address == 0xA826 {
-            println!("Read ${:X}.  base = ${:X}, offset = ${:X}", address, base, offset);
-        }
         self.prg_rom[base + offset]
     }
 
@@ -132,7 +130,7 @@ impl Mapper for MMC3 {
             0x8000 => {
                 if address & 0x1 == 0 {
                     // 0x8000, even => Bank select
-                    self.bank_select = (byte & 0x0F) as usize;
+                    self.bank_select = (byte & 0x07) as usize;
                     self.prg_inversion = byte & 0x40 == 0x40;
                     self.chr_inversion = byte & 0x80 == 0x80;
                 } else {
@@ -140,12 +138,12 @@ impl Mapper for MMC3 {
                     // Handle PRG and CHR separately.
                     if self.bank_select >= 6 {
                         // PRG, 8kb banks, ignores top 2 bits.
-                        self.bank_registers[self.bank_select] = ((byte & 0x7F) as usize) << 13;
+                        self.bank_registers[self.bank_select] = (((byte & 0x3F) as usize) << 13) % self.prg_rom.len();
                     } else if self.bank_select <= 1 {
                         // 2kb CHR banks can only select even banks.
-                        self.bank_registers[self.bank_select] = ((byte & 0xFE) as usize) << 10;
+                        self.bank_registers[self.bank_select] = (((byte & 0xFE) as usize) << 10) % self.chr_rom.len();
                     } else {
-                        self.bank_registers[self.bank_select] = (byte as usize) << 10;
+                        self.bank_registers[self.bank_select] = ((byte as usize) << 10) % self.chr_rom.len();
                     }
                 }
             },
@@ -156,7 +154,6 @@ impl Mapper for MMC3 {
                 }
             },
             0xC000 => {
-                println!("${:X} = 0x{:X}", address, byte);
                 if address & 0x1 == 0 {
                     // 0xC000, even => IRQ Latch
                     self.irq_counter_reload = byte;
