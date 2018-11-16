@@ -55,7 +55,7 @@ impl MMC3 {
 
     fn clock_irq(&mut self) {
         if self.irq_counter == 0 || self.irq_reload_flag {
-            self.irq_flag = self.irq_enabled;
+            self.irq_flag = self.irq_enabled && self.irq_counter == 0;
             self.irq_counter = self.irq_counter_reload;
             self.irq_reload_flag = false;
         } else {
@@ -121,7 +121,7 @@ impl Mapper for MMC3 {
         // These can be broken into two independent functional units:
         //   - memory mapping ($8000, $8001, $A000, $A001)
         //   - scanline counting ($C000, $C001, $E000, $E001).
-        println!("${:X} = 0x{:X}", address, byte);
+        //println!("${:X} = 0x{:X}", address, byte);
         match address & 0xE000 {
             0x8000 => {
                 if address & 0x1 == 0 {
