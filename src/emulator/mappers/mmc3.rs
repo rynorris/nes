@@ -55,11 +55,14 @@ impl MMC3 {
 
     fn clock_irq(&mut self) {
         if self.irq_counter == 0 || self.irq_reload_flag {
-            self.irq_flag = self.irq_enabled && self.irq_counter == 0;
             self.irq_counter = self.irq_counter_reload;
             self.irq_reload_flag = false;
         } else {
             self.irq_counter = self.irq_counter.saturating_sub(1);
+        }
+
+        if self.irq_counter == 0 {
+            self.irq_flag = self.irq_enabled;
         }
     }
 }
@@ -84,7 +87,7 @@ impl Mapper for MMC3 {
 
         // Update A12 and clock IRQ.
         let a12 = address & 0x1000 == 0x1000;
-        if a12 && !self.ppu_a12 && self.ppu_a12_low_counter > 12 {
+        if a12 && !self.ppu_a12 && self.ppu_a12_low_counter > 6 {
             self.clock_irq();
         } else if !a12 && !self.ppu_a12 {
             self.ppu_a12_low_counter += 1;
@@ -111,6 +114,10 @@ impl Mapper for MMC3 {
 
         let base = self.bank_registers[bank_ix];
         let offset = (address % bank_size) as usize;
+
+        if address == 0xA826 {
+            println!("Read ${:X}.  base = ${:X}, offset = ${:X}", address, base, offset);
+        }
         self.prg_rom[base + offset]
     }
 
@@ -121,7 +128,6 @@ impl Mapper for MMC3 {
         // These can be broken into two independent functional units:
         //   - memory mapping ($8000, $8001, $A000, $A001)
         //   - scanline counting ($C000, $C001, $E000, $E001).
-        //println!("${:X} = 0x{:X}", address, byte);
         match address & 0xE000 {
             0x8000 => {
                 if address & 0x1 == 0 {
@@ -150,6 +156,7 @@ impl Mapper for MMC3 {
                 }
             },
             0xC000 => {
+                println!("${:X} = 0x{:X}", address, byte);
                 if address & 0x1 == 0 {
                     // 0xC000, even => IRQ Latch
                     self.irq_counter_reload = byte;

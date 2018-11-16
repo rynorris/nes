@@ -144,9 +144,6 @@ impl NES {
         }
 
         if self.mapper.borrow_mut().irq_triggered() {
-            let scanline = self.ppu.borrow().scanline;
-            let cycle = self.ppu.borrow().cycle;
-            println!("IRQ at scanline {}, cycle {}", scanline, cycle);
             self.cpu.borrow_mut().trigger_irq();
         }
 
