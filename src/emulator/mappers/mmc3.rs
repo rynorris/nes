@@ -87,7 +87,7 @@ impl Mapper for MMC3 {
 
         // Update A12 and clock IRQ.
         let a12 = address & 0x1000 == 0x1000;
-        if a12 && !self.ppu_a12 && self.ppu_a12_low_counter > 6 {
+        if a12 && !self.ppu_a12 && self.ppu_a12_low_counter > 12 {
             self.clock_irq();
         } else if !a12 && !self.ppu_a12 {
             self.ppu_a12_low_counter += 1;
@@ -99,8 +99,8 @@ impl Mapper for MMC3 {
         self.chr_rom[base + offset]
     }
 
-    fn write_chr(&mut self, _address: u16, _byte: u8) {
-        // CHR ROM not writeable.
+    fn write_chr(&mut self, address: u16, byte: u8) {
+        self.chr_rom[address as usize] = byte;
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
