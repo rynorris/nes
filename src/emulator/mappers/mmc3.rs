@@ -182,8 +182,6 @@ impl Mapper for MMC3 {
     }
 
     fn irq_triggered(&mut self) -> bool {
-        let flag = self.irq_flag;
-        self.irq_flag = false;
-        flag
+        self.irq_flag
     }
 }
