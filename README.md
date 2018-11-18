@@ -32,7 +32,7 @@ NES emulator written in Rust
   
 **Other**
   - [x] Basic iNES file loading
-  - [ ] Support common mappers (~NROM~, ~MMC1~, MMC3)
+  - [x] Support common mappers (~NROM~, ~MMC1~, ~MMC3~)
   - [x] Clock to drive all components at the correct speed
   
   ## Examples
