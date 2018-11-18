@@ -37,6 +37,7 @@ pub struct NES {
     pub cpu: Rc<RefCell<cpu::CPU>>,
     pub ppu: Rc<RefCell<ppu::PPU>>,
     pub apu: Rc<RefCell<apu::APU>>,
+    pub mapper: Rc<RefCell<memory::Mapper>>,
     nmi_pin: bool,
 }
 
@@ -121,6 +122,7 @@ impl NES {
             cpu,
             ppu,
             apu,
+            mapper,
             nmi_pin: false,
         }
     }
@@ -141,6 +143,10 @@ impl NES {
             self.cpu.borrow_mut().trigger_irq();
         }
 
+        if self.mapper.borrow_mut().irq_triggered() {
+            self.cpu.borrow_mut().trigger_irq();
+        }
+
         cycles
     }
 
@@ -154,6 +160,7 @@ impl NES {
             1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
             2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_rom, mirror_mode))),
             3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_rom, mirror_mode))),
+            4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_rom))),
             7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_rom))),
             _ => panic!("Unknown mapper: {}", rom.mapper_number()),
         }

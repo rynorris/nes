@@ -53,7 +53,7 @@ impl <V : VideoOut> VideoOut for Rc<RefCell<V>> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum MirrorMode {
     SingleLower,
     SingleUpper,
@@ -154,10 +154,10 @@ pub struct PPU {
 
     // There are 262 scanlines in total. 0-239 are visible, 240-260 occur durng vblank, and 261 is
     // idle.
-    scanline: u16,
+    pub scanline: u16,
 
     // Each scanline takes 341 cycles to render.
-    cycle: u16,
+    pub cycle: u16,
 
     // Every odd frame is one cycle short.
     is_odd_frame: bool,

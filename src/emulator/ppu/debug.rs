@@ -70,6 +70,7 @@ impl PPUDebug {
                         pattern_tables,
                         buffer,
                         PPUDebug::PATTERN_WIDTH as u16,
+                        0,
                     );
                 }
             }
@@ -84,6 +85,10 @@ impl PPUDebug {
                 for column in 0 .. 32 {
                     let nt_addr = 0x2000 | (table << 10) | (row << 5) | column;
                     let nt_byte = ppu.memory.read(nt_addr);
+                    let attribute_addr = 0x23C0 | (table << 10) | ((row >> 2) << 3) | (column >> 2);
+                    let attribute_byte = ppu.memory.read(attribute_addr);
+                    let attr_shift = ((row << 1) & 0x4) | (column & 0x2);
+                    let palette_ix = (attribute_byte >> attr_shift) & 0x3;
                     PPUDebug::copy_tile(
                         0x1000 * side,
                         (nt_byte >> 4) as u16,
@@ -93,6 +98,7 @@ impl PPUDebug {
                         pattern_tables,
                         buffer,
                         PPUDebug::NAMETABLE_WIDTH as u16,
+                        palette_ix,
                     );
                 }
             }
@@ -120,6 +126,7 @@ impl PPUDebug {
                 pattern_tables,
                 buffer,
                 PPUDebug::SPRITE_WIDTH as u16,
+                0
             );
 
             if tall_sprites {
@@ -132,6 +139,7 @@ impl PPUDebug {
                     pattern_tables,
                     buffer,
                     PPUDebug::SPRITE_WIDTH as u16,
+                    0
                 );
             }
         }
@@ -162,7 +170,8 @@ impl PPUDebug {
     }
 
     fn copy_tile(base: u16, row: u16, column: u16, x: u16, y: u16,
-                 source: &[u8], target: &mut [u8], pitch: u16) {
+                 source: &[u8], target: &mut [u8], pitch: u16,
+                 palette_ix: u8) {
         for line in 0 .. 8 {
             let low = source[(base | (row << 8) | (column << 4) | line) as usize];
             let high = source[(base | (row << 8) | (column << 4) | 0x8 | line) as usize];
@@ -170,14 +179,17 @@ impl PPUDebug {
                 let pixel_high = (high >> (7 - pixel)) & 0x1;
                 let pixel_low = (low >> (7 - pixel)) & 0x1;
 
-                // Just generate greyscale.
+                // Palette 0 = greyscale, 1 = R, 2 = G, 3 = B.
                 let colour = (pixel_high << 7) | (pixel_low << 6);
+                let r = if palette_ix == 0 || palette_ix == 1 { colour } else { 0 };
+                let g = if palette_ix == 0 || palette_ix == 2 { colour } else { 0 };
+                let b = if palette_ix == 0 || palette_ix == 3 { colour } else { 0 };
 
                 let pixel_x = (x + pixel) as usize;
                 let pixel_y = (y + line) as usize;
-                target[(pixel_y * (pitch as usize) + pixel_x) * 3] = colour;
-                target[(pixel_y * (pitch as usize) + pixel_x) * 3 + 1] = colour;
-                target[(pixel_y * (pitch as usize) + pixel_x) * 3 + 2] = colour;
+                target[(pixel_y * (pitch as usize) + pixel_x) * 3] = r;
+                target[(pixel_y * (pitch as usize) + pixel_x) * 3 + 1] = g;
+                target[(pixel_y * (pitch as usize) + pixel_x) * 3 + 2] = b;
             }
         }
     }

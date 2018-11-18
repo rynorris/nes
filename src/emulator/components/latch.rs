@@ -23,4 +23,8 @@ impl Latch {
     pub fn get(&self) -> State {
         self.state
     }
+
+    pub fn reset(&mut self) {
+        self.state = State::OFF;
+    }
 }
