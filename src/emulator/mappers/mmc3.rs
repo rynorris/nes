@@ -148,9 +148,15 @@ impl Mapper for MMC3 {
                 }
             },
             0xA000 => {
-                self.mirror_mode = match byte & 0x1 == 0 {
-                    true => MirrorMode::Vertical,
-                    false => MirrorMode::Horizontal,
+                if address & 0x1 == 0 {
+                    // 0xA000, even => mirror mode.
+                    self.mirror_mode = match byte & 0x1 == 0 {
+                        true => MirrorMode::Vertical,
+                        false => MirrorMode::Horizontal,
+                    };
+                } else {
+                    // 0xA000, odd => PRG RAM protect
+                    // Unimplemented for compatibility with MMC6.
                 }
             },
             0xC000 => {
