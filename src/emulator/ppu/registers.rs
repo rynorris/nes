@@ -33,7 +33,9 @@ impl Reader for PPU {
                 let byte = self.ppustatus.as_byte() & 0b1110_0000;
 
                 // After reading PPUSTATUS, vblank flag is cleared.
+                // And ppuaddr latch is reset.
                 self.ppustatus.clear(flags::PPUSTATUS::V);
+                self.write_latch.reset();
                 Some(byte)
             },
 
