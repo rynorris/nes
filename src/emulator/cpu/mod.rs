@@ -14,6 +14,7 @@ use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::ringbuffer::RingBuffer;
 use emulator::memory::ReadWriter;
+use emulator::state;
 use emulator::util;
 
 // Program vector locations.
@@ -537,5 +538,34 @@ impl CPU {
 
     pub fn clear_trace(&mut self) {
         self.trace_buffer.clear();
+    }
+}
+
+// CPU Save State functionality.
+impl <'de> state::SaveState<'de, state::CPUState> for CPU {
+    fn freeze(&mut self) -> state::CPUState {
+        state::CPUState {
+            a: self.a,
+            x: self.x,
+            y: self.y,
+            sp: self.sp,
+            pc: self.pc,
+            p: self.p.as_byte(),
+            dec_arith_on: self.dec_arith_on,
+            irq_flip_flop: self.irq_flip_flop,
+            nmi_flip_flop: self.nmi_flip_flop,
+        }
+    }
+
+    fn hydrate(&mut self, s: state::CPUState) {
+        self.a = s.a;
+        self.x = s.x;
+        self.y = s.y;
+        self.sp = s.sp;
+        self.pc = s.pc;
+        self.p.load_byte(s.p);
+        self.dec_arith_on = s.dec_arith_on;
+        self.irq_flip_flop = s.irq_flip_flop;
+        self.nmi_flip_flop = s.nmi_flip_flop;
     }
 }

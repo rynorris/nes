@@ -8,6 +8,7 @@ pub mod ines;
 pub mod io;
 pub mod mappers;
 pub mod memory;
+pub mod state;
 pub mod ppu;
 pub mod util;
 

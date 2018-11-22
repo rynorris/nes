@@ -7,6 +7,8 @@ authors = ["Ryan Norris <rynorris@gmail.com>"]
 base64 = "0.10"
 md-5 = "0.8"
 sdl2 = { version = "0.31", features = ["unsafe_textures"] }
+serde = "1.0"
+serde_derive = "1.0"
 
 [profile.release]
 debug = true
