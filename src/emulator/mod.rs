@@ -39,6 +39,9 @@ pub struct NES {
     pub ppu: Rc<RefCell<ppu::PPU>>,
     pub apu: Rc<RefCell<apu::APU>>,
     pub mapper: Rc<RefCell<memory::Mapper>>,
+    pub ram: Rc<RefCell<memory::RAM>>,
+    pub sram: Rc<RefCell<memory::RAM>>,
+    pub vram: Rc<RefCell<memory::RAM>>,
     nmi_pin: bool,
 }
 
@@ -51,11 +54,16 @@ impl NES {
         // Load ROM into memory.
         let mapper = NES::load(rom);
 
+        // Create RAM modules.
+        let ram = Rc::new(RefCell::new(memory::RAM::new()));
+        let sram = Rc::new(RefCell::new(memory::RAM::new()));
+        let vram = Rc::new(RefCell::new(memory::RAM::new()));
+
         // Create graphics output module and PPU.
         let ppu_memory = memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
             Box::new(mapper.clone()),
-            Box::new(memory::RAM::new()),
+            Box::new(vram.clone()),
         );
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
@@ -93,15 +101,15 @@ impl NES {
             Box::new(joy2.clone()),
         )));
 
-        let cpu_memory = Box::new(memory::CPUMemory::new(
-            Box::new(memory::RAM::new()),
+        let cpu_memory = memory::CPUMemory::new(
+            Box::new(ram.clone()),
             Box::new(ppu.clone()),
             Box::new(io_registers.clone()),
-            Box::new(memory::RAM::new()),
+            Box::new(sram.clone()),
             Box::new(memory::PrgMapper::new(mapper.clone()))
-        ));
+        );
 
-        let cpu = Rc::new(RefCell::new(cpu::new(cpu_memory)));
+        let cpu = Rc::new(RefCell::new(cpu::new(Box::new(cpu_memory))));
         cpu.borrow_mut().disable_bcd();
         cpu.borrow_mut().startup_sequence();
 
@@ -124,6 +132,9 @@ impl NES {
             ppu,
             apu,
             mapper,
+            ram,
+            sram,
+            vram,
             nmi_pin: false,
         }
     }
