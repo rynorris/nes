@@ -11,7 +11,7 @@ use std::rc::Rc;
 use emulator::clock;
 use emulator::components::bitfield::BitField;
 use emulator::components::latch;
-use emulator::memory::{PPUMemory, Reader};
+use emulator::memory::{ReadWriter, Reader};
 use emulator::util;
 
 // Colours represented as a single byte:
@@ -96,7 +96,7 @@ pub struct PPU {
     // $3000-$3EFF = mirrors of $2000-$2EFF
     // $3F00-$3F1F = palette RAM indexes
     // $3F20-$3FFF = mirrors of $3F00-$3F1F
-    memory: PPUMemory,
+    memory: Box<dyn ReadWriter>,
 
     // -- Background State --
 
@@ -199,7 +199,7 @@ impl clock::Ticker for PPU {
 }
 
 impl PPU {
-    pub fn new(memory: PPUMemory, output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: Box<dyn ReadWriter>, output: Box<VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),

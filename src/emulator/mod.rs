@@ -38,6 +38,8 @@ pub struct NES {
     pub ppu: Rc<RefCell<ppu::PPU>>,
     pub apu: Rc<RefCell<apu::APU>>,
     pub mapper: Rc<RefCell<memory::Mapper>>,
+    pub cpu_memory: Rc<RefCell<memory::CPUMemory>>,
+    pub ppu_memory: Rc<RefCell<memory::PPUMemory>>,
     nmi_pin: bool,
 }
 
@@ -51,14 +53,14 @@ impl NES {
         let mapper = NES::load(rom);
 
         // Create graphics output module and PPU.
-        let ppu_memory = memory::PPUMemory::new(
+        let ppu_memory = Rc::new(RefCell::new(memory::PPUMemory::new(
             Box::new(memory::ChrMapper::new(mapper.clone())),
             Box::new(mapper.clone()),
             Box::new(memory::RAM::new()),
-        );
+        )));
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
-                    ppu_memory,
+                    Box::new(ppu_memory.clone()),
                     Box::new(video))));
 
         // Create APU.
@@ -92,15 +94,15 @@ impl NES {
             Box::new(joy2.clone()),
         )));
 
-        let cpu_memory = Box::new(memory::CPUMemory::new(
+        let cpu_memory = Rc::new(RefCell::new(memory::CPUMemory::new(
             Box::new(memory::RAM::new()),
             Box::new(ppu.clone()),
             Box::new(io_registers.clone()),
             Box::new(memory::RAM::new()),
             Box::new(memory::PrgMapper::new(mapper.clone()))
-        ));
+        )));
 
-        let cpu = Rc::new(RefCell::new(cpu::new(cpu_memory)));
+        let cpu = Rc::new(RefCell::new(cpu::new(Box::new(cpu_memory.clone()))));
         cpu.borrow_mut().disable_bcd();
         cpu.borrow_mut().startup_sequence();
 
@@ -123,6 +125,8 @@ impl NES {
             ppu,
             apu,
             mapper,
+            cpu_memory,
+            ppu_memory,
             nmi_pin: false,
         }
     }
