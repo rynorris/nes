@@ -9,6 +9,7 @@ md-5 = "0.8"
 sdl2 = { version = "0.31", features = ["unsafe_textures"] }
 serde = "1.0"
 serde_derive = "1.0"
+serde_bytes = "0.10"
 
 [profile.release]
 debug = true

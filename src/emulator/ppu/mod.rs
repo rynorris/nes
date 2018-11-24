@@ -1,6 +1,7 @@
 pub mod debug;
 mod flags;
 mod registers;
+mod state;
 
 #[cfg(test)]
 mod test;
