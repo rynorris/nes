@@ -54,7 +54,7 @@ impl <V : VideoOut> VideoOut for Rc<RefCell<V>> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum MirrorMode {
     SingleLower,
     SingleUpper,
