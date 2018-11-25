@@ -12,7 +12,7 @@ pub trait SaveState<'de, T: Serialize + Deserialize<'de>> {
     fn hydrate(&mut self, t: T);
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NESState {
     pub cpu: CPUState,
     pub ppu: PPUState,
@@ -30,7 +30,7 @@ pub struct NESState {
     pub screen: ScreenState,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CPUState {
     pub a: u8,
     pub x: u8,
@@ -43,7 +43,7 @@ pub struct CPUState {
     pub nmi_flip_flop: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PPUState {
     pub ppuctrl: u8,
     pub ppumask: u8,
@@ -98,13 +98,13 @@ pub struct PPUState {
     pub bus_latch: u8,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScreenState {
     pub scanline: u32,
     pub dot: u32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MapperState {
     NROM,
     MMC1(MMC1State),
@@ -114,7 +114,7 @@ pub enum MapperState {
     AXROM(AXROMState),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MMC1State {
     pub load_register: u8,
     pub write_index: u8,
@@ -129,17 +129,17 @@ pub struct MMC1State {
     pub chr_ram: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UXROMState {
     pub prg_bank: u8,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CNROMState {
     pub chr_bank: u8,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MMC3State {
     pub bank_registers: Vec<usize>,
     pub bank_select: usize,
@@ -158,7 +158,7 @@ pub struct MMC3State {
     pub chr_ram: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AXROMState {
     pub mirror_mode: MirrorMode,
     pub prg_bank: u8,

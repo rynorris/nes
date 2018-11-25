@@ -5,6 +5,7 @@ use std::rc::Rc;
 use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
+use emulator::state::{NESState, SaveState};
 use ui::compositor::DebugMode;
 
 pub struct Controller {
@@ -15,6 +16,7 @@ pub struct Controller {
     is_tracing: bool,
     target_hz: u64,
     debug_mode: DebugMode,
+    save_state: Option<NESState>,
 }
 
 impl Controller {
@@ -29,6 +31,7 @@ impl Controller {
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
             debug_mode: DebugMode::OFF,
+            save_state: None,
         }
     }
 
@@ -120,6 +123,14 @@ impl EventHandler for Controller {
                     Key::Num9 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 4),
                     Key::Num0 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 5),
                     Key::Backspace => self.reset(),
+                    Key::O => self.save_state = Some(self.nes.freeze()),
+                    Key::P => {
+                        let state = self.save_state.clone();
+                        match state {
+                            Some(s) => self.nes.hydrate(s),
+                            None => (),
+                        }
+                    },
                     _ => (),
                 };
             },
