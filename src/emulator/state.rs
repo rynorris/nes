@@ -1,13 +1,66 @@
 // This file contains the save states API.
 // Changes could break old save states.
 
+use std::fs::{create_dir_all, File};
+
+use flate2::Compression;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
 use serde::{Serialize, Deserialize};
+use serde_json::Serializer;
 
 use emulator::ppu::MirrorMode;
+use emulator::NES;
+
+const SAVE_STATE_DIR: &str = "./.save_states";
 
 pub trait SaveState<'de, T: Serialize + Deserialize<'de>> {
     fn freeze(&mut self) -> T;
     fn hydrate(&mut self, t: T);
+}
+
+pub fn save_state(nes: &mut NES, name: &str) {
+    match create_dir_all(SAVE_STATE_DIR) {
+        Err(cause) => panic!("Couldn't create save states dir: {}", cause),
+        Ok(_) => (),
+    };
+
+    let state = nes.freeze();
+    let state_file = match File::create(format!("./{}/{}.gz", SAVE_STATE_DIR, name)) {
+        Err(cause) => panic!("Couldn't open state file: {}", cause),
+        Ok(f) => f,
+    };
+
+    let gzip = GzEncoder::new(state_file, Compression::best());
+    let mut serializer = Serializer::new(gzip);
+    match state.serialize(&mut serializer) {
+        Err(cause) => panic!("Failed to serialize state: {}", cause),
+        Ok(_) => (),
+    };
+
+    match serializer.into_inner().try_finish() {
+        Err(cause) => panic!("Failed to close gzip stream: {}", cause),
+        Ok(_) => (),
+    }
+}
+
+pub fn load_state(nes: &mut NES, name: &str) {
+    let state_file: File = match File::open(format!("./{}/{}.gz", SAVE_STATE_DIR, name)) {
+        Err(_) => {
+            println!("Couldn't open state file");
+            return;
+        }
+        Ok(f) => f,
+    };
+
+    let gzip = GzDecoder::new(state_file);
+
+    let state = match serde_json::from_reader(gzip) {
+        Err(cause) => panic!("Failed to deserialize state: {}", cause),
+        Ok(s) => s,
+    };
+
+    nes.hydrate(state);
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

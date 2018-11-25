@@ -3,13 +3,10 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::rc::Rc;
 
-use flate2::Compression;
-use flate2::write::GzEncoder;
-
 use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
-use emulator::state::{NESState, SaveState};
+use emulator::state::{load_state, save_state};
 use ui::compositor::DebugMode;
 
 pub struct Controller {
@@ -20,7 +17,6 @@ pub struct Controller {
     is_tracing: bool,
     target_hz: u64,
     debug_mode: DebugMode,
-    save_state: Option<NESState>,
     key_states: HashMap<Key, bool>,
 }
 
@@ -36,7 +32,6 @@ impl Controller {
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
             debug_mode: DebugMode::OFF,
-            save_state: None,
             key_states: HashMap::new(),
         }
     }
@@ -99,8 +94,14 @@ impl Controller {
 
         if shift_modifier {
             // Save state.
+            let name = format!("state_{}", num);
+            println!("Saving state: {}", name);
+            save_state(&mut self.nes, &name);
         } else if ctrl_modifier {
             // Load state.
+            let name = format!("state_{}", num);
+            println!("Loading state: {}", name);
+            load_state(&mut self.nes, &name);
         } else {
             // Set speed.
             let target_hz = match num {
@@ -157,28 +158,6 @@ impl EventHandler for Controller {
                     Key::Num9 => self.handle_num_key(9),
                     Key::Num0 => self.handle_num_key(0),
                     Key::Backspace => self.reset(),
-                    Key::O => {
-                        let state = self.nes.freeze();
-                        let mut state_file = match File::create("./state.gz") {
-                            Err(_) => panic!("Couldn't open state file"),
-                            Ok(f) => f,
-                        };
-
-                        let mut gzip = GzEncoder::new(state_file, Compression::best());
-                        match serde_json::to_writer(gzip, &state) {
-                            Err(cause) => panic!("Failed to serialize state: {}", cause),
-                            Ok(_) => (),
-                        }
-
-                        self.save_state = Some(state);
-                    },
-                    Key::P => {
-                        let state = self.save_state.clone();
-                        match state {
-                            Some(s) => self.nes.hydrate(s),
-                            None => (),
-                        }
-                    },
                     _ => (),
                 };
             },
