@@ -1,5 +1,6 @@
 use emulator::memory;
 use emulator::ppu::MirrorMode;
+use emulator::state::{AXROMState, MapperState, SaveState};
 
 // iNES Mapper 7: AXROM
 // 32kb switchable PRG ROM.
@@ -52,5 +53,23 @@ impl memory::Mapper for AXROM {
     }
 }
 
+impl <'de> SaveState<'de, MapperState> for AXROM {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::AXROM(AXROMState {
+            mirror_mode: self.mirror_mode,
+            prg_bank: self.prg_bank,
+            chr_ram: self.chr_rom.to_vec(),
+        })
+    }
 
-
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::AXROM(s) => {
+                self.mirror_mode = s.mirror_mode;
+                self.prg_bank = s.prg_bank;
+                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
+            },
+            _ => panic!("Incompatible mapper state for AXROM mapper: {:?}", state),
+        }
+    }
+}

@@ -1,5 +1,6 @@
 use emulator::memory;
 use emulator::ppu::MirrorMode;
+use emulator::state::{MapperState, SaveState};
 
 // iNES Mapper 0: NROM
 // Non-switchable PRG ROM, mirrorred to fill the space.
@@ -35,5 +36,18 @@ impl memory::Mapper for NROM {
 
     fn mirror_mode(&self) -> MirrorMode {
         self.mirror_mode
+    }
+}
+
+impl <'de> SaveState<'de, MapperState> for NROM {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::NROM
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::NROM => (),
+            _ => panic!("Incompatible mapper state for NROM mapper: {:?}", state),
+        }
     }
 }

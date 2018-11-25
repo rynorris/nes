@@ -80,44 +80,59 @@ pub struct PPUState {
     pub bus_latch: u8,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum MapperState {
     NROM,
-    MMC1 {
-        load_register: u8,
-        write_index: u8,
-        control: u8,
-        prg_bank: u8,
-        chr_bank_1: u8,
-        chr_bank_2: u8,
-        prg_offsets: Vec<u32>,
-        chr_offsets: Vec<u32>,
-        chr_ram: Vec<u8>,
-    },
-    UXROM {
-        prg_bank: u8,
-    },
-    CNROM {
-        chr_bank: u8,
-    },
-    MMC3 {
-        bank_registers: Vec<usize>,
-        bank_select: usize,
-        prg_inversion: bool,
-        chr_inversion: bool,
-        irq_flag: bool,
-        irq_counter: u8,
-        irq_reload_flag: bool,
-        irq_counter_reload: u8,
-        irq_enabled: bool,
-        ppu_a12: bool,
-        ppu_a12_low_counter: u8,
-        mirror_mode: MirrorMode,
-        chr_ram: Vec<u8>,
-    },
-    AXROM {
-        mirror_mode: MirrorMode,
-        prg_bank: u8,
-        chr_ram: Vec<u8>,
-    },
+    MMC1(MMC1State),
+    UXROM(UXROMState),
+    CNROM(CNROMState),
+    MMC3(MMC3State),
+    AXROM(AXROMState),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MMC1State {
+    pub load_register: u8,
+    pub write_index: u8,
+    pub control: u8,
+    pub prg_bank: u8,
+    pub chr_bank_1: u8,
+    pub chr_bank_2: u8,
+    pub prg_offsets: Vec<u32>,
+    pub chr_offsets: Vec<u32>,
+    pub chr_ram: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UXROMState {
+    pub prg_bank: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CNROMState {
+    pub chr_bank: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MMC3State {
+    pub bank_registers: Vec<usize>,
+    pub bank_select: usize,
+    pub prg_inversion: bool,
+    pub chr_inversion: bool,
+    pub irq_flag: bool,
+    pub irq_counter: u8,
+    pub irq_reload_flag: bool,
+    pub irq_counter_reload: u8,
+    pub irq_enabled: bool,
+    pub ppu_a12: bool,
+    pub ppu_a12_low_counter: u8,
+    pub mirror_mode: MirrorMode,
+    pub chr_ram: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AXROMState {
+    pub mirror_mode: MirrorMode,
+    pub prg_bank: u8,
+    pub chr_ram: Vec<u8>,
 }

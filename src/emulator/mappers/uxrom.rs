@@ -1,5 +1,6 @@
 use emulator::memory;
 use emulator::ppu::MirrorMode;
+use emulator::state::{MapperState, SaveState, UXROMState};
 
 // iNES Mapper 2: UXROM
 // 16k switchable + 16k fixed PRG ROM.
@@ -50,4 +51,19 @@ impl memory::Mapper for UXROM {
     }
 }
 
+impl <'de> SaveState<'de, MapperState> for UXROM {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::UXROM(UXROMState {
+            prg_bank: self.prg_bank,
+        })
+    }
 
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::UXROM(s) => {
+                self.prg_bank = s.prg_bank;
+            },
+            _ => panic!("Incompatible mapper state for UXROM mapper: {:?}", state),
+        }
+    }
+}

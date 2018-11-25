@@ -1,5 +1,6 @@
 use emulator::memory;
 use emulator::ppu::MirrorMode;
+use emulator::state::{CNROMState, MapperState, SaveState};
 
 // iNES Mapper 3: CNROM
 // Non-switchable PRG ROM, mirrorred to fill the space.
@@ -45,3 +46,19 @@ impl memory::Mapper for CNROM {
     }
 }
 
+impl <'de> SaveState<'de, MapperState> for CNROM {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::CNROM(CNROMState {
+            chr_bank: self.chr_bank,
+        })
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::CNROM(s) => {
+                self.chr_bank = s.chr_bank;
+            },
+            _ => panic!("Incompatible mapper state for CNROM mapper: {:?}", state),
+        }
+    }
+}

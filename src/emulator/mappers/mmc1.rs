@@ -1,5 +1,6 @@
 use emulator::memory;
 use emulator::ppu::MirrorMode;
+use emulator::state::{MapperState, MMC1State, SaveState};
 
 
 // iNES Mapper 1: MMC1
@@ -158,6 +159,39 @@ impl memory::Mapper for MMC1 {
             2 => MirrorMode::Vertical,
             3 => MirrorMode::Horizontal,
             _ => panic!("Unexpected mirror control: 0b{:b}", self.control),
+        }
+    }
+}
+
+impl <'de> SaveState<'de, MapperState> for MMC1 {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::MMC1(MMC1State {
+            load_register: self.load_register,
+            write_index: self.write_index,
+            control: self.control,
+            prg_bank: self.prg_bank,
+            chr_bank_1: self.chr_bank_1,
+            chr_bank_2: self.chr_bank_2,
+            prg_offsets: self.prg_offsets.to_vec(),
+            chr_offsets: self.chr_offsets.to_vec(),
+            chr_ram: self.chr_rom.to_vec(),
+        })
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::MMC1(s) => {
+                self.load_register = s.load_register;
+                self.write_index = s.write_index;
+                self.control = s.control;
+                self.prg_bank = s.prg_bank;
+                self.chr_bank_1 = s.chr_bank_1;
+                self.chr_bank_2 = s.chr_bank_2;
+                self.prg_offsets.copy_from_slice(s.prg_offsets.as_slice());
+                self.chr_offsets.copy_from_slice(s.chr_offsets.as_slice());
+                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
+            },
+            _ => panic!("Incompatible mapper state for MMC1 mapper: {:?}", state),
         }
     }
 }

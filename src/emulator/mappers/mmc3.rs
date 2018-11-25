@@ -1,5 +1,6 @@
 use emulator::memory::Mapper;
 use emulator::ppu::MirrorMode;
+use emulator::state::{MapperState, MMC3State, SaveState};
 
 // 1x 8kb PRG RAM - right now we have this sram outside the mappers, so ignored here.
 // 4x 8kb switchable PRG ROM
@@ -189,5 +190,45 @@ impl Mapper for MMC3 {
 
     fn irq_triggered(&mut self) -> bool {
         self.irq_flag
+    }
+}
+
+impl <'de> SaveState<'de, MapperState> for MMC3 {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::MMC3(MMC3State {
+            bank_registers: self.bank_registers.to_vec(),
+            bank_select: self.bank_select,
+            prg_inversion: self.prg_inversion,
+            chr_inversion: self.chr_inversion,
+            irq_flag: self.irq_flag,
+            irq_counter: self.irq_counter,
+            irq_reload_flag: self.irq_reload_flag,
+            irq_counter_reload: self.irq_counter_reload,
+            irq_enabled: self.irq_enabled,
+            ppu_a12: self.ppu_a12,
+            ppu_a12_low_counter: self.ppu_a12_low_counter,
+            mirror_mode: self.mirror_mode,
+            chr_ram: self.chr_rom.to_vec(),
+        })
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::MMC3(s) => {
+                self.bank_registers.copy_from_slice(s.bank_registers.as_slice());
+                self.bank_select = s.bank_select;
+                self.prg_inversion = s.prg_inversion;
+                self.chr_inversion = s.chr_inversion;
+                self.irq_flag = s.irq_flag;
+                self.irq_counter = s.irq_counter;
+                self.irq_reload_flag = s.irq_reload_flag;
+                self.irq_enabled = s.irq_enabled;
+                self.ppu_a12 = s.ppu_a12;
+                self.ppu_a12_low_counter = s.ppu_a12_low_counter;
+                self.mirror_mode = s.mirror_mode;
+                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
+            },
+            _ => panic!("Incompatible mapper state for MMC3 mapper: {:?}", state),
+        }
     }
 }
