@@ -17,6 +17,7 @@ pub enum Key {
     Up, Down, Left, Right,
     Minus, Equals, Backspace,
     Escape, Return, Tab, Space,
+    Shift, Control,
 }
 
 pub trait EventHandler {

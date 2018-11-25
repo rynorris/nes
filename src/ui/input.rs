@@ -95,6 +95,9 @@ fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
         Keycode::Tab => Some(Key::Tab),
         Keycode::Space => Some(Key::Space),
 
+        Keycode::LShift => Some(Key::Shift),
+        Keycode::LCtrl => Some(Key::Control),
+
         _ => None
     }
 }
