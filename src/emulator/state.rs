@@ -1,9 +1,7 @@
 // This file contains the save states API.
 // Changes could break old save states.
 
-extern crate serde;
-
-use self::serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
 
 use emulator::ppu::MirrorMode;
 

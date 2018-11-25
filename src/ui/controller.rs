@@ -2,6 +2,9 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::rc::Rc;
 
+use flate2::Compression;
+use flate2::write::GzEncoder;
+
 use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
@@ -123,7 +126,21 @@ impl EventHandler for Controller {
                     Key::Num9 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 4),
                     Key::Num0 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 5),
                     Key::Backspace => self.reset(),
-                    Key::O => self.save_state = Some(self.nes.freeze()),
+                    Key::O => {
+                        let state = self.nes.freeze();
+                        let mut state_file = match File::create("./state.gz") {
+                            Err(_) => panic!("Couldn't open state file"),
+                            Ok(f) => f,
+                        };
+
+                        let mut gzip = GzEncoder::new(state_file, Compression::best());
+                        match serde_json::to_writer(gzip, &state) {
+                            Err(cause) => panic!("Failed to serialize state: {}", cause),
+                            Ok(_) => (),
+                        }
+
+                        self.save_state = Some(state);
+                    },
                     Key::P => {
                         let state = self.save_state.clone();
                         match state {
