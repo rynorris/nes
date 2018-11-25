@@ -21,8 +21,9 @@ use std::rc::Rc;
 use emulator::apu::AudioOut;
 use emulator::controller::Button;
 use emulator::io::event::{EventBus, Key};
-use emulator::memory::{IORegisters, Writer};
+use emulator::memory::{IORegisters, Mapper, Writer};
 use emulator::ppu::VideoOut;
+use emulator::state::{NESState, SaveState};
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -162,7 +163,7 @@ impl NES {
         cycles
     }
 
-    pub fn load(rom: ines::ROM) -> memory::MapperRef {
+    pub fn load(rom: ines::ROM) -> Rc<RefCell<Mapper>> {
         let prg_rom = rom.prg_rom().to_vec();
         let chr_rom = rom.chr_rom().to_vec();
         let mirror_mode = rom.mirror_mode();
@@ -225,5 +226,27 @@ impl clock::Ticker for DMAController {
         } else {
             self.cpu.borrow_mut().tick()
         }
+    }
+}
+
+impl <'de> SaveState<'de, NESState> for NES {
+    fn freeze(&mut self) -> NESState {
+        NESState {
+            cpu: self.cpu.borrow_mut().freeze(),
+            ppu: self.ppu.borrow_mut().freeze(),
+            mapper: self.mapper.borrow_mut().freeze(),
+            ram: self.ram.borrow().to_vec(),
+            sram: self.sram.borrow().to_vec(),
+            vram: self.vram.borrow().to_vec(),
+        }
+    }
+
+    fn hydrate(&mut self, state: NESState) {
+        self.cpu.borrow_mut().hydrate(state.cpu);
+        self.ppu.borrow_mut().hydrate(state.ppu);
+        self.mapper.borrow_mut().hydrate(state.mapper);
+        self.ram.borrow_mut().load_vec(state.ram);
+        self.sram.borrow_mut().load_vec(state.sram);
+        self.vram.borrow_mut().load_vec(state.vram);
     }
 }

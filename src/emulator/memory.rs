@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::ppu::{Mirrorer, MirrorMode};
+use emulator::state::{MapperState, SaveState};
 
 const ADDRESS_SPACE: usize = 65536;
 
@@ -173,7 +174,7 @@ impl Writer for PPUMemory {
     }
 }
 
-pub trait Mapper {
+pub trait Mapper: SaveState<'static, MapperState> {
     fn read_chr(&mut self, address: u16) -> u8;
     fn write_chr(&mut self, address: u16, byte: u8);
     fn read_prg(&mut self, address: u16) -> u8;
@@ -205,6 +206,16 @@ impl Mapper for MapperRef {
 
     fn mirror_mode(&self) -> MirrorMode {
         self.borrow().mirror_mode()
+    }
+}
+
+impl SaveState<'static, MapperState> for MapperRef {
+    fn freeze(&mut self) -> MapperState {
+        self.borrow_mut().freeze()
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        self.borrow_mut().hydrate(state);
     }
 }
 
@@ -284,6 +295,14 @@ impl RAM {
     pub fn debug_print(&self, start_addr: u16, num_bytes: u16) {
         let end_addr = start_addr - 1 + num_bytes;
         println!("RAM [{:X}..{:X}]: {:?}", start_addr, end_addr, &self.memory[(start_addr as usize) .. (end_addr as usize)]);
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.memory.to_vec()
+    }
+
+    pub fn load_vec(&mut self, v: Vec<u8>) {
+        self.memory.copy_from_slice(v.as_slice());
     }
 }
 

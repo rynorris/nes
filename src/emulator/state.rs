@@ -13,6 +13,22 @@ pub trait SaveState<'de, T: Serialize + Deserialize<'de>> {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct NESState {
+    pub cpu: CPUState,
+    pub ppu: PPUState,
+    pub mapper: MapperState,
+
+    #[serde(with = "serde_bytes")]
+    pub ram: Vec<u8>,
+
+    #[serde(with = "serde_bytes")]
+    pub sram: Vec<u8>,
+
+    #[serde(with = "serde_bytes")]
+    pub vram: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct CPUState {
     pub a: u8,
     pub x: u8,
@@ -100,6 +116,8 @@ pub struct MMC1State {
     pub chr_bank_2: u8,
     pub prg_offsets: Vec<u32>,
     pub chr_offsets: Vec<u32>,
+
+    #[serde(with = "serde_bytes")]
     pub chr_ram: Vec<u8>,
 }
 
@@ -127,6 +145,8 @@ pub struct MMC3State {
     pub ppu_a12: bool,
     pub ppu_a12_low_counter: u8,
     pub mirror_mode: MirrorMode,
+
+    #[serde(with = "serde_bytes")]
     pub chr_ram: Vec<u8>,
 }
 
@@ -134,5 +154,7 @@ pub struct MMC3State {
 pub struct AXROMState {
     pub mirror_mode: MirrorMode,
     pub prg_bank: u8,
+
+    #[serde(with = "serde_bytes")]
     pub chr_ram: Vec<u8>,
 }
