@@ -2,14 +2,14 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::rc::Rc;
 
-use emulator::io::{SimpleAudioOut, SimpleVideoOut};
+use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
 use ui::compositor::DebugMode;
 
 pub struct Controller {
     nes: NES,
-    video_output: Rc<RefCell<SimpleVideoOut>>,
+    screen: Rc<RefCell<Screen>>,
     audio_output: Rc<RefCell<SimpleAudioOut>>,
     is_running: bool,
     is_tracing: bool,
@@ -19,11 +19,11 @@ pub struct Controller {
 
 impl Controller {
     pub fn new(nes: NES,
-               video_output: Rc<RefCell<SimpleVideoOut>>,
+               screen: Rc<RefCell<Screen>>,
                audio_output: Rc<RefCell<SimpleAudioOut>>) -> Controller {
         Controller {
             nes,
-            video_output,
+            screen,
             audio_output,
             is_running: false,
             is_tracing: false,
@@ -52,7 +52,7 @@ impl Controller {
 
     pub fn set_target_hz(&mut self, hz: u64) {
         self.target_hz = hz;
-        self.video_output.borrow_mut().set_double_buffering(hz > 200_000);
+        self.screen.borrow_mut().set_double_buffering(hz > 200_000);
         self.audio_output.borrow_mut().set_enabled(hz >= 10_000_000 && hz <= 50_000_000);
     }
 

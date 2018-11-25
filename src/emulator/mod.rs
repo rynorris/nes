@@ -20,9 +20,9 @@ use std::rc::Rc;
 
 use emulator::apu::AudioOut;
 use emulator::controller::Button;
+use emulator::io::Screen;
 use emulator::io::event::{EventBus, Key};
 use emulator::memory::{IORegisters, Mapper, Writer};
-use emulator::ppu::VideoOut;
 use emulator::state::{NESState, SaveState};
 
 // Timings (NTSC).
@@ -43,12 +43,13 @@ pub struct NES {
     pub ram: Rc<RefCell<memory::RAM>>,
     pub sram: Rc<RefCell<memory::RAM>>,
     pub vram: Rc<RefCell<memory::RAM>>,
+    pub screen: Rc<RefCell<Screen>>,
     nmi_pin: bool,
 }
 
 impl NES {
-    pub fn new<V, A>(event_bus: Rc<RefCell<EventBus>>, video: V, audio: A, rom: ines::ROM) -> NES where
-    V: VideoOut + 'static, A: AudioOut + 'static {
+    pub fn new<A>(event_bus: Rc<RefCell<EventBus>>, screen: Rc<RefCell<Screen>>, audio: A, rom: ines::ROM) -> NES where
+    A: AudioOut + 'static {
         // Create master clock.
         let mut clock = clock::Clock::new();
 
@@ -69,7 +70,7 @@ impl NES {
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
                     ppu_memory,
-                    Box::new(video))));
+                    Box::new(screen.clone()))));
 
         // Create APU.
         let apu = Rc::new(RefCell::new(apu::APU::new(
@@ -136,6 +137,7 @@ impl NES {
             ram,
             sram,
             vram,
+            screen,
             nmi_pin: false,
         }
     }
@@ -238,6 +240,7 @@ impl <'de> SaveState<'de, NESState> for NES {
             ram: self.ram.borrow().to_vec(),
             sram: self.sram.borrow().to_vec(),
             vram: self.vram.borrow().to_vec(),
+            screen: self.screen.borrow_mut().freeze(),
         }
     }
 
@@ -248,5 +251,6 @@ impl <'de> SaveState<'de, NESState> for NES {
         self.ram.borrow_mut().load_vec(state.ram);
         self.sram.borrow_mut().load_vec(state.sram);
         self.vram.borrow_mut().load_vec(state.vram);
+        self.screen.borrow_mut().hydrate(state.screen);
     }
 }

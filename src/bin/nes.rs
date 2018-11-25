@@ -36,7 +36,7 @@ fn main() {
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let video_output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let video_output = Rc::new(RefCell::new(io::Screen::new()));
     let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
 
     let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);

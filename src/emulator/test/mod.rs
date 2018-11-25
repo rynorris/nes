@@ -37,7 +37,7 @@ fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
 fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cycles: u64) -> (u8, String) {
     let rom = ines::ROM::load(rom_path);
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let output = io::SimpleVideoOut::new();
+    let output = Rc::new(RefCell::new(io::Screen::new()));
     let audio = io::nop::DummyAudio{};
     let mut nes = NES::new(event_bus.clone(), output, audio, rom);
 

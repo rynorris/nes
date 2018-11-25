@@ -26,6 +26,8 @@ pub struct NESState {
 
     #[serde(with = "serde_bytes")]
     pub vram: Vec<u8>,
+
+    pub screen: ScreenState,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -94,6 +96,12 @@ pub struct PPUState {
     pub sprite_0_this_line: bool,
     pub ppudata_read_buffer: u8,
     pub bus_latch: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScreenState {
+    pub scanline: u32,
+    pub dot: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

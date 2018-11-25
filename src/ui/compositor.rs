@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::io::SimpleVideoOut;
+use emulator::io::Screen;
 use emulator::apu::debug::APUDebug;
 use emulator::ppu::debug::PPUDebug;
 use ui::sdl2::{pixels, rect, render, video};
@@ -25,7 +25,7 @@ pub struct Compositor {
     palette_texture: render::Texture,
     waveform_texture: render::Texture,
 
-    nes_output: Rc<RefCell<SimpleVideoOut>>,
+    nes_output: Rc<RefCell<Screen>>,
     ppu_debug: PPUDebug,
     apu_debug: APUDebug,
     debug_mode: DebugMode,
@@ -34,7 +34,7 @@ pub struct Compositor {
 impl Compositor {
     pub fn new(
         video: sdl2::VideoSubsystem,
-        nes_output: Rc<RefCell<SimpleVideoOut>>,
+        nes_output: Rc<RefCell<Screen>>,
         ppu_debug: PPUDebug,
         apu_debug: APUDebug,
     ) -> Compositor {

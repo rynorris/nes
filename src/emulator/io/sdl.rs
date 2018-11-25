@@ -7,22 +7,22 @@ use std::rc::Rc;
 use self::sdl2::pixels;
 use self::sdl2::surface;
 
-use emulator::io::SimpleVideoOut;
+use emulator::io::Screen;
 
 pub struct ImageCapture {
-    output: Rc<RefCell<SimpleVideoOut>>,
+    screen: Rc<RefCell<Screen>>,
 }
 
 impl ImageCapture {
-    pub fn new(output: Rc<RefCell<SimpleVideoOut>>) -> ImageCapture {
+    pub fn new(screen: Rc<RefCell<Screen>>) -> ImageCapture {
         let _ = sdl2::init().unwrap();
         ImageCapture {
-            output,
+            screen,
         }
     }
 
     pub fn save_bmp(&mut self, path: &Path) {
-        self.output.borrow().do_render(|buffer| {
+        self.screen.borrow().do_render(|buffer| {
             // Make a copy of the data so it doesn't need to be mutable.
             let mut copy = Vec::from(buffer);
             let surface = surface::Surface::from_data(
