@@ -36,48 +36,26 @@ fn save_state_file_path(name: &str) -> PathBuf {
     state_file_path
 }
 
-pub fn save_state(nes: &mut NES, name: &str) {
-    match create_dir_all(save_state_dir()) {
-        Err(cause) => panic!("Couldn't create save states dir: {}", cause),
-        Ok(_) => (),
-    };
+pub fn save_state(nes: &mut NES, name: &str) -> Result<(), String> {
+    create_dir_all(save_state_dir()).map_err(|e| e.to_string())?;
 
     let state = nes.freeze();
-    let state_file = match File::create(save_state_file_path(name)) {
-        Err(cause) => panic!("Couldn't open state file: {}", cause),
-        Ok(f) => f,
-    };
+    let state_file = File::create(save_state_file_path(name)).map_err(|e| e.to_string())?;
 
     let gzip = GzEncoder::new(state_file, Compression::best());
     let mut serializer = Serializer::new(gzip);
-    match state.serialize(&mut serializer) {
-        Err(cause) => panic!("Failed to serialize state: {}", cause),
-        Ok(_) => (),
-    };
+    state.serialize(&mut serializer).map_err(|e| e.to_string())?;
 
-    match serializer.into_inner().try_finish() {
-        Err(cause) => panic!("Failed to close gzip stream: {}", cause),
-        Ok(_) => (),
-    }
+    serializer.into_inner().try_finish().map_err(|e| e.to_string())?;
+    Ok(())
 }
 
-pub fn load_state(nes: &mut NES, name: &str) {
-    let state_file = match File::open(save_state_file_path(name)) {
-        Err(_) => {
-            println!("Couldn't open state file");
-            return;
-        }
-        Ok(f) => f,
-    };
-
+pub fn load_state(nes: &mut NES, name: &str) -> Result<(), String> {
+    let state_file = File::open(save_state_file_path(name)).map_err(|e| e.to_string())?;
     let gzip = GzDecoder::new(state_file);
-
-    let state = match serde_json::from_reader(gzip) {
-        Err(cause) => panic!("Failed to deserialize state: {}", cause),
-        Ok(s) => s,
-    };
-
+    let state = serde_json::from_reader(gzip).map_err(|e| e.to_string())?;
     nes.hydrate(state);
+    Ok(())
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

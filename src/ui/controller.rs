@@ -106,11 +106,17 @@ impl Controller {
         if shift_modifier {
             // Save state.
             println!("Saving state: {}", state_name);
-            save_state(&mut self.nes, &state_name);
+            match save_state(&mut self.nes, &state_name) {
+                Err(cause) => println!("Failed to save state: {}", cause),
+                Ok(_) => (),
+            };
         } else if ctrl_modifier {
             // Load state.
             println!("Loading state: {}", state_name);
-            load_state(&mut self.nes, &state_name);
+            match load_state(&mut self.nes, &state_name) {
+                Err(cause) => println!("Failed to save state: {}", cause),
+                Ok(_) => (),
+            };
         } else {
             // Set speed.
             let target_hz = match num {
