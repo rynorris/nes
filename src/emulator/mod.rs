@@ -44,6 +44,8 @@ pub struct NES {
     pub sram: Rc<RefCell<memory::RAM>>,
     pub vram: Rc<RefCell<memory::RAM>>,
     pub screen: Rc<RefCell<Screen>>,
+    pub joy1: Rc<RefCell<controller::Controller>>,
+    pub joy2: Rc<RefCell<controller::Controller>>,
     nmi_pin: bool,
 }
 
@@ -138,6 +140,8 @@ impl NES {
             sram,
             vram,
             screen,
+            joy1,
+            joy2,
             nmi_pin: false,
         }
     }
@@ -241,6 +245,8 @@ impl <'de> SaveState<'de, NESState> for NES {
             sram: self.sram.borrow().to_vec(),
             vram: self.vram.borrow().to_vec(),
             screen: self.screen.borrow_mut().freeze(),
+            joy1: self.joy1.borrow_mut().freeze(),
+            joy2: self.joy2.borrow_mut().freeze(),
         }
     }
 
@@ -252,5 +258,7 @@ impl <'de> SaveState<'de, NESState> for NES {
         self.sram.borrow_mut().load_vec(state.sram);
         self.vram.borrow_mut().load_vec(state.vram);
         self.screen.borrow_mut().hydrate(state.screen);
+        self.joy1.borrow_mut().hydrate(state.joy1);
+        self.joy2.borrow_mut().hydrate(state.joy2);
     }
 }

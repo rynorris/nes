@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::memory::{Reader, Writer};
+use emulator::state::{ControllerState, SaveState};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Button {
@@ -79,5 +80,19 @@ impl Writer for Controller {
     fn write(&mut self, _address: u16, byte: u8) {
         // Controller is only responsible for the bit 0.
         self.register = byte & 1;
+    }
+}
+
+impl <'de> SaveState<'de, ControllerState> for Controller {
+    fn freeze(&mut self) -> ControllerState {
+        ControllerState {
+            strobe_ix: self.strobe_ix,
+            register: self.register,
+        }
+    }
+
+    fn hydrate(&mut self, state: ControllerState) {
+        self.strobe_ix = state.strobe_ix;
+        self.register = state.register;
     }
 }

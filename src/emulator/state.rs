@@ -79,6 +79,9 @@ pub struct NESState {
     pub vram: Vec<u8>,
 
     pub screen: ScreenState,
+
+    pub joy1: ControllerState,
+    pub joy2: ControllerState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -153,6 +156,12 @@ pub struct PPUState {
 pub struct ScreenState {
     pub scanline: u32,
     pub dot: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ControllerState {
+    pub strobe_ix: u8,
+    pub register: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
