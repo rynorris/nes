@@ -30,17 +30,22 @@ fn run_for(nes: &mut NES, cycles: u64) {
     }
 }
 
+fn prepare_ete_test<P : AsRef<Path>>(path: P) -> (NES, Rc<RefCell<EventBus>>, ImageCapture) {
+    let rom = ines::ROM::load(path);
+    let event_bus = Rc::new(RefCell::new(EventBus::new()));
+    let output = Rc::new(RefCell::new(io::Screen::new()));
+    let audio = io::nop::DummyAudio{};
+    let image = ImageCapture::new(output.clone());
+    let nes = NES::new(event_bus.clone(), output, audio, rom);
+    (nes, event_bus, image)
+}
+
 fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
     load_and_run_blargg_test_rom_with_cycles(rom_path, 100_000_000)
 }
 
 fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cycles: u64) -> (u8, String) {
-    let rom = ines::ROM::load(rom_path);
-    let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let output = Rc::new(RefCell::new(io::Screen::new()));
-    let audio = io::nop::DummyAudio{};
-    let mut nes = NES::new(event_bus.clone(), output, audio, rom);
-
+    let (mut nes, _, _) = prepare_ete_test(rom_path);
     run_blargg_test_rom(&mut nes, max_cycles)
 }
 
@@ -93,7 +98,7 @@ fn collect_test_output(nes: &mut NES) -> String {
     }
 }
 
-pub fn assert_image(capture: &mut ImageCapture, exp_file: PathBuf) {
+pub fn assert_image(capture: &ImageCapture, exp_file: PathBuf) {
     let tmp_dir = env::temp_dir();
     let mut out_file = tmp_dir.clone();
     out_file.push(exp_file.file_name().unwrap());

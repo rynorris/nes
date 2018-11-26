@@ -4,7 +4,7 @@ use std::rc::Rc;
 use emulator::io::Screen;
 use emulator::apu::debug::APUDebug;
 use emulator::ppu::debug::PPUDebug;
-use ui::sdl2::{pixels, rect, render, video};
+use sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
 

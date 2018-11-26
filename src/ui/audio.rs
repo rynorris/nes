@@ -4,7 +4,7 @@ use std::rc::Rc;
 use emulator::io::SimpleAudioOut;
 
 use ui::RENDER_FPS;
-use ui::sdl2::audio;
+use sdl2::audio;
 
 pub const SAMPLE_RATE: f32 = 48_000.0;
 
