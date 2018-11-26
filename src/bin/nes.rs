@@ -34,7 +34,10 @@ fn main() {
     // -- Initialize --
 
     let rom = ines::ROM::load(rom_path);
-    let rom_name = Path::new(rom_path).file_stem().map(|s| s.to_string_lossy().to_string());
+    let rom_name = Path::new(rom_path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or(String::from("unknown"));
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
@@ -54,7 +57,8 @@ fn main() {
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
-    controller.borrow_mut().set_rom_name(&rom_name.unwrap_or(String::from("unknown")));
+    controller.borrow_mut().set_rom_name(&rom_name);
+    compositor.set_window_title(&format!("[NES] {}", rom_name));
     controller.borrow_mut().start();
     event_bus.borrow_mut().register(Box::new(controller.clone()));
 

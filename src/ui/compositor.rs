@@ -126,6 +126,13 @@ impl Compositor {
         }
     }
 
+    pub fn set_window_title(&mut self, title: &str) {
+        match self.canvas.window_mut().set_title(title) {
+            Err(cause) => panic!("failed to set window title: {}", cause),
+            Ok(_) => (),
+        };
+    }
+
     pub fn set_debug(&mut self, mode: DebugMode) {
         if mode == self.debug_mode {
             return;
