@@ -91,7 +91,7 @@ impl Mapper for MMC3 {
         if a12 && !self.ppu_a12 && self.ppu_a12_low_counter > 12 {
             self.clock_irq();
         } else if !a12 && !self.ppu_a12 {
-            self.ppu_a12_low_counter += 1;
+            self.ppu_a12_low_counter = self.ppu_a12_low_counter.saturating_add(1);
         } else if a12 {
             self.ppu_a12_low_counter = 0;
         }

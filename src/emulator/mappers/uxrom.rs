@@ -55,6 +55,7 @@ impl <'de> SaveState<'de, MapperState> for UXROM {
     fn freeze(&mut self) -> MapperState {
         MapperState::UXROM(UXROMState {
             prg_bank: self.prg_bank,
+            chr_ram: self.chr_rom.to_vec(),
         })
     }
 
@@ -62,6 +63,7 @@ impl <'de> SaveState<'de, MapperState> for UXROM {
         match state {
             MapperState::UXROM(s) => {
                 self.prg_bank = s.prg_bank;
+                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
             },
             _ => panic!("Incompatible mapper state for UXROM mapper: {:?}", state),
         }

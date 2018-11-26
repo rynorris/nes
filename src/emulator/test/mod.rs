@@ -4,6 +4,7 @@ extern crate md5;
 mod instr_misc;
 mod instr_test_v5;
 mod instr_timing;
+mod mappers;
 mod nestest;
 mod ppu_sprite_hit;
 mod ppu_sprite_overflow;

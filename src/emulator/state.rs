@@ -192,6 +192,9 @@ pub struct MMC1State {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UXROMState {
     pub prg_bank: u8,
+
+    #[serde(with = "serde_bytes")]
+    pub chr_ram: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
