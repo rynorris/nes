@@ -11,6 +11,7 @@ use ui::compositor::DebugMode;
 
 pub struct Controller {
     nes: NES,
+    rom_name: Option<String>,
     screen: Rc<RefCell<Screen>>,
     audio_output: Rc<RefCell<SimpleAudioOut>>,
     is_running: bool,
@@ -26,6 +27,7 @@ impl Controller {
                audio_output: Rc<RefCell<SimpleAudioOut>>) -> Controller {
         Controller {
             nes,
+            rom_name: None,
             screen,
             audio_output,
             is_running: false,
@@ -42,6 +44,10 @@ impl Controller {
 
     pub fn is_running(&self) -> bool {
         self.is_running
+    }
+
+    pub fn set_rom_name(&mut self, name: &str) {
+        self.rom_name = Some(String::from(name));
     }
 
     pub fn start(&mut self) {
@@ -91,17 +97,20 @@ impl Controller {
     fn handle_num_key(&mut self, num: u8) {
         let shift_modifier = *self.key_states.get(&Key::Shift).unwrap_or(&false);
         let ctrl_modifier = *self.key_states.get(&Key::Control).unwrap_or(&false);
+        let rom_name = match self.rom_name {
+            Some(ref name) => name.clone(),
+            None => String::from("unknown"),
+        };
+        let state_name = format!("{}.{}", rom_name, num);
 
         if shift_modifier {
             // Save state.
-            let name = format!("state_{}", num);
-            println!("Saving state: {}", name);
-            save_state(&mut self.nes, &name);
+            println!("Saving state: {}", state_name);
+            save_state(&mut self.nes, &state_name);
         } else if ctrl_modifier {
             // Load state.
-            let name = format!("state_{}", num);
-            println!("Loading state: {}", name);
-            load_state(&mut self.nes, &name);
+            println!("Loading state: {}", state_name);
+            load_state(&mut self.nes, &state_name);
         } else {
             // Set speed.
             let target_hz = match num {
