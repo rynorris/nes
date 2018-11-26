@@ -2,7 +2,9 @@
 // Changes could break old save states.
 
 use std::fs::{create_dir_all, File};
+use std::path::PathBuf;
 
+use dirs;
 use flate2::Compression;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
@@ -12,21 +14,36 @@ use serde_json::Serializer;
 use emulator::ppu::MirrorMode;
 use emulator::NES;
 
-const SAVE_STATE_DIR: &str = "./.save_states";
-
 pub trait SaveState<'de, T: Serialize + Deserialize<'de>> {
     fn freeze(&mut self) -> T;
     fn hydrate(&mut self, t: T);
 }
 
+fn save_state_dir() -> PathBuf {
+    let mut path = match dirs::data_dir() {
+        Some(path) => path,
+        None => panic!("Couldn't get data dir!"),
+    };
+
+    path.push("nes");
+    path.push("save_states");
+    path
+}
+
+fn save_state_file_path(name: &str) -> PathBuf {
+    let mut state_file_path = save_state_dir();
+    state_file_path.push(format!("{}.gz", name));
+    state_file_path
+}
+
 pub fn save_state(nes: &mut NES, name: &str) {
-    match create_dir_all(SAVE_STATE_DIR) {
+    match create_dir_all(save_state_dir()) {
         Err(cause) => panic!("Couldn't create save states dir: {}", cause),
         Ok(_) => (),
     };
 
     let state = nes.freeze();
-    let state_file = match File::create(format!("./{}/{}.gz", SAVE_STATE_DIR, name)) {
+    let state_file = match File::create(save_state_file_path(name)) {
         Err(cause) => panic!("Couldn't open state file: {}", cause),
         Ok(f) => f,
     };
@@ -45,7 +62,7 @@ pub fn save_state(nes: &mut NES, name: &str) {
 }
 
 pub fn load_state(nes: &mut NES, name: &str) {
-    let state_file: File = match File::open(format!("./{}/{}.gz", SAVE_STATE_DIR, name)) {
+    let state_file = match File::open(save_state_file_path(name)) {
         Err(_) => {
             println!("Couldn't open state file");
             return;
