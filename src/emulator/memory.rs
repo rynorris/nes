@@ -144,16 +144,16 @@ impl PPUMemory {
                     MirrorMode::Vertical => (address & 0x0400) >> 10,
                     MirrorMode::Horizontal => (address & 0x0800) >> 11,
                 };
-                let mirrored_addr = 0x2000 | (nt_bank << 10) | (address & 0x03FF);
+                let mirrored_addr = (nt_bank << 10) | (address & 0x03FF);
                 Some((&mut self.vram, mirrored_addr & 0x3FFF))
             },
             0x3F00 ... 0x3FFF => {
                 // Palettes and palette mirrors.
                 let mirrored_addr = if address % 4 == 0 {
                     // Colour 0 in sprite palettes is mirrored to the BG palettes.
-                    address & 0x3F0F
+                    address & 0x1F0F
                 } else {
-                    address & 0x3F1F
+                    address & 0x1F1F
                 };
                 Some((&mut self.vram, mirrored_addr))
             },
@@ -292,14 +292,12 @@ impl Memory {
     // These methods used to access data outside the first 64kb.
     // since Reader/Writer interfaces only allow access to 16bit addresses.
     pub fn get(&self, address: usize) -> u8 {
-        let wrapped = address % self.len();
-        self.data[wrapped]
+        self.data[address]
     }
 
     pub fn put(&mut self, address: usize, byte: u8) {
         if self.writeable {
-            let wrapped = address % self.len();
-            self.data[wrapped] = byte;
+            self.data[address] = byte;
         }
     }
 
