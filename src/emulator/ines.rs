@@ -1,8 +1,12 @@
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::rc::Rc;
 use std::vec::Vec;
 
+use emulator::mappers;
+use emulator::memory::Mapper;
 use emulator::ppu;
 
 pub struct ROM {
@@ -65,6 +69,22 @@ impl ROM {
             ppu::MirrorMode::Horizontal
         } else {
             ppu::MirrorMode::Vertical
+        }
+    }
+
+    pub fn get_mapper(&self) -> Rc<RefCell<Mapper>> {
+        let prg_rom = self.prg_rom().to_vec();
+        let chr_rom = self.chr_rom().to_vec();
+        let mirror_mode = self.mirror_mode();
+
+        match self.mapper_number() {
+            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom, mirror_mode))),
+            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
+            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_rom, mirror_mode))),
+            3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_rom, mirror_mode))),
+            4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_rom))),
+            7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_rom))),
+            _ => panic!("Unknown mapper: {}", self.mapper_number()),
         }
     }
 }

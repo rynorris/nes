@@ -22,7 +22,7 @@ use emulator::apu::AudioOut;
 use emulator::controller::Button;
 use emulator::io::Screen;
 use emulator::io::event::{EventBus, Key};
-use emulator::memory::{IORegisters, Mapper, Writer};
+use emulator::memory::{IORegisters, Writer};
 use emulator::state::{NESState, SaveState};
 
 // Timings (NTSC).
@@ -56,7 +56,7 @@ impl NES {
         let mut clock = clock::Clock::new();
 
         // Load ROM into memory.
-        let mapper = NES::load(rom);
+        let mapper = rom.get_mapper();
 
         // Create RAM modules.
         let ram = Rc::new(RefCell::new(memory::RAM::new()));
@@ -167,22 +167,6 @@ impl NES {
         }
 
         cycles
-    }
-
-    pub fn load(rom: ines::ROM) -> Rc<RefCell<Mapper>> {
-        let prg_rom = rom.prg_rom().to_vec();
-        let chr_rom = rom.chr_rom().to_vec();
-        let mirror_mode = rom.mirror_mode();
-
-        match rom.mapper_number() {
-            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom, mirror_mode))),
-            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
-            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_rom, mirror_mode))),
-            3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_rom, mirror_mode))),
-            4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_rom))),
-            7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_rom))),
-            _ => panic!("Unknown mapper: {}", rom.mapper_number()),
-        }
     }
 
     pub fn reset(&mut self) {
