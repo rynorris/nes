@@ -7,14 +7,14 @@ use emulator::state::{AXROMState, MapperState, SaveState};
 // 8kb CHR RAM.
 // Selectable, sindle-screen mirroring.
 pub struct AXROM {
-    prg_rom: Vec<u8>,
+    prg_rom: Memory,
     chr_mem: Memory,
     mirror_mode: MirrorMode,
     prg_bank: u8,
 }
 
 impl AXROM {
-    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory) -> AXROM {
+    pub fn new(prg_rom: Memory, chr_mem: Memory) -> AXROM {
         AXROM {
             prg_rom,
             chr_mem,
@@ -36,7 +36,7 @@ impl Mapper for AXROM {
     fn read_prg(&mut self, address: u16) -> u8 {
         let base = (self.prg_bank as usize) << 15;
         let rel = (address & 0x7FFF) as usize;
-        self.prg_rom[(base | rel) % self.prg_rom.len()]
+        self.prg_rom.get((base | rel) % self.prg_rom.len())
     }
 
     fn write_prg(&mut self, _address: u16, byte: u8) {

@@ -8,7 +8,7 @@ use emulator::state::{MapperState, MMC3State, SaveState};
 // 4x 1kb switchable CHR ROM
 // Capable of generating IRQs.
 pub struct MMC3 {
-    prg_rom: Vec<u8>,
+    prg_rom: Memory,
     chr_mem: Memory,
 
     // 8 registers for banks R0-R7, plus 2 slots which always point to the 2nd last and last PRG
@@ -31,7 +31,7 @@ pub struct MMC3 {
 }
 
 impl MMC3 {
-    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory) -> MMC3 {
+    pub fn new(prg_rom: Memory, chr_mem: Memory) -> MMC3 {
         let mut m = MMC3 {
             prg_rom,
             chr_mem,
@@ -117,7 +117,7 @@ impl Mapper for MMC3 {
         let base = self.bank_registers[bank_ix];
         let offset = (address % bank_size) as usize;
 
-        self.prg_rom[base + offset]
+        self.prg_rom.get(base + offset)
     }
 
     fn write_prg(&mut self, address: u16, byte: u8) {

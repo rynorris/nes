@@ -35,11 +35,11 @@ impl ROM {
         ((self.data[6] & 0xF0) >> 4) | (self.data[7] & 0xF0)
     }
 
-    pub fn prg_rom(&self) -> &[u8] {
+    pub fn prg_rom(&self) -> Memory {
         let size = self.prg_rom_size_bytes();
         let start = 16 as usize;
         let end = start + size as usize;
-        &self.data[start..end]
+        Memory::new_rom(self.data[start..end].to_vec())
     }
 
     pub fn prg_rom_size_bytes(&self) -> u32 {
@@ -73,7 +73,7 @@ impl ROM {
     }
 
     pub fn get_mapper(&self) -> Rc<RefCell<Mapper>> {
-        let prg_rom = self.prg_rom().to_vec();
+        let prg_rom = self.prg_rom();
         let chr_mem = self.chr_mem();
         let mirror_mode = self.mirror_mode();
 

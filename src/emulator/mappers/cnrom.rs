@@ -6,14 +6,14 @@ use emulator::state::{CNROMState, MapperState, SaveState};
 // Non-switchable PRG ROM, mirrorred to fill the space.
 // Up to 4 switchable 2kb CHR ROM banks.
 pub struct CNROM {
-    prg_rom: Vec<u8>,
+    prg_rom: Memory,
     chr_mem: Memory,
     mirror_mode: MirrorMode,
     chr_bank: u8,
 }
 
 impl CNROM {
-    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory, mirror_mode: MirrorMode) -> CNROM {
+    pub fn new(prg_rom: Memory, chr_mem: Memory, mirror_mode: MirrorMode) -> CNROM {
         CNROM {
             prg_rom,
             chr_mem,
@@ -34,7 +34,7 @@ impl Mapper for CNROM {
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
-        self.prg_rom[((address - 0x8000) % self.prg_rom.len() as u16) as usize]
+        self.prg_rom.get(((address - 0x8000) % self.prg_rom.len() as u16) as usize)
     }
 
     fn write_prg(&mut self, _address: u16, byte: u8) {

@@ -6,14 +6,14 @@ use emulator::state::{MapperState, SaveState, UXROMState};
 // 16k switchable + 16k fixed PRG ROM.
 // 8kb CHR RAM.
 pub struct UXROM {
-    prg_rom: Vec<u8>,
+    prg_rom: Memory,
     chr_mem: Memory,
     mirror_mode: MirrorMode,
     prg_bank: u8,
 }
 
 impl UXROM {
-    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory, mirror_mode: MirrorMode) -> UXROM {
+    pub fn new(prg_rom: Memory, chr_mem: Memory, mirror_mode: MirrorMode) -> UXROM {
         UXROM {
             prg_rom,
             chr_mem,
@@ -39,7 +39,7 @@ impl Mapper for UXROM {
             (self.prg_rom.len() - 1) << 14
         };
         let rel = (address & 0x3FFF) as usize;
-        self.prg_rom[(base | rel) % self.prg_rom.len()]
+        self.prg_rom.get((base | rel) % self.prg_rom.len())
     }
 
     fn write_prg(&mut self, _address: u16, byte: u8) {

@@ -8,7 +8,7 @@ use emulator::state::{MapperState, MMC1State, SaveState};
 // 2 switchable 4k CHR ROM banks.
 // Non-switchable CHR ROM.
 pub struct MMC1 {
-    prg_rom: Vec<u8>,
+    prg_rom: Memory,
     chr_mem: Memory,
 
     load_register: u8,
@@ -24,7 +24,7 @@ pub struct MMC1 {
 }
 
 impl MMC1 {
-    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory) -> MMC1 {
+    pub fn new(prg_rom: Memory, chr_mem: Memory) -> MMC1 {
         let mut mapper = MMC1 {
             prg_rom,
             chr_mem,
@@ -114,7 +114,7 @@ impl Mapper for MMC1 {
         let bank = rel / 0x4000;
         let offset = rel % 0x4000;
         let final_addr = self.prg_offsets[bank as usize] + (offset as u32);
-        self.prg_rom[final_addr as usize]
+        self.prg_rom.get(final_addr as usize)
     }
 
     fn write_prg(&mut self, address: u16, byte: u8) {

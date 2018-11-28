@@ -6,13 +6,13 @@ use emulator::state::{MapperState, SaveState};
 // Non-switchable PRG ROM, mirrorred to fill the space.
 // Non-switchable CHR ROM.
 pub struct NROM {
-    prg_rom: Vec<u8>,
+    prg_rom: Memory,
     chr_rom: Memory,
     mirror_mode: MirrorMode,
 }
 
 impl NROM {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Memory, mirror_mode: MirrorMode) -> NROM {
+    pub fn new(prg_rom: Memory, chr_rom: Memory, mirror_mode: MirrorMode) -> NROM {
         NROM { prg_rom, chr_rom, mirror_mode }
     }
 }
@@ -27,7 +27,7 @@ impl Mapper for NROM {
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
-        self.prg_rom[((address - 0x8000) % self.prg_rom.len() as u16) as usize]
+        self.prg_rom.get(((address - 0x8000) % self.prg_rom.len() as u16) as usize)
     }
 
     fn write_prg(&mut self, _address: u16, _byte: u8) {
