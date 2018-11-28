@@ -1,4 +1,4 @@
-use emulator::memory;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu::MirrorMode;
 use emulator::state::{MapperState, SaveState};
 
@@ -7,23 +7,23 @@ use emulator::state::{MapperState, SaveState};
 // Non-switchable CHR ROM.
 pub struct NROM {
     prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    chr_rom: Memory,
     mirror_mode: MirrorMode,
 }
 
 impl NROM {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>, mirror_mode: MirrorMode) -> NROM {
+    pub fn new(prg_rom: Vec<u8>, chr_rom: Memory, mirror_mode: MirrorMode) -> NROM {
         NROM { prg_rom, chr_rom, mirror_mode }
     }
 }
 
-impl memory::Mapper for NROM {
+impl Mapper for NROM {
     fn read_chr(&mut self, address: u16) -> u8 {
-        self.chr_rom[address as usize]
+        self.chr_rom.get(address as usize)
     }
 
-    fn write_chr(&mut self, _address: u16, _byte: u8) {
-        // Can't write to ROM.
+    fn write_chr(&mut self, address: u16, byte: u8) {
+        self.chr_rom.put(address as usize, byte);
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {

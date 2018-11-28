@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::vec::Vec;
 
 use emulator::mappers;
-use emulator::memory::Mapper;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu;
 
 pub struct ROM {
@@ -46,17 +46,17 @@ impl ROM {
         (self.data[4] as u32) * 16384
     }
 
-    pub fn chr_rom(&self) -> &[u8] {
+    pub fn chr_mem(&self) -> Memory {
         let prg_size = self.prg_rom_size_bytes();
         let size = self.chr_rom_size_bytes();
 
         if size == 0 {
             // Cartridge uses chr_ram.
-            &[0; 0x2000]
+            Memory::new_ram(0x2000)
         } else {
             let start = (16 + prg_size) as usize;
             let end = start + size as usize;
-            &self.data[start..end]
+            Memory::new_rom(self.data[start..end].to_vec())
         }
     }
 
@@ -74,16 +74,16 @@ impl ROM {
 
     pub fn get_mapper(&self) -> Rc<RefCell<Mapper>> {
         let prg_rom = self.prg_rom().to_vec();
-        let chr_rom = self.chr_rom().to_vec();
+        let chr_mem = self.chr_mem();
         let mirror_mode = self.mirror_mode();
 
         match self.mapper_number() {
-            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom, mirror_mode))),
-            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
-            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_rom, mirror_mode))),
-            3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_rom, mirror_mode))),
-            4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_rom))),
-            7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_rom))),
+            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_mem, mirror_mode))),
+            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_mem))),
+            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_mem, mirror_mode))),
+            3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_mem, mirror_mode))),
+            4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_mem))),
+            7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_mem))),
             _ => panic!("Unknown mapper: {}", self.mapper_number()),
         }
     }

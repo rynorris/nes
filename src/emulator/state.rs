@@ -177,22 +177,19 @@ pub struct MMC1State {
     pub chr_bank_2: u8,
     pub prg_offsets: Vec<u32>,
     pub chr_offsets: Vec<u32>,
-
-    #[serde(with = "serde_bytes")]
-    pub chr_ram: Vec<u8>,
+    pub chr_mem: MemoryState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UXROMState {
     pub prg_bank: u8,
-
-    #[serde(with = "serde_bytes")]
-    pub chr_ram: Vec<u8>,
+    pub chr_mem: MemoryState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CNROMState {
     pub chr_bank: u8,
+    pub chr_mem: MemoryState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -209,16 +206,12 @@ pub struct MMC3State {
     pub ppu_a12: bool,
     pub ppu_a12_low_counter: u8,
     pub mirror_mode: MirrorMode,
-
-    #[serde(with = "serde_bytes")]
-    pub chr_ram: Vec<u8>,
+    pub chr_mem: MemoryState,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AXROMState {
     pub mirror_mode: MirrorMode,
     pub prg_bank: u8,
-
-    #[serde(with = "serde_bytes")]
-    pub chr_ram: Vec<u8>,
+    pub chr_mem: MemoryState,
 }

@@ -120,20 +120,20 @@ impl Writer for CPUMemory {
 }
 
 pub struct PPUMemory {
-    chr_rom: Box<dyn ReadWriter>,
+    chr_mem: Box<dyn ReadWriter>,
     mirrorer: Box<dyn Mirrorer>,
     vram: Box<dyn ReadWriter>,
 }
 
 impl PPUMemory {
-    pub fn new(chr_rom: Box<dyn ReadWriter>, mirrorer: Box<dyn Mirrorer>, vram: Box<dyn ReadWriter>) -> PPUMemory {
-        PPUMemory { chr_rom, mirrorer, vram }
+    pub fn new(chr_mem: Box<dyn ReadWriter>, mirrorer: Box<dyn Mirrorer>, vram: Box<dyn ReadWriter>) -> PPUMemory {
+        PPUMemory { chr_mem, mirrorer, vram }
     }
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         // Whole thing is mirrored above $4000.
         match address & 0x3FFF {
-            0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address & 0x3FFF)),
+            0x0000 ... 0x1FFF => Some((&mut self.chr_mem, address & 0x3FFF)),
             0x2000 ... 0x3EFF => {
                 // Nametable and nametable mirrors.
                 // Note that we don't just literally mirror the address horizontally/vertically.
@@ -144,16 +144,16 @@ impl PPUMemory {
                     MirrorMode::Vertical => (address & 0x0400) >> 10,
                     MirrorMode::Horizontal => (address & 0x0800) >> 11,
                 };
-                let mirrored_addr = (nt_bank << 10) | (address & 0x03FF);
-                Some((&mut self.vram, mirrored_addr & 0x1FFF))
+                let mirrored_addr = 0x2000 | (nt_bank << 10) | (address & 0x03FF);
+                Some((&mut self.vram, mirrored_addr & 0x3FFF))
             },
             0x3F00 ... 0x3FFF => {
                 // Palettes and palette mirrors.
                 let mirrored_addr = if address % 4 == 0 {
                     // Colour 0 in sprite palettes is mirrored to the BG palettes.
-                    address & 0x1F0F
+                    address & 0x3F0F
                 } else {
-                    address & 0x1F1F
+                    address & 0x3F1F
                 };
                 Some((&mut self.vram, mirrored_addr))
             },
@@ -289,6 +289,24 @@ impl Memory {
         }
     }
 
+    // These methods used to access data outside the first 64kb.
+    // since Reader/Writer interfaces only allow access to 16bit addresses.
+    pub fn get(&self, address: usize) -> u8 {
+        let wrapped = address % self.len();
+        self.data[wrapped]
+    }
+
+    pub fn put(&mut self, address: usize, byte: u8) {
+        if self.writeable {
+            let wrapped = address % self.len();
+            self.data[wrapped] = byte;
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn debug_print(&self, start_addr: u16, num_bytes: u16) {
         let end_addr = start_addr - 1 + num_bytes;
         println!("Memory [{:X}..{:X}]: {:?}", start_addr, end_addr, &self.data[(start_addr as usize) .. (end_addr as usize)]);
@@ -297,15 +315,13 @@ impl Memory {
 
 impl Reader for Memory {
     fn read(&mut self, address: u16) -> u8 {
-        self.data[address as usize]
+        self.get(address as usize)
     }
 }
 
 impl Writer for Memory {
     fn write(&mut self, address: u16, byte: u8) {
-        if self.writeable {
-            self.data[address as usize] = byte
-        }
+        self.put(address as usize, byte);
     }
 }
 

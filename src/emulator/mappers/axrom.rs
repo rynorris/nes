@@ -1,4 +1,4 @@
-use emulator::memory;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu::MirrorMode;
 use emulator::state::{AXROMState, MapperState, SaveState};
 
@@ -8,29 +8,29 @@ use emulator::state::{AXROMState, MapperState, SaveState};
 // Selectable, sindle-screen mirroring.
 pub struct AXROM {
     prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    chr_mem: Memory,
     mirror_mode: MirrorMode,
     prg_bank: u8,
 }
 
 impl AXROM {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>) -> AXROM {
+    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory) -> AXROM {
         AXROM {
             prg_rom,
-            chr_rom,
+            chr_mem,
             mirror_mode: MirrorMode::SingleLower,
             prg_bank: 0,
         }
     }
 }
 
-impl memory::Mapper for AXROM {
+impl Mapper for AXROM {
     fn read_chr(&mut self, address: u16) -> u8 {
-        self.chr_rom[address as usize]
+        self.chr_mem.get(address as usize)
     }
 
     fn write_chr(&mut self, address: u16, byte: u8) {
-        self.chr_rom[address as usize] = byte;
+        self.chr_mem.put(address as usize, byte);
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
@@ -58,7 +58,7 @@ impl <'de> SaveState<'de, MapperState> for AXROM {
         MapperState::AXROM(AXROMState {
             mirror_mode: self.mirror_mode,
             prg_bank: self.prg_bank,
-            chr_ram: self.chr_rom.to_vec(),
+            chr_mem: self.chr_mem.freeze(),
         })
     }
 
@@ -67,7 +67,7 @@ impl <'de> SaveState<'de, MapperState> for AXROM {
             MapperState::AXROM(s) => {
                 self.mirror_mode = s.mirror_mode;
                 self.prg_bank = s.prg_bank;
-                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
+                self.chr_mem.hydrate(s.chr_mem);
             },
             _ => panic!("Incompatible mapper state for AXROM mapper: {:?}", state),
         }

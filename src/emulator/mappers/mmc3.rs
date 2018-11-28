@@ -1,4 +1,4 @@
-use emulator::memory::Mapper;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu::MirrorMode;
 use emulator::state::{MapperState, MMC3State, SaveState};
 
@@ -9,7 +9,7 @@ use emulator::state::{MapperState, MMC3State, SaveState};
 // Capable of generating IRQs.
 pub struct MMC3 {
     prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    chr_mem: Memory,
 
     // 8 registers for banks R0-R7, plus 2 slots which always point to the 2nd last and last PRG
     // banks.
@@ -31,10 +31,10 @@ pub struct MMC3 {
 }
 
 impl MMC3 {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>) -> MMC3 {
+    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory) -> MMC3 {
         let mut m = MMC3 {
             prg_rom,
-            chr_rom,
+            chr_mem,
             bank_registers: [0; 10],
             bank_select: 0,
             prg_inversion: false,
@@ -97,11 +97,11 @@ impl Mapper for MMC3 {
         }
         self.ppu_a12 = a12;
 
-        self.chr_rom[base + offset]
+        self.chr_mem.get(base + offset)
     }
 
     fn write_chr(&mut self, address: u16, byte: u8) {
-        self.chr_rom[address as usize] = byte;
+        self.chr_mem.put(address as usize, byte);
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
@@ -142,9 +142,9 @@ impl Mapper for MMC3 {
                         self.bank_registers[self.bank_select] = (((byte & 0x3F) as usize) << 13) % self.prg_rom.len();
                     } else if self.bank_select <= 1 {
                         // 2kb CHR banks can only select even banks.
-                        self.bank_registers[self.bank_select] = (((byte & 0xFE) as usize) << 10) % self.chr_rom.len();
+                        self.bank_registers[self.bank_select] = (((byte & 0xFE) as usize) << 10) % self.chr_mem.len();
                     } else {
-                        self.bank_registers[self.bank_select] = ((byte as usize) << 10) % self.chr_rom.len();
+                        self.bank_registers[self.bank_select] = ((byte as usize) << 10) % self.chr_mem.len();
                     }
                 }
             },
@@ -208,7 +208,7 @@ impl <'de> SaveState<'de, MapperState> for MMC3 {
             ppu_a12: self.ppu_a12,
             ppu_a12_low_counter: self.ppu_a12_low_counter,
             mirror_mode: self.mirror_mode,
-            chr_ram: self.chr_rom.to_vec(),
+            chr_mem: self.chr_mem.freeze(),
         })
     }
 
@@ -226,7 +226,7 @@ impl <'de> SaveState<'de, MapperState> for MMC3 {
                 self.ppu_a12 = s.ppu_a12;
                 self.ppu_a12_low_counter = s.ppu_a12_low_counter;
                 self.mirror_mode = s.mirror_mode;
-                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
+                self.chr_mem.hydrate(s.chr_mem);
             },
             _ => panic!("Incompatible mapper state for MMC3 mapper: {:?}", state),
         }

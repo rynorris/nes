@@ -36,13 +36,12 @@ macro_rules! test_mapper {
 }
 
 test_mapper!(nrom, "M0_P32K_C8K_V", 100_000_000);
+
+// Note that test status here is 1000.
+// This means that bit 4 of $Exxx doesn't disable WRAM.
+// Right now our mappers aren't hooked up to WRAM, so accepting this as-is.
 test_mapper!(mmc1, "M1_P128K_C128K", 500_000_000);
 test_mapper!(uxrom, "M2_P128K_V", 150_000_000);
 test_mapper!(cnrom, "M3_P32K_C32K_H", 100_000_000);
-
-// Note that the image here displays an error.
-// But the error code "2000" just means that read-only RAM protect mode is not present.
-// This is left out intentionally, so can be ignored.
 test_mapper!(mmc3, "M4_P256K_C256K", 200_000_000);
-
 test_mapper!(axrom, "M7_P128K", 120_000_000);

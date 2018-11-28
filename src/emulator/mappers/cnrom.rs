@@ -1,4 +1,4 @@
-use emulator::memory;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu::MirrorMode;
 use emulator::state::{CNROMState, MapperState, SaveState};
 
@@ -7,30 +7,30 @@ use emulator::state::{CNROMState, MapperState, SaveState};
 // Up to 4 switchable 2kb CHR ROM banks.
 pub struct CNROM {
     prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    chr_mem: Memory,
     mirror_mode: MirrorMode,
     chr_bank: u8,
 }
 
 impl CNROM {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>, mirror_mode: MirrorMode) -> CNROM {
+    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory, mirror_mode: MirrorMode) -> CNROM {
         CNROM {
             prg_rom,
-            chr_rom,
+            chr_mem,
             mirror_mode,
             chr_bank: 0,
         }
     }
 }
 
-impl memory::Mapper for CNROM {
+impl Mapper for CNROM {
     fn read_chr(&mut self, address: u16) -> u8 {
         let base = (self.chr_bank as u16) << 13;
-        self.chr_rom[(base | address) as usize]
+        self.chr_mem.get((base | address) as usize)
     }
 
-    fn write_chr(&mut self, _address: u16, _byte: u8) {
-        // Can't write to ROM.
+    fn write_chr(&mut self, address: u16, byte: u8) {
+        self.chr_mem.put(address as usize, byte);
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
@@ -50,6 +50,7 @@ impl <'de> SaveState<'de, MapperState> for CNROM {
     fn freeze(&mut self) -> MapperState {
         MapperState::CNROM(CNROMState {
             chr_bank: self.chr_bank,
+            chr_mem: self.chr_mem.freeze(),
         })
     }
 
@@ -57,6 +58,7 @@ impl <'de> SaveState<'de, MapperState> for CNROM {
         match state {
             MapperState::CNROM(s) => {
                 self.chr_bank = s.chr_bank;
+                self.chr_mem.hydrate(s.chr_mem);
             },
             _ => panic!("Incompatible mapper state for CNROM mapper: {:?}", state),
         }

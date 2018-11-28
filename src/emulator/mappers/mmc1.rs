@@ -1,4 +1,4 @@
-use emulator::memory;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu::MirrorMode;
 use emulator::state::{MapperState, MMC1State, SaveState};
 
@@ -9,7 +9,7 @@ use emulator::state::{MapperState, MMC1State, SaveState};
 // Non-switchable CHR ROM.
 pub struct MMC1 {
     prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    chr_mem: Memory,
 
     load_register: u8,
     write_index: u8,
@@ -24,10 +24,10 @@ pub struct MMC1 {
 }
 
 impl MMC1 {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>) -> MMC1 {
+    pub fn new(prg_rom: Vec<u8>, chr_mem: Memory) -> MMC1 {
         let mut mapper = MMC1 {
             prg_rom,
-            chr_rom,
+            chr_mem,
 
             load_register: 0x10,
             write_index: 0,
@@ -90,23 +90,23 @@ impl MMC1 {
     }
 
     fn chr_offset(&self, index: u32) -> u32 {
-        (index % ((self.chr_rom.len() as u32) / 0x1000)) * 0x1000
+        (index % ((self.chr_mem.len() as u32) / 0x1000)) * 0x1000
     }
 }
 
-impl memory::Mapper for MMC1 {
+impl Mapper for MMC1 {
     fn read_chr(&mut self, address: u16) -> u8 {
         let rel = address;
         let bank = rel / 0x1000;
         let offset = rel % 0x1000;
-        self.chr_rom[(self.chr_offsets[bank as usize] + (offset as u32)) as usize]
+        self.chr_mem.get((self.chr_offsets[bank as usize] + (offset as u32)) as usize)
     }
 
     fn write_chr(&mut self, address: u16, byte: u8) {
         let rel = address;
         let bank = rel / 0x1000;
         let offset = rel % 0x1000;
-        self.chr_rom[(self.chr_offsets[bank as usize] + (offset as u32)) as usize] = byte
+        self.chr_mem.put((self.chr_offsets[bank as usize] + (offset as u32)) as usize, byte);
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
@@ -174,7 +174,7 @@ impl <'de> SaveState<'de, MapperState> for MMC1 {
             chr_bank_2: self.chr_bank_2,
             prg_offsets: self.prg_offsets.to_vec(),
             chr_offsets: self.chr_offsets.to_vec(),
-            chr_ram: self.chr_rom.to_vec(),
+            chr_mem: self.chr_mem.freeze(),
         })
     }
 
@@ -189,7 +189,7 @@ impl <'de> SaveState<'de, MapperState> for MMC1 {
                 self.chr_bank_2 = s.chr_bank_2;
                 self.prg_offsets.copy_from_slice(s.prg_offsets.as_slice());
                 self.chr_offsets.copy_from_slice(s.chr_offsets.as_slice());
-                self.chr_rom.copy_from_slice(s.chr_ram.as_slice());
+                self.chr_mem.hydrate(s.chr_mem);
             },
             _ => panic!("Incompatible mapper state for MMC1 mapper: {:?}", state),
         }
