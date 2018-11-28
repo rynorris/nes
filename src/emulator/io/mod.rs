@@ -8,12 +8,13 @@ use std::f32::consts::PI;
 
 use emulator::apu;
 use emulator::ppu;
+use emulator::state::{SaveState, ScreenState};
 
 pub trait Graphics {
     fn draw_screen(&mut self, pixel_data: &[u8]);
 }
 
-pub struct SimpleVideoOut {
+pub struct Screen {
     scanline: u32,
     dot: u32,
     screen_buffer: [u8; 256 * 240 * 3],
@@ -21,7 +22,7 @@ pub struct SimpleVideoOut {
     double_buffering: bool,
 }
 
-impl ppu::VideoOut for SimpleVideoOut {
+impl ppu::VideoOut for Screen {
     fn emit(&mut self, c: ppu::Colour) {
         let x = self.dot;
         let y = self.scanline;
@@ -43,9 +44,9 @@ impl ppu::VideoOut for SimpleVideoOut {
     }
 }
 
-impl SimpleVideoOut {
-    pub fn new() -> SimpleVideoOut {
-        SimpleVideoOut {
+impl Screen {
+    pub fn new() -> Screen {
+        Screen {
             scanline: 0,
             dot: 0,
             screen_buffer: [0; 256 * 240 * 3],
@@ -61,6 +62,20 @@ impl SimpleVideoOut {
 
     pub fn set_double_buffering(&mut self, on: bool) {
         self.double_buffering = on;
+    }
+}
+
+impl <'de> SaveState<'de, ScreenState> for Screen {
+    fn freeze(&mut self) -> ScreenState {
+        ScreenState {
+            scanline: self.scanline,
+            dot: self.dot,
+        }
+    }
+
+    fn hydrate(&mut self, state: ScreenState) {
+        self.scanline = state.scanline;
+        self.dot = state.dot;
     }
 }
 

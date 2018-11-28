@@ -1,13 +1,8 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use emulator::ines;
-use emulator::io;
-use emulator::io::event::{Event, EventBus, Key};
-use emulator::io::sdl::ImageCapture;
-use emulator::NES;
+use emulator::io::event::{Event, Key};
+use emulator::state::SaveState;
 
 use emulator::test::assert_image;
+use emulator::test::prepare_ete_test;
 use emulator::test::run_for;
 use emulator::test::test_resource_path;
 
@@ -15,22 +10,41 @@ use emulator::test::test_resource_path;
 #[test]
 fn test_nestest_visual() {
     let path = test_resource_path("nestest/nestest.nes");
-    let rom = ines::ROM::load(&path.into_os_string().into_string().unwrap());
-    let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
-    let mut image = ImageCapture::new(output.clone());
-    let audio = io::nop::DummyAudio{};
-    let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);
+    let (mut nes, event_bus, image) = prepare_ete_test(&path);
 
     // Check the menu load.
     run_for(&mut nes, 2_000_000);
-    assert_image(&mut image, test_resource_path("nestest/capture_01_menu.bmp"));
+    assert_image(&image, test_resource_path("nestest/capture_01_menu.bmp"));
 
     // Start tests.
     event_bus.borrow_mut().broadcast(Event::KeyDown(Key::A));
    
     // Wait for tests to finish and check they pass.
     run_for(&mut nes, 7_000_000);
-    assert_image(&mut image, test_resource_path("nestest/capture_02_passed.bmp"));
+    assert_image(&image, test_resource_path("nestest/capture_02_passed.bmp"));
+}
+
+#[test]
+fn test_nestest_savestate() {
+    let path = test_resource_path("nestest/nestest.nes");
+    let (mut nes, event_bus, image) = prepare_ete_test(&path);
+
+    // Check the menu load.
+    run_for(&mut nes, 2_000_000);
+    assert_image(&image, test_resource_path("nestest/capture_01_menu.bmp"));
+
+    // Start tests.
+    event_bus.borrow_mut().broadcast(Event::KeyDown(Key::A));
+
+    // Half way through the tests, save and load state.
+    run_for(&mut nes, 4_000_000);
+    let state = nes.freeze();
+
+    let (mut nes_2, _, image_2) = prepare_ete_test(&path);
+    nes_2.hydrate(state);
+   
+    // Wait for tests to finish and check they pass.
+    run_for(&mut nes_2, 3_000_000);
+    assert_image(&image_2, test_resource_path("nestest/capture_02_passed.bmp"));
 }
 

@@ -17,7 +17,7 @@ use emulator::memory::ReadWriter;
 
 pub const PROGRAM_ROOT: u16 = 0xF000;
 fn new_cpu() -> cpu::CPU {
-    cpu::new(Box::new(memory::RAM::new()))
+    cpu::new(Box::new(memory::Memory::new_ram(0x10000)))
 }
 
 fn load_data(memory: &mut Box<dyn ReadWriter>, addr: u16, bytes: &[u8]) {

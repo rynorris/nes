@@ -18,7 +18,7 @@ fn test_instr_timing_1() {
     let path = test_resource_path("instr_timing/rom_singles/1-instr_timing.nes");
     let rom = ines::ROM::load(&path.into_os_string().into_string().unwrap());
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let output = Rc::new(RefCell::new(io::Screen::new()));
     let mut image = ImageCapture::new(output.clone());
     let audio = io::nop::DummyAudio{};
     let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);

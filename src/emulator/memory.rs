@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::ppu::{Mirrorer, MirrorMode};
+use emulator::state::{MapperState, MemoryState, SaveState};
 
 const ADDRESS_SPACE: usize = 65536;
 
@@ -119,20 +120,20 @@ impl Writer for CPUMemory {
 }
 
 pub struct PPUMemory {
-    chr_rom: Box<dyn ReadWriter>,
+    chr_mem: Box<dyn ReadWriter>,
     mirrorer: Box<dyn Mirrorer>,
     vram: Box<dyn ReadWriter>,
 }
 
 impl PPUMemory {
-    pub fn new(chr_rom: Box<dyn ReadWriter>, mirrorer: Box<dyn Mirrorer>, vram: Box<dyn ReadWriter>) -> PPUMemory {
-        PPUMemory { chr_rom, mirrorer, vram }
+    pub fn new(chr_mem: Box<dyn ReadWriter>, mirrorer: Box<dyn Mirrorer>, vram: Box<dyn ReadWriter>) -> PPUMemory {
+        PPUMemory { chr_mem, mirrorer, vram }
     }
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         // Whole thing is mirrored above $4000.
         match address & 0x3FFF {
-            0x0000 ... 0x1FFF => Some((&mut self.chr_rom, address & 0x3FFF)),
+            0x0000 ... 0x1FFF => Some((&mut self.chr_mem, address & 0x3FFF)),
             0x2000 ... 0x3EFF => {
                 // Nametable and nametable mirrors.
                 // Note that we don't just literally mirror the address horizontally/vertically.
@@ -143,16 +144,16 @@ impl PPUMemory {
                     MirrorMode::Vertical => (address & 0x0400) >> 10,
                     MirrorMode::Horizontal => (address & 0x0800) >> 11,
                 };
-                let mirrored_addr = 0x2000 | (nt_bank << 10) | (address & 0x03FF);
-                Some((&mut self.vram, mirrored_addr & 0x2FFF))
+                let mirrored_addr = (nt_bank << 10) | (address & 0x03FF);
+                Some((&mut self.vram, mirrored_addr & 0x3FFF))
             },
             0x3F00 ... 0x3FFF => {
                 // Palettes and palette mirrors.
                 let mirrored_addr = if address % 4 == 0 {
                     // Colour 0 in sprite palettes is mirrored to the BG palettes.
-                    address & 0x3F0F
+                    address & 0x1F0F
                 } else {
-                    address & 0x3F1F
+                    address & 0x1F1F
                 };
                 Some((&mut self.vram, mirrored_addr))
             },
@@ -173,7 +174,7 @@ impl Writer for PPUMemory {
     }
 }
 
-pub trait Mapper {
+pub trait Mapper: SaveState<'static, MapperState> {
     fn read_chr(&mut self, address: u16) -> u8;
     fn write_chr(&mut self, address: u16, byte: u8);
     fn read_prg(&mut self, address: u16) -> u8;
@@ -205,6 +206,16 @@ impl Mapper for MapperRef {
 
     fn mirror_mode(&self) -> MirrorMode {
         self.borrow().mirror_mode()
+    }
+}
+
+impl SaveState<'static, MapperState> for MapperRef {
+    fn freeze(&mut self) -> MapperState {
+        self.borrow_mut().freeze()
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        self.borrow_mut().hydrate(state);
     }
 }
 
@@ -258,38 +269,77 @@ impl <M : Mapper> Writer for ChrMapper<M> {
     }
 }
 
-pub struct RAM {
-    memory: [u8; ADDRESS_SPACE],
+pub struct Memory {
+    data: Vec<u8>,
+    writeable: bool,
 }
 
-impl Reader for RAM {
-    fn read(&mut self, address: u16) -> u8 {
-        self.memory[address as usize]
-    }
-}
-
-impl Writer for RAM {
-    fn write(&mut self, address: u16, byte: u8) {
-        self.memory[address as usize] = byte
-    }
-}
-
-impl RAM {
-    pub fn new() -> RAM {
-        RAM{
-            memory: [0; ADDRESS_SPACE],
+impl Memory {
+    pub fn new_ram(size: usize) -> Memory {
+        Memory {
+            data: vec![0; size],
+            writeable: true,
         }
+    }
+
+    pub fn new_rom(contents: Vec<u8>) -> Memory {
+        Memory {
+            data: contents,
+            writeable: false,
+        }
+    }
+
+    // These methods used to access data outside the first 64kb.
+    // since Reader/Writer interfaces only allow access to 16bit addresses.
+    pub fn get(&self, address: usize) -> u8 {
+        self.data[address]
+    }
+
+    pub fn put(&mut self, address: usize, byte: u8) {
+        if self.writeable {
+            self.data[address] = byte;
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
     }
 
     pub fn debug_print(&self, start_addr: u16, num_bytes: u16) {
         let end_addr = start_addr - 1 + num_bytes;
-        println!("RAM [{:X}..{:X}]: {:?}", start_addr, end_addr, &self.memory[(start_addr as usize) .. (end_addr as usize)]);
+        println!("Memory [{:X}..{:X}]: {:?}", start_addr, end_addr, &self.data[(start_addr as usize) .. (end_addr as usize)]);
+    }
+}
+
+impl Reader for Memory {
+    fn read(&mut self, address: u16) -> u8 {
+        self.get(address as usize)
+    }
+}
+
+impl Writer for Memory {
+    fn write(&mut self, address: u16, byte: u8) {
+        self.put(address as usize, byte);
+    }
+}
+
+impl <'de> SaveState<'de, MemoryState> for Memory {
+    fn freeze(&mut self) -> MemoryState {
+        MemoryState {
+            data: if self.writeable { self.data.clone() } else { vec![] },
+        }
+    }
+
+    fn hydrate(&mut self, state: MemoryState) {
+        if self.writeable {
+            self.data = state.data.clone();
+        }
     }
 }
 
 #[test]
 fn test_get_and_set() {
-    let mut ram = RAM::new();
+    let mut ram = Memory::new_ram(2048);
     ram.write(1234, 23);
     assert_eq!(ram.read(1234), 23);
 }

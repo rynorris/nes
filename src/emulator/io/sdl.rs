@@ -1,28 +1,26 @@
-extern crate sdl2;
-
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
-use self::sdl2::pixels;
-use self::sdl2::surface;
+use sdl2::pixels;
+use sdl2::surface;
 
-use emulator::io::SimpleVideoOut;
+use emulator::io::Screen;
 
 pub struct ImageCapture {
-    output: Rc<RefCell<SimpleVideoOut>>,
+    screen: Rc<RefCell<Screen>>,
 }
 
 impl ImageCapture {
-    pub fn new(output: Rc<RefCell<SimpleVideoOut>>) -> ImageCapture {
-        let _ = sdl2::init().unwrap();
+    pub fn new(screen: Rc<RefCell<Screen>>) -> ImageCapture {
         ImageCapture {
-            output,
+            screen,
         }
     }
 
-    pub fn save_bmp(&mut self, path: &Path) {
-        self.output.borrow().do_render(|buffer| {
+    // SDL2 must already be initialized when this is called.
+    pub fn save_bmp(&self, path: &Path) {
+        self.screen.borrow().do_render(|buffer| {
             // Make a copy of the data so it doesn't need to be mutable.
             let mut copy = Vec::from(buffer);
             let surface = surface::Surface::from_data(

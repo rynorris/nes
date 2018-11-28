@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::io::SimpleVideoOut;
+use emulator::io::Screen;
 use emulator::apu::debug::APUDebug;
 use emulator::ppu::debug::PPUDebug;
-use ui::sdl2::{pixels, rect, render, video};
+use sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
 
@@ -25,7 +25,7 @@ pub struct Compositor {
     palette_texture: render::Texture,
     waveform_texture: render::Texture,
 
-    nes_output: Rc<RefCell<SimpleVideoOut>>,
+    nes_output: Rc<RefCell<Screen>>,
     ppu_debug: PPUDebug,
     apu_debug: APUDebug,
     debug_mode: DebugMode,
@@ -34,7 +34,7 @@ pub struct Compositor {
 impl Compositor {
     pub fn new(
         video: sdl2::VideoSubsystem,
-        nes_output: Rc<RefCell<SimpleVideoOut>>,
+        nes_output: Rc<RefCell<Screen>>,
         ppu_debug: PPUDebug,
         apu_debug: APUDebug,
     ) -> Compositor {
@@ -124,6 +124,13 @@ impl Compositor {
             DebugMode::APU => self.render_apu_debug(),
             _ => (),
         }
+    }
+
+    pub fn set_window_title(&mut self, title: &str) {
+        match self.canvas.window_mut().set_title(title) {
+            Err(cause) => panic!("failed to set window title: {}", cause),
+            Ok(_) => (),
+        };
     }
 
     pub fn set_debug(&mut self, mode: DebugMode) {

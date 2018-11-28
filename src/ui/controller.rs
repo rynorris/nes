@@ -1,34 +1,40 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fs::File;
 use std::rc::Rc;
 
-use emulator::io::{SimpleAudioOut, SimpleVideoOut};
+use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
+use emulator::state::{load_state, save_state};
 use ui::compositor::DebugMode;
 
 pub struct Controller {
     nes: NES,
-    video_output: Rc<RefCell<SimpleVideoOut>>,
+    rom_name: Option<String>,
+    screen: Rc<RefCell<Screen>>,
     audio_output: Rc<RefCell<SimpleAudioOut>>,
     is_running: bool,
     is_tracing: bool,
     target_hz: u64,
     debug_mode: DebugMode,
+    key_states: HashMap<Key, bool>,
 }
 
 impl Controller {
     pub fn new(nes: NES,
-               video_output: Rc<RefCell<SimpleVideoOut>>,
+               screen: Rc<RefCell<Screen>>,
                audio_output: Rc<RefCell<SimpleAudioOut>>) -> Controller {
         Controller {
             nes,
-            video_output,
+            rom_name: None,
+            screen,
             audio_output,
             is_running: false,
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
             debug_mode: DebugMode::OFF,
+            key_states: HashMap::new(),
         }
     }
 
@@ -38,6 +44,10 @@ impl Controller {
 
     pub fn is_running(&self) -> bool {
         self.is_running
+    }
+
+    pub fn set_rom_name(&mut self, name: &str) {
+        self.rom_name = Some(String::from(name));
     }
 
     pub fn start(&mut self) {
@@ -52,7 +62,7 @@ impl Controller {
 
     pub fn set_target_hz(&mut self, hz: u64) {
         self.target_hz = hz;
-        self.video_output.borrow_mut().set_double_buffering(hz > 200_000);
+        self.screen.borrow_mut().set_double_buffering(hz > 200_000);
         self.audio_output.borrow_mut().set_enabled(hz >= 10_000_000 && hz <= 50_000_000);
     }
 
@@ -83,12 +93,55 @@ impl Controller {
         }
         println!("");
     }
+
+    fn handle_num_key(&mut self, num: u8) {
+        let shift_modifier = *self.key_states.get(&Key::Shift).unwrap_or(&false);
+        let ctrl_modifier = *self.key_states.get(&Key::Control).unwrap_or(&false);
+        let rom_name = match self.rom_name {
+            Some(ref name) => name.clone(),
+            None => String::from("unknown"),
+        };
+        let state_name = format!("{}.{}", rom_name, num);
+
+        if shift_modifier {
+            // Save state.
+            println!("Saving state: {}", state_name);
+            match save_state(&mut self.nes, &state_name) {
+                Err(cause) => println!("Failed to save state: {}", cause),
+                Ok(_) => (),
+            };
+        } else if ctrl_modifier {
+            // Load state.
+            println!("Loading state: {}", state_name);
+            match load_state(&mut self.nes, &state_name) {
+                Err(cause) => println!("Failed to save state: {}", cause),
+                Ok(_) => (),
+            };
+        } else {
+            // Set speed.
+            let target_hz = match num {
+                1 => 0,  // Paused.
+                2 => 20_000,  // Scanlines.
+                3 => 200_000,  // Frames.
+                4 => 2_000_000,  // 1/10 Slow-mo.
+                5 => 10_000_000,  // 1/2 Slow-mo.
+                6 => NES_MASTER_CLOCK_HZ,
+                7 => NES_MASTER_CLOCK_HZ * 2,
+                8 => NES_MASTER_CLOCK_HZ * 3,
+                9 => NES_MASTER_CLOCK_HZ * 4,
+                0 => NES_MASTER_CLOCK_HZ * 5,
+                _ => panic!("Unexpected num key: {}", num),
+            };
+            self.set_target_hz(target_hz);
+        }
+    }
 }
 
 impl EventHandler for Controller {
     fn handle_event(&mut self, event: Event) {
         match event {
             Event::KeyDown(key) => {
+                self.key_states.insert(key, true);
                 match key {
                     Key::Escape => self.is_running = false,
                     Key::Tab => {
@@ -109,21 +162,23 @@ impl EventHandler for Controller {
                         DebugMode::PPU => DebugMode::APU,
                         DebugMode::APU => DebugMode::OFF,
                     },
-                    Key::Num1 => self.set_target_hz(0),  // Paused
-                    Key::Num2 => self.set_target_hz(20_000),  // Scanlines
-                    Key::Num3 => self.set_target_hz(200_000),  // Frames
-                    Key::Num4 => self.set_target_hz(2_000_000),  // 1/10 slow-mo
-                    Key::Num5 => self.set_target_hz(10_000_000),  // 1/2 Slow-mo
-                    Key::Num6 => self.set_target_hz(NES_MASTER_CLOCK_HZ), // Normal
-                    Key::Num7 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 2),  // Fast Forward
-                    Key::Num8 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 3),
-                    Key::Num9 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 4),
-                    Key::Num0 => self.set_target_hz(NES_MASTER_CLOCK_HZ * 5),
+                    Key::Num1 => self.handle_num_key(1),
+                    Key::Num2 => self.handle_num_key(2),
+                    Key::Num3 => self.handle_num_key(3),
+                    Key::Num4 => self.handle_num_key(4),
+                    Key::Num5 => self.handle_num_key(5),
+                    Key::Num6 => self.handle_num_key(6),
+                    Key::Num7 => self.handle_num_key(7),
+                    Key::Num8 => self.handle_num_key(8),
+                    Key::Num9 => self.handle_num_key(9),
+                    Key::Num0 => self.handle_num_key(0),
                     Key::Backspace => self.reset(),
                     _ => (),
                 };
             },
-            _ => (),
+            Event::KeyUp(key) => {
+                self.key_states.insert(key, false);
+            },
         };
     }
 }

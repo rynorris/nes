@@ -1,5 +1,6 @@
-use emulator::memory;
+use emulator::memory::{Mapper, Memory};
 use emulator::ppu::MirrorMode;
+use emulator::state::{MapperState, MMC1State, SaveState};
 
 
 // iNES Mapper 1: MMC1
@@ -7,8 +8,8 @@ use emulator::ppu::MirrorMode;
 // 2 switchable 4k CHR ROM banks.
 // Non-switchable CHR ROM.
 pub struct MMC1 {
-    prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    prg_rom: Memory,
+    chr_mem: Memory,
 
     load_register: u8,
     write_index: u8,
@@ -23,10 +24,10 @@ pub struct MMC1 {
 }
 
 impl MMC1 {
-    pub fn new(prg_rom: Vec<u8>, chr_rom: Vec<u8>) -> MMC1 {
+    pub fn new(prg_rom: Memory, chr_mem: Memory) -> MMC1 {
         let mut mapper = MMC1 {
             prg_rom,
-            chr_rom,
+            chr_mem,
 
             load_register: 0x10,
             write_index: 0,
@@ -89,23 +90,23 @@ impl MMC1 {
     }
 
     fn chr_offset(&self, index: u32) -> u32 {
-        (index % ((self.chr_rom.len() as u32) / 0x1000)) * 0x1000
+        (index % ((self.chr_mem.len() as u32) / 0x1000)) * 0x1000
     }
 }
 
-impl memory::Mapper for MMC1 {
+impl Mapper for MMC1 {
     fn read_chr(&mut self, address: u16) -> u8 {
         let rel = address;
         let bank = rel / 0x1000;
         let offset = rel % 0x1000;
-        self.chr_rom[(self.chr_offsets[bank as usize] + (offset as u32)) as usize]
+        self.chr_mem.get((self.chr_offsets[bank as usize] + (offset as u32)) as usize)
     }
 
     fn write_chr(&mut self, address: u16, byte: u8) {
         let rel = address;
         let bank = rel / 0x1000;
         let offset = rel % 0x1000;
-        self.chr_rom[(self.chr_offsets[bank as usize] + (offset as u32)) as usize] = byte
+        self.chr_mem.put((self.chr_offsets[bank as usize] + (offset as u32)) as usize, byte);
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
@@ -113,7 +114,7 @@ impl memory::Mapper for MMC1 {
         let bank = rel / 0x4000;
         let offset = rel % 0x4000;
         let final_addr = self.prg_offsets[bank as usize] + (offset as u32);
-        self.prg_rom[final_addr as usize]
+        self.prg_rom.get(final_addr as usize)
     }
 
     fn write_prg(&mut self, address: u16, byte: u8) {
@@ -158,6 +159,39 @@ impl memory::Mapper for MMC1 {
             2 => MirrorMode::Vertical,
             3 => MirrorMode::Horizontal,
             _ => panic!("Unexpected mirror control: 0b{:b}", self.control),
+        }
+    }
+}
+
+impl <'de> SaveState<'de, MapperState> for MMC1 {
+    fn freeze(&mut self) -> MapperState {
+        MapperState::MMC1(MMC1State {
+            load_register: self.load_register,
+            write_index: self.write_index,
+            control: self.control,
+            prg_bank: self.prg_bank,
+            chr_bank_1: self.chr_bank_1,
+            chr_bank_2: self.chr_bank_2,
+            prg_offsets: self.prg_offsets.to_vec(),
+            chr_offsets: self.chr_offsets.to_vec(),
+            chr_mem: self.chr_mem.freeze(),
+        })
+    }
+
+    fn hydrate(&mut self, state: MapperState) {
+        match state {
+            MapperState::MMC1(s) => {
+                self.load_register = s.load_register;
+                self.write_index = s.write_index;
+                self.control = s.control;
+                self.prg_bank = s.prg_bank;
+                self.chr_bank_1 = s.chr_bank_1;
+                self.chr_bank_2 = s.chr_bank_2;
+                self.prg_offsets.copy_from_slice(s.prg_offsets.as_slice());
+                self.chr_offsets.copy_from_slice(s.chr_offsets.as_slice());
+                self.chr_mem.hydrate(s.chr_mem);
+            },
+            _ => panic!("Incompatible mapper state for MMC1 mapper: {:?}", state),
         }
     }
 }

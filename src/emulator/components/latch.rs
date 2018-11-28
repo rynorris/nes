@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum State {
     OFF = 0,
     ON = 1,
@@ -26,5 +26,13 @@ impl Latch {
 
     pub fn reset(&mut self) {
         self.state = State::OFF;
+    }
+
+    pub fn as_bool(&self) -> bool {
+        self.state == State::ON
+    }
+
+    pub fn load_bool(&mut self, on: bool) {
+        self.state = if on { State::ON } else { State::OFF };
     }
 }

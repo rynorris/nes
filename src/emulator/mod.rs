@@ -8,6 +8,7 @@ pub mod ines;
 pub mod io;
 pub mod mappers;
 pub mod memory;
+pub mod state;
 pub mod ppu;
 pub mod util;
 
@@ -19,9 +20,10 @@ use std::rc::Rc;
 
 use emulator::apu::AudioOut;
 use emulator::controller::Button;
+use emulator::io::Screen;
 use emulator::io::event::{EventBus, Key};
 use emulator::memory::{IORegisters, Writer};
-use emulator::ppu::VideoOut;
+use emulator::state::{NESState, SaveState};
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.
@@ -38,25 +40,28 @@ pub struct NES {
     pub ppu: Rc<RefCell<ppu::PPU>>,
     pub apu: Rc<RefCell<apu::APU>>,
     pub mapper: Rc<RefCell<memory::Mapper>>,
-    pub ram: Rc<RefCell<memory::RAM>>,
-    pub sram: Rc<RefCell<memory::RAM>>,
-    pub vram: Rc<RefCell<memory::RAM>>,
+    pub ram: Rc<RefCell<memory::Memory>>,
+    pub sram: Rc<RefCell<memory::Memory>>,
+    pub vram: Rc<RefCell<memory::Memory>>,
+    pub screen: Rc<RefCell<Screen>>,
+    pub joy1: Rc<RefCell<controller::Controller>>,
+    pub joy2: Rc<RefCell<controller::Controller>>,
     nmi_pin: bool,
 }
 
 impl NES {
-    pub fn new<V, A>(event_bus: Rc<RefCell<EventBus>>, video: V, audio: A, rom: ines::ROM) -> NES where
-    V: VideoOut + 'static, A: AudioOut + 'static {
+    pub fn new<A>(event_bus: Rc<RefCell<EventBus>>, screen: Rc<RefCell<Screen>>, audio: A, rom: ines::ROM) -> NES where
+    A: AudioOut + 'static {
         // Create master clock.
         let mut clock = clock::Clock::new();
 
         // Load ROM into memory.
-        let mapper = NES::load(rom);
+        let mapper = rom.get_mapper();
 
         // Create RAM modules.
-        let ram = Rc::new(RefCell::new(memory::RAM::new()));
-        let sram = Rc::new(RefCell::new(memory::RAM::new()));
-        let vram = Rc::new(RefCell::new(memory::RAM::new()));
+        let ram = Rc::new(RefCell::new(memory::Memory::new_ram(0x800)));
+        let sram = Rc::new(RefCell::new(memory::Memory::new_ram(0x2000)));
+        let vram = Rc::new(RefCell::new(memory::Memory::new_ram(0x2000)));
 
         // Create graphics output module and PPU.
         let ppu_memory = memory::PPUMemory::new(
@@ -67,7 +72,7 @@ impl NES {
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
                     ppu_memory,
-                    Box::new(video))));
+                    Box::new(screen.clone()))));
 
         // Create APU.
         let apu = Rc::new(RefCell::new(apu::APU::new(
@@ -134,6 +139,9 @@ impl NES {
             ram,
             sram,
             vram,
+            screen,
+            joy1,
+            joy2,
             nmi_pin: false,
         }
     }
@@ -159,22 +167,6 @@ impl NES {
         }
 
         cycles
-    }
-
-    pub fn load(rom: ines::ROM) -> memory::MapperRef {
-        let prg_rom = rom.prg_rom().to_vec();
-        let chr_rom = rom.chr_rom().to_vec();
-        let mirror_mode = rom.mirror_mode();
-
-        match rom.mapper_number() {
-            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_rom, mirror_mode))),
-            1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_rom))),
-            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_rom, mirror_mode))),
-            3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_rom, mirror_mode))),
-            4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_rom))),
-            7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_rom))),
-            _ => panic!("Unknown mapper: {}", rom.mapper_number()),
-        }
     }
 
     pub fn reset(&mut self) {
@@ -224,5 +216,33 @@ impl clock::Ticker for DMAController {
         } else {
             self.cpu.borrow_mut().tick()
         }
+    }
+}
+
+impl <'de> SaveState<'de, NESState> for NES {
+    fn freeze(&mut self) -> NESState {
+        NESState {
+            cpu: self.cpu.borrow_mut().freeze(),
+            ppu: self.ppu.borrow_mut().freeze(),
+            mapper: self.mapper.borrow_mut().freeze(),
+            ram: self.ram.borrow_mut().freeze(),
+            sram: self.sram.borrow_mut().freeze(),
+            vram: self.vram.borrow_mut().freeze(),
+            screen: self.screen.borrow_mut().freeze(),
+            joy1: self.joy1.borrow_mut().freeze(),
+            joy2: self.joy2.borrow_mut().freeze(),
+        }
+    }
+
+    fn hydrate(&mut self, state: NESState) {
+        self.cpu.borrow_mut().hydrate(state.cpu);
+        self.ppu.borrow_mut().hydrate(state.ppu);
+        self.mapper.borrow_mut().hydrate(state.mapper);
+        self.ram.borrow_mut().hydrate(state.ram);
+        self.sram.borrow_mut().hydrate(state.sram);
+        self.vram.borrow_mut().hydrate(state.vram);
+        self.screen.borrow_mut().hydrate(state.screen);
+        self.joy1.borrow_mut().hydrate(state.joy1);
+        self.joy2.borrow_mut().hydrate(state.joy2);
     }
 }

@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use emulator::io::event::{Event, EventBus, Key};
-use ui::sdl2::event;
-use ui::sdl2::keyboard::Keycode;
+use sdl2::event;
+use sdl2::keyboard::Keycode;
 
 // Responsible for collecting SDL events and rebroadcasting them as internal events.
 pub struct InputPump {
@@ -94,6 +94,9 @@ fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
         Keycode::Return => Some(Key::Return),
         Keycode::Tab => Some(Key::Tab),
         Keycode::Space => Some(Key::Space),
+
+        Keycode::LShift => Some(Key::Shift),
+        Keycode::LCtrl => Some(Key::Control),
 
         _ => None
     }

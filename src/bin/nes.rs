@@ -2,6 +2,7 @@ extern crate nes;
 
 use std::cell::RefCell;
 use std::env;
+use std::path::Path;
 use std::rc::Rc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -33,10 +34,14 @@ fn main() {
     // -- Initialize --
 
     let rom = ines::ROM::load(rom_path);
+    let rom_name = Path::new(rom_path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or(String::from("unknown"));
 
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let video_output = Rc::new(RefCell::new(io::SimpleVideoOut::new()));
+    let video_output = Rc::new(RefCell::new(io::Screen::new()));
     let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
 
     let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
@@ -52,6 +57,8 @@ fn main() {
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
+    controller.borrow_mut().set_rom_name(&rom_name);
+    compositor.set_window_title(&format!("[NES] {}", rom_name));
     controller.borrow_mut().start();
     event_bus.borrow_mut().register(Box::new(controller.clone()));
 
