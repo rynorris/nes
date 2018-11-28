@@ -7,9 +7,9 @@ use emulator::ppu::{Colour, Mirrorer, MirrorMode, PPU, VideoOut};
 
 fn new_ppu(output: Box<VideoOut>) -> PPU {
     let ppu_memory = memory::PPUMemory::new(
-        Box::new(memory::RAM::new()),
+        Box::new(memory::Memory::new_ram(0x2000)),
         Box::new(DummyMirrorer{}),
-        Box::new(memory::RAM::new()),
+        Box::new(memory::Memory::new_ram(0x2000)),
     );
     PPU::new(ppu_memory, output)
 }

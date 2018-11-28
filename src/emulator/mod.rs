@@ -40,9 +40,9 @@ pub struct NES {
     pub ppu: Rc<RefCell<ppu::PPU>>,
     pub apu: Rc<RefCell<apu::APU>>,
     pub mapper: Rc<RefCell<memory::Mapper>>,
-    pub ram: Rc<RefCell<memory::RAM>>,
-    pub sram: Rc<RefCell<memory::RAM>>,
-    pub vram: Rc<RefCell<memory::RAM>>,
+    pub ram: Rc<RefCell<memory::Memory>>,
+    pub sram: Rc<RefCell<memory::Memory>>,
+    pub vram: Rc<RefCell<memory::Memory>>,
     pub screen: Rc<RefCell<Screen>>,
     pub joy1: Rc<RefCell<controller::Controller>>,
     pub joy2: Rc<RefCell<controller::Controller>>,
@@ -59,9 +59,9 @@ impl NES {
         let mapper = rom.get_mapper();
 
         // Create RAM modules.
-        let ram = Rc::new(RefCell::new(memory::RAM::new()));
-        let sram = Rc::new(RefCell::new(memory::RAM::new()));
-        let vram = Rc::new(RefCell::new(memory::RAM::new()));
+        let ram = Rc::new(RefCell::new(memory::Memory::new_ram(0x800)));
+        let sram = Rc::new(RefCell::new(memory::Memory::new_ram(0x2000)));
+        let vram = Rc::new(RefCell::new(memory::Memory::new_ram(0x2000)));
 
         // Create graphics output module and PPU.
         let ppu_memory = memory::PPUMemory::new(
@@ -225,9 +225,9 @@ impl <'de> SaveState<'de, NESState> for NES {
             cpu: self.cpu.borrow_mut().freeze(),
             ppu: self.ppu.borrow_mut().freeze(),
             mapper: self.mapper.borrow_mut().freeze(),
-            ram: self.ram.borrow().to_vec(),
-            sram: self.sram.borrow().to_vec(),
-            vram: self.vram.borrow().to_vec(),
+            ram: self.ram.borrow_mut().freeze(),
+            sram: self.sram.borrow_mut().freeze(),
+            vram: self.vram.borrow_mut().freeze(),
             screen: self.screen.borrow_mut().freeze(),
             joy1: self.joy1.borrow_mut().freeze(),
             joy2: self.joy2.borrow_mut().freeze(),
@@ -238,9 +238,9 @@ impl <'de> SaveState<'de, NESState> for NES {
         self.cpu.borrow_mut().hydrate(state.cpu);
         self.ppu.borrow_mut().hydrate(state.ppu);
         self.mapper.borrow_mut().hydrate(state.mapper);
-        self.ram.borrow_mut().load_vec(state.ram);
-        self.sram.borrow_mut().load_vec(state.sram);
-        self.vram.borrow_mut().load_vec(state.vram);
+        self.ram.borrow_mut().hydrate(state.ram);
+        self.sram.borrow_mut().hydrate(state.sram);
+        self.vram.borrow_mut().hydrate(state.vram);
         self.screen.borrow_mut().hydrate(state.screen);
         self.joy1.borrow_mut().hydrate(state.joy1);
         self.joy2.borrow_mut().hydrate(state.joy2);

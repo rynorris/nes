@@ -63,20 +63,18 @@ pub struct NESState {
     pub cpu: CPUState,
     pub ppu: PPUState,
     pub mapper: MapperState,
-
-    #[serde(with = "serde_bytes")]
-    pub ram: Vec<u8>,
-
-    #[serde(with = "serde_bytes")]
-    pub sram: Vec<u8>,
-
-    #[serde(with = "serde_bytes")]
-    pub vram: Vec<u8>,
-
+    pub ram: MemoryState,
+    pub sram: MemoryState,
+    pub vram: MemoryState,
     pub screen: ScreenState,
-
     pub joy1: ControllerState,
     pub joy2: ControllerState,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MemoryState {
+    #[serde(with = "serde_bytes")]
+    pub data: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
