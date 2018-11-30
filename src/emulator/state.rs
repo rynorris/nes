@@ -165,6 +165,7 @@ pub enum MapperState {
     CNROM(CNROMState),
     MMC3(MMC3State),
     AXROM(AXROMState),
+    ColorDreams(ColorDreamsState),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -213,5 +214,12 @@ pub struct MMC3State {
 pub struct AXROMState {
     pub mirror_mode: MirrorMode,
     pub prg_bank: u8,
+    pub chr_mem: MemoryState,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ColorDreamsState {
+    pub prg_bank: u8,
+    pub chr_bank: u8,
     pub chr_mem: MemoryState,
 }

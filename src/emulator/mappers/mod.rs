@@ -23,3 +23,7 @@ pub use self::mmc3::MMC3;
 // #7 AxROM
 mod axrom;
 pub use self::axrom::AXROM;
+
+// #11 ColorDreams
+mod color_dreams;
+pub use self::color_dreams::ColorDreams;
