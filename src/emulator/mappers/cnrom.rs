@@ -4,7 +4,7 @@ use emulator::state::{CNROMState, MapperState, SaveState};
 
 // iNES Mapper 3: CNROM
 // Non-switchable PRG ROM, mirrorred to fill the space.
-// Up to 4 switchable 2kb CHR ROM banks.
+// Up to 4 switchable 8kb CHR banks.
 pub struct CNROM {
     prg_rom: Memory,
     chr_mem: Memory,

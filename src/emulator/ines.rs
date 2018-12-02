@@ -84,6 +84,7 @@ impl ROM {
             3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_mem, mirror_mode))),
             4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_mem))),
             7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_mem))),
+            11 => Rc::new(RefCell::new(mappers::ColorDreams::new(prg_rom, chr_mem, mirror_mode))),
             _ => panic!("Unknown mapper: {}", self.mapper_number()),
         }
     }
