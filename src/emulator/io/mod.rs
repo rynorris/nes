@@ -9,6 +9,7 @@ use std::f32::consts::PI;
 use emulator::apu;
 use emulator::ppu;
 use emulator::state::{SaveState, ScreenState};
+use emulator::NES_APU_CLOCK_FACTOR;
 
 pub trait Graphics {
     fn draw_screen(&mut self, pixel_data: &[u8]);
@@ -326,16 +327,21 @@ impl SimpleAudioOut {
         }
     }
 
-    pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, num_samples: usize, consume: F) {
+    // master_cycles indicates the number of master clock cycles which have elapsed.
+    // num_samples indicates how many samples we should output that into.
+    pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, master_cycles: u64, num_samples: u64, consume: F) {
         if self.buffer.len() == 0 || num_samples == 0 || !self.enabled {
+            self.buffer.clear();
             return;
         }
 
-        let mut buf = Vec::with_capacity(num_samples);
+        let mut buf = Vec::with_capacity(num_samples as usize);
 
         // Need to downsample all the samples we collected this frame.
         let total = self.buffer.len();
-        let step = (total as f32) / (num_samples as f32);
+        let apu_cycles = master_cycles / (NES_APU_CLOCK_FACTOR as u64);
+        let step = (apu_cycles as f64) / (num_samples as f64);
+
         let mut counter = 0.0;
         for ix in 0 .. total {
             self.fir_filter.shift(self.buffer[ix]);

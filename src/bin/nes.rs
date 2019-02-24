@@ -107,7 +107,7 @@ fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, a
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
-        audio_queue.flush();
+        audio_queue.flush(target_cycles_this_frame);
         compositor.set_debug(controller.borrow().debug_mode());
         compositor.render();
         input.pump();

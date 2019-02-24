@@ -35,11 +35,11 @@ impl AudioQueue {
         }
     }
 
-    pub fn flush(&mut self) {
+    pub fn flush(&mut self, master_cycles: u64) {
         let mut output = self.output.borrow_mut();
         let queue = &mut self.queue;
         let request_samples = SAMPLE_RATE / (RENDER_FPS as f32);
-        output.consume(request_samples as usize, |data| {
+        output.consume(master_cycles, request_samples as u64, |data| {
             queue.queue(&data);
         });
     }
