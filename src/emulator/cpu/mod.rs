@@ -102,13 +102,15 @@ pub fn new(memory: Box<ReadWriter>) -> CPU {
 impl clock::Ticker for CPU {
     #[inline]
     fn tick(&mut self) -> u32 {
-        return if self.should_non_maskable_interrupt() {
+        let instr_cycles = self.execute_next_instruction();
+        let irq_cycles =  if self.should_non_maskable_interrupt() {
             self.non_maskable_interrupt()
         } else if self.should_interrupt() {
             self.interrupt()
         } else {
-            self.execute_next_instruction()
-        }
+            0
+        };
+        instr_cycles + irq_cycles
     }
 }
 
