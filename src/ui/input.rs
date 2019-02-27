@@ -1,21 +1,19 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use emulator::io::event::{Event, EventBus, Key};
+use emulator::components::portal::Portal;
+use emulator::io::event::{Event, Key};
 use sdl2::event;
 use sdl2::keyboard::Keycode;
 
 // Responsible for collecting SDL events and rebroadcasting them as internal events.
 pub struct InputPump {
     event_pump: sdl2::EventPump,
-    event_bus: Rc<RefCell<EventBus>>,
+    events: Portal<Vec<Event>>,
 }
 
 impl InputPump {
-    pub fn new(event_pump: sdl2::EventPump, event_bus: Rc<RefCell<EventBus>>) -> InputPump {
+    pub fn new(event_pump: sdl2::EventPump, events: Portal<Vec<Event>>) -> InputPump {
         InputPump {
             event_pump,
-            event_bus,
+            events,
         }
     }
 
@@ -24,7 +22,9 @@ impl InputPump {
             let internal_event = convert_sdl_event_to_internal(e);
 
             if let Some(e) = internal_event {
-                self.event_bus.borrow_mut().broadcast(e);
+                self.events.consume(|portal| {
+                    portal.push(e);
+                });
             }
         }
     }

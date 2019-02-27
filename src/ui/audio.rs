@@ -1,21 +1,17 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use emulator::components::portal::Portal;
 
-use emulator::io::SimpleAudioOut;
-
-use ui::RENDER_FPS;
 use sdl2::audio;
 
 pub const SAMPLE_RATE: f32 = 48_000.0;
 
 pub struct AudioQueue {
-    output: Rc<RefCell<SimpleAudioOut>>,
+    output: Portal<Vec<f32>>,
     queue: audio::AudioQueue<f32>,
 }
 
 impl AudioQueue {
 
-    pub fn new(audio: sdl2::AudioSubsystem, output: Rc<RefCell<SimpleAudioOut>>) -> AudioQueue {
+    pub fn new(audio: sdl2::AudioSubsystem, output: Portal<Vec<f32>>) -> AudioQueue {
         let spec = audio::AudioSpecDesired {
             freq: Some(SAMPLE_RATE as i32),
             channels: Some(1),
@@ -36,11 +32,10 @@ impl AudioQueue {
     }
 
     pub fn flush(&mut self) {
-        let mut output = self.output.borrow_mut();
         let queue = &mut self.queue;
-        let request_samples = SAMPLE_RATE / (RENDER_FPS as f32);
-        output.consume(request_samples as usize, |data| {
+        self.output.consume(|data| {
             queue.queue(&data);
+            data.clear();
         });
     }
 
