@@ -129,7 +129,6 @@ pub struct PPUState {
 
     pub scanline: u16,
     pub cycle: u16,
-    pub is_odd_frame: bool,
     pub tmp_pattern_coords: u8,
     pub tmp_attribute_byte: u8,
     pub tmp_oam_byte: u8,
