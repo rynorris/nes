@@ -1,16 +1,12 @@
 use emulator::components::portal::Portal;
 use emulator::apu::debug::APUDebug;
-use emulator::ppu::debug::PPUDebug;
+use emulator::ppu::debug::{PPUDebug, PPUDebugRender};
+
+use ui::controller::DebugMode;
+
 use sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
-
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub enum DebugMode {
-    OFF,
-    PPU,
-    APU,
-}
 
 pub struct Compositor {
     canvas: render::Canvas<video::Window>,
@@ -23,7 +19,7 @@ pub struct Compositor {
     waveform_texture: render::Texture,
 
     nes_output: Portal<Box<[u8]>>,
-    ppu_debug: PPUDebug,
+    ppu_debug: Portal<Option<PPUDebugRender>>,
     apu_debug: APUDebug,
     debug_mode: DebugMode,
 }
@@ -32,7 +28,7 @@ impl Compositor {
     pub fn new(
         video: sdl2::VideoSubsystem,
         nes_output: Portal<Box<[u8]>>,
-        ppu_debug: PPUDebug,
+        ppu_debug: Portal<Option<PPUDebugRender>>,
         apu_debug: APUDebug,
     ) -> Compositor {
         let mut main_window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
@@ -159,11 +155,16 @@ impl Compositor {
         let sprite_texture = &mut self.sprite_texture;
         let palette_texture = &mut self.palette_texture;
 
-        self.ppu_debug.do_render(|buffers| {
-            pattern_texture.update(None, &buffers.patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap();
-            nametable_texture.update(None, &buffers.nametables, PPUDebug::NAMETABLE_WIDTH * 3).unwrap();
-            sprite_texture.update(None, &buffers.sprites, PPUDebug::SPRITE_WIDTH * 3).unwrap();
-            palette_texture.update(None, &buffers.palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap();
+        self.ppu_debug.consume(|maybe_buffers| {
+            match maybe_buffers {
+                Some(buffers) => {
+                    pattern_texture.update(None, &buffers.patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap();
+                    nametable_texture.update(None, &buffers.nametables, PPUDebug::NAMETABLE_WIDTH * 3).unwrap();
+                    sprite_texture.update(None, &buffers.sprites, PPUDebug::SPRITE_WIDTH * 3).unwrap();
+                    palette_texture.update(None, &buffers.palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap();
+                },
+                None => ()
+            }
         });
 
         let _ = self.debug_canvas.copy(&pattern_texture, None, rect::Rect::new(0, 0, 256, 128));

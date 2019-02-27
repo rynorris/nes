@@ -7,7 +7,13 @@ use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
 use emulator::state::{load_state, save_state};
-use ui::compositor::DebugMode;
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum DebugMode {
+    OFF,
+    PPU,
+    APU,
+}
 
 pub struct Controller {
     nes: NES,

@@ -10,6 +10,7 @@ pub struct PPUDebug {
     ppu: Rc<RefCell<PPU>>,
 }
 
+#[derive(Clone)]
 pub struct PPUDebugRender {
     pub patterns: [u8; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
     pub nametables: [u8; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],

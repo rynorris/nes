@@ -13,11 +13,11 @@ use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::EventBus;
 use nes::emulator::apu::debug::APUDebug;
-use nes::emulator::ppu::debug::PPUDebug;
+use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
 
 use nes::ui::RENDER_FPS;
 use nes::ui::audio::{AudioQueue, SAMPLE_RATE};
-use nes::ui::controller::Controller;
+use nes::ui::controller::{Controller, DebugMode};
 use nes::ui::compositor::Compositor;
 use nes::ui::input::InputPump;
 
@@ -54,9 +54,10 @@ fn main() {
     let audio = sdl_context.audio().unwrap();
 
     let video_portal = Portal::new(vec![0; 256 * 240 * 3].into_boxed_slice());
+    let ppu_debug_portal: Portal<Option<PPUDebugRender>> = Portal::new(Option::None);
 
     let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone(), audio_output.clone())));
-    let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug, apu_debug);
+    let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug_portal.clone(), apu_debug);
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
@@ -67,7 +68,15 @@ fn main() {
 
     // -- Run --
     let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        main_loop(controller.clone(), video_output.clone(), video_portal.clone(), &mut compositor, &mut audio_queue, &mut input);
+        main_loop(
+            controller.clone(),
+            video_output.clone(),
+            video_portal.clone(),
+            ppu_debug,
+            ppu_debug_portal.clone(),
+            &mut compositor,
+            &mut audio_queue,
+            &mut input);
     }));
 
     match res {
@@ -83,6 +92,8 @@ fn main_loop(
     controller: Rc<RefCell<Controller>>,
     video_output: Rc<RefCell<io::Screen>>,
     video_portal: Portal<Box<[u8]>>,
+    mut ppu_debug: PPUDebug,
+    ppu_debug_portal: Portal<Option<PPUDebugRender>>,
     compositor: &mut Compositor,
     audio_queue: &mut AudioQueue,
     input: &mut InputPump) {
@@ -120,13 +131,22 @@ fn main_loop(
         audio_queue.flush();
         compositor.set_debug(controller.borrow().debug_mode());
 
+        // Drive rendering.
         video_output.borrow().do_render(|data| {
-            video_portal.consume(|video| {
-                for (tgt, src) in video.iter_mut().zip(data.iter()) {
-                    *tgt = *src;
-                }
+            video_portal.consume(|portal| {
+                copy_buffer(data, portal);
             });
         });
+
+        match controller.borrow().debug_mode() {
+            DebugMode::PPU => ppu_debug.do_render(|buffers| {
+                ppu_debug_portal.consume(|portal| {
+                    portal.replace(buffers);
+                });
+            }),
+            DebugMode::APU => (),
+            _ => (),
+        }
 
         compositor.render();
         input.pump();
@@ -172,3 +192,8 @@ fn main_loop(
     }
 }
 
+fn copy_buffer(src_buf: &[u8], tgt_buf:  &mut [u8]) {
+    for (tgt, src) in tgt_buf.iter_mut().zip(src_buf.iter()) {
+        *tgt = *src;
+    }
+}
