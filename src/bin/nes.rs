@@ -206,7 +206,7 @@ fn main_loop(
         }
 
         let request_samples = SAMPLE_RATE / (RENDER_FPS as f32);
-        audio_output.borrow_mut().consume(target_frame_cycles, request_samples as usize, |data| {
+        audio_output.borrow_mut().consume(target_frame_cycles, request_samples as u64, |data| {
             audio_portal.consume(|portal| {
                 portal.extend_from_slice(data);
             });
