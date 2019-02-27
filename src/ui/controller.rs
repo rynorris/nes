@@ -3,16 +3,36 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::rc::Rc;
 
+use emulator::components::portal::Portal;
 use emulator::io::{SimpleAudioOut, Screen};
 use emulator::io::event::{Event, EventHandler, Key};
 use emulator::{NES, NES_MASTER_CLOCK_HZ};
 use emulator::state::{load_state, save_state};
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DebugMode {
     OFF,
     PPU,
     APU,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EmulatorState {
+    pub is_running: bool,
+    pub is_tracing: bool,
+    pub target_hz: u64,
+    pub debug_mode: DebugMode,
+}
+
+impl EmulatorState {
+    pub fn new() -> EmulatorState {
+        EmulatorState {
+            is_running: true,
+            is_tracing: false,
+            target_hz: NES_MASTER_CLOCK_HZ,
+            debug_mode: DebugMode::OFF,
+        }
+    }
 }
 
 pub struct Controller {
@@ -20,27 +40,22 @@ pub struct Controller {
     rom_name: Option<String>,
     screen: Rc<RefCell<Screen>>,
     audio_output: Rc<RefCell<SimpleAudioOut>>,
-    is_running: bool,
-    is_tracing: bool,
-    target_hz: u64,
-    debug_mode: DebugMode,
     key_states: HashMap<Key, bool>,
+    state_portal: Portal<EmulatorState>,
 }
 
 impl Controller {
     pub fn new(nes: NES,
                screen: Rc<RefCell<Screen>>,
-               audio_output: Rc<RefCell<SimpleAudioOut>>) -> Controller {
+               audio_output: Rc<RefCell<SimpleAudioOut>>,
+               state_portal: Portal<EmulatorState>) -> Controller {
         Controller {
             nes,
             rom_name: None,
             screen,
             audio_output,
-            is_running: false,
-            is_tracing: false,
-            target_hz: NES_MASTER_CLOCK_HZ,
-            debug_mode: DebugMode::OFF,
             key_states: HashMap::new(),
+            state_portal,
         }
     }
 
@@ -49,7 +64,15 @@ impl Controller {
     }
 
     pub fn is_running(&self) -> bool {
-        self.is_running
+        self.state_portal.consume(|state| state.is_running)
+    }
+
+    pub fn is_tracing(&self) -> bool {
+        self.state_portal.consume(|state| state.is_tracing)
+    }
+
+    pub fn set_tracing(&self, on: bool) {
+        self.state_portal.consume(|state| state.is_tracing = on)
     }
 
     pub fn set_rom_name(&mut self, name: &str) {
@@ -57,9 +80,17 @@ impl Controller {
     }
 
     pub fn start(&mut self) {
-        self.is_running = true;
-        self.is_tracing = true;
+        self.state_portal.consume(|state| {
+            state.is_running = true;
+            state.is_tracing = true;
+        });
         self.nes.cpu.borrow_mut().start_tracing();
+    }
+
+    pub fn stop(&mut self) {
+        self.state_portal.consume(|state| {
+            state.is_running = false;
+        });
     }
 
     pub fn reset(&mut self) {
@@ -67,21 +98,31 @@ impl Controller {
     }
 
     pub fn set_target_hz(&mut self, hz: u64) {
-        self.target_hz = hz;
+        self.state_portal.consume(|state| state.target_hz = hz);
         self.screen.borrow_mut().set_double_buffering(hz > 200_000);
         self.audio_output.borrow_mut().set_enabled(hz >= 10_000_000 && hz <= 50_000_000);
     }
 
     pub fn target_hz(&self) -> u64 {
-        self.target_hz
+        self.state_portal.consume(|state| state.target_hz)
     }
 
     pub fn debug_mode(&self) -> DebugMode {
-        self.debug_mode
+        self.state_portal.consume(|state| state.debug_mode)
+    }
+
+    pub fn cycle_debug_mode(&self) {
+        self.state_portal.consume(|state| {
+            state.debug_mode = match state.debug_mode {
+                DebugMode::OFF => DebugMode::PPU,
+                DebugMode::PPU => DebugMode::APU,
+                DebugMode::APU => DebugMode::OFF,
+            };
+        });
     }
 
     pub fn dump_trace(&mut self) {
-        if self.is_tracing {
+        if self.is_tracing() {
             println!("Flushing CPU trace buffer to ./cpu.trace");
             let mut trace_file = match File::create("./cpu.trace") {
                 Err(_) => panic!("Couldn't open trace file"),
@@ -149,25 +190,21 @@ impl EventHandler for Controller {
             Event::KeyDown(key) => {
                 self.key_states.insert(key, true);
                 match key {
-                    Key::Escape => self.is_running = false,
+                    Key::Escape => self.stop(),
                     Key::Tab => {
-                        if self.is_tracing {
+                        if self.is_tracing() {
                             self.nes.cpu.borrow_mut().stop_tracing();
-                            self.is_tracing = false;
+                            self.set_tracing(false);
                         } else {
-                            self.is_tracing = true;
+                            self.set_tracing(true);
                             self.nes.cpu.borrow_mut().start_tracing();
                         }
-                        println!("CPU Tracing: {}", if self.is_tracing { "ON" } else { "OFF" });
+                        println!("CPU Tracing: {}", if self.is_tracing() { "ON" } else { "OFF" });
                     },
                     Key::Return => {
                         self.dump_trace();
                     }
-                    Key::Backquote => self.debug_mode = match self.debug_mode {
-                        DebugMode::OFF => DebugMode::PPU,
-                        DebugMode::PPU => DebugMode::APU,
-                        DebugMode::APU => DebugMode::OFF,
-                    },
+                    Key::Backquote => self.cycle_debug_mode(),
                     Key::Num1 => self.handle_num_key(1),
                     Key::Num2 => self.handle_num_key(2),
                     Key::Num3 => self.handle_num_key(3),

@@ -12,9 +12,9 @@ impl <T> Portal<T> {
         }
     }
 
-    pub fn consume<F : FnOnce(&mut T) -> ()>(&self, action: F) {
+    pub fn consume<S, F : FnOnce(&mut T) -> S>(&self, action: F) -> S {
         let mut v = self.value.lock().expect("Could not lock mutex");
-        action(&mut *v);
+        action(&mut *v)
     }
 }
 

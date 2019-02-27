@@ -17,7 +17,7 @@ use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
 
 use nes::ui::RENDER_FPS;
 use nes::ui::audio::{AudioQueue, SAMPLE_RATE};
-use nes::ui::controller::{Controller, DebugMode};
+use nes::ui::controller::{Controller, DebugMode, EmulatorState};
 use nes::ui::compositor::Compositor;
 use nes::ui::input::InputPump;
 
@@ -40,14 +40,7 @@ fn main() {
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or(String::from("unknown"));
 
-    let event_bus = Rc::new(RefCell::new(EventBus::new()));
 
-    let video_output = Rc::new(RefCell::new(io::Screen::new()));
-    let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
-
-    let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
-    let ppu_debug = PPUDebug::new(nes.ppu.clone());
-    let apu_debug = APUDebug::new(nes.apu.clone());
 
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
@@ -59,20 +52,35 @@ fn main() {
     let audio_portal = Portal::new(Vec::new());
     let event_portal = Portal::new(Vec::new());
 
-    let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone(), audio_output.clone())));
     let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug_portal.clone(), apu_debug_portal.clone());
     let mut audio_queue = AudioQueue::new(audio, audio_portal.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_portal.clone());
 
-    controller.borrow_mut().set_rom_name(&rom_name);
     compositor.set_window_title(&format!("[NES] {}", rom_name));
-    controller.borrow_mut().start();
-    event_bus.borrow_mut().register(Box::new(controller.clone()));
+
+    let state = Portal::new(EmulatorState::new());
+    let emu_state = state.clone();
 
     // -- Run --
-    let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let _ = std::thread::spawn(std::panic::AssertUnwindSafe(move || {
+        let event_bus = Rc::new(RefCell::new(EventBus::new()));
+        let video_output = Rc::new(RefCell::new(io::Screen::new()));
+        let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
+
+        let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
+        let ppu_debug = PPUDebug::new(nes.ppu.clone());
+        let apu_debug = APUDebug::new(nes.apu.clone());
+
+        let controller = Rc::new(RefCell::new(Controller::new(
+                    nes,
+                    video_output.clone(),
+                    audio_output.clone(),
+                    emu_state)));
+        controller.borrow_mut().set_rom_name(&rom_name);
+        controller.borrow_mut().start();
+        event_bus.borrow_mut().register(Box::new(controller.clone()));
         main_loop(
-            controller.clone(),
+            controller,
             video_output.clone(),
             video_portal.clone(),
             ppu_debug,
@@ -82,18 +90,32 @@ fn main() {
             audio_output.clone(),
             audio_portal.clone(),
             event_bus.clone(),
-            event_portal.clone(),
-            &mut compositor,
-            &mut audio_queue,
-            &mut input);
+            event_portal.clone());
     }));
 
-    match res {
+    let ui_res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        ui_loop(&mut compositor, &mut audio_queue, &mut input, state.clone());
+    }));
+
+
+    match ui_res {
         Ok(_) => (),
         Err(_) => {
-            controller.borrow_mut().dump_trace();
             println!("Panic in main loop.  Exiting.");
         },
+    }
+}
+
+fn ui_loop(
+    compositor: &mut Compositor,
+    audio_queue: &mut AudioQueue,
+    input: &mut InputPump,
+    state_portal: Portal<EmulatorState>) {
+
+    while state_portal.consume(|state| state.is_running) {
+        audio_queue.flush();
+        compositor.render();
+        input.pump();
     }
 }
 
@@ -109,9 +131,7 @@ fn main_loop(
     audio_portal: Portal<Vec<f32>>,
     event_bus: Rc<RefCell<EventBus>>,
     event_portal: Portal<Vec<Event>>,
-    compositor: &mut Compositor,
-    audio_queue: &mut AudioQueue,
-    input: &mut InputPump) {
+    ) {
 
     let started_instant = Instant::now();
     let frames_per_second = RENDER_FPS;
@@ -132,6 +152,10 @@ fn main_loop(
         let target_cycles_this_frame = target_frame_cycles.saturating_sub(overwork_cycles);
         let mut frame_ns = 0;
 
+        event_portal.consume(|events| {
+            events.drain(..).for_each(|e| event_bus.borrow_mut().broadcast(e));
+        });
+
         while cycles_this_frame < target_cycles_this_frame && frame_ns < target_ns_this_frame {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
@@ -143,8 +167,7 @@ fn main_loop(
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
-        audio_queue.flush();
-        compositor.set_debug(controller.borrow().debug_mode());
+        //compositor.set_debug(controller.borrow().debug_mode());
 
         // Drive rendering.
         video_output.borrow().do_render(|data| {
@@ -176,13 +199,6 @@ fn main_loop(
             });
         });
 
-        compositor.render();
-        input.pump();
-
-        event_portal.consume(|events| {
-            events.drain(..).for_each(|e| event_bus.borrow_mut().broadcast(e));
-        });
-
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
         if frame_ns < target_ns_this_frame {
             let render_end = Instant::now();
@@ -210,13 +226,12 @@ fn main_loop(
             let current_hz = (agg_cycles * 1_000_000_000) / agg_ns;
 
             println!(
-                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.  Audio queue: {}",
+                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.",
                 (target_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / 1_000_000f64,
                 (current_hz as f64) / (NES_MASTER_CLOCK_HZ as f64),
                 agg_ns,
                 agg_cycles,
-                audio_queue.size(),
             );
 
             agg_cycles = 0;
