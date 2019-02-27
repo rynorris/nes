@@ -47,7 +47,7 @@ fn main() {
     let audio = sdl_context.audio().unwrap();
 
     let video_portal = Portal::new(vec![0; 256 * 240 * 3].into_boxed_slice());
-    let ppu_debug_portal: Portal<Option<PPUDebugRender>> = Portal::new(Option::None);
+    let ppu_debug_portal: Portal<PPUDebugRender> = Portal::new(PPUDebugRender::new());
     let apu_debug_portal = Portal::new(vec![0; APUDebug::WAVEFORM_WIDTH * APUDebug::WAVEFORM_HEIGHT * 3].into_boxed_slice());
     let audio_portal = Portal::new(Vec::new());
     let event_portal = Portal::new(Vec::new());
@@ -116,6 +116,8 @@ fn ui_loop(
         audio_queue.flush();
         compositor.render();
         input.pump();
+        compositor.set_debug(state_portal.consume(|state| state.debug_mode));
+        thread::sleep(Duration::from_nanos(1000000));
     }
 }
 
@@ -124,7 +126,7 @@ fn main_loop(
     video_output: Rc<RefCell<io::Screen>>,
     video_portal: Portal<Box<[u8]>>,
     mut ppu_debug: PPUDebug,
-    ppu_debug_portal: Portal<Option<PPUDebugRender>>,
+    ppu_debug_portal: Portal<PPUDebugRender>,
     mut apu_debug: APUDebug,
     apu_debug_portal: Portal<Box<[u8]>>,
     audio_output: Rc<RefCell<io::SimpleAudioOut>>,
@@ -167,8 +169,6 @@ fn main_loop(
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
 
-        //compositor.set_debug(controller.borrow().debug_mode());
-
         // Drive rendering.
         video_output.borrow().do_render(|data| {
             video_portal.consume(|portal| {
@@ -179,7 +179,10 @@ fn main_loop(
         match controller.borrow().debug_mode() {
             DebugMode::PPU => ppu_debug.do_render(|buffers| {
                 ppu_debug_portal.consume(|portal| {
-                    portal.replace(buffers);
+                    copy_buffer(&buffers.patterns, &mut portal.patterns);
+                    copy_buffer(&buffers.nametables, &mut portal.nametables);
+                    copy_buffer(&buffers.sprites, &mut portal.sprites);
+                    copy_buffer(&buffers.palettes, &mut portal.palettes);
                 });
             }),
             DebugMode::APU => {

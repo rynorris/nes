@@ -30,7 +30,7 @@ impl EmulatorState {
             is_running: true,
             is_tracing: false,
             target_hz: NES_MASTER_CLOCK_HZ,
-            debug_mode: DebugMode::OFF,
+            debug_mode: DebugMode::APU,
         }
     }
 }

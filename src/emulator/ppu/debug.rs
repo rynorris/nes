@@ -19,7 +19,7 @@ pub struct PPUDebugRender {
 }
 
 impl PPUDebugRender {
-    fn new() -> PPUDebugRender {
+    pub fn new() -> PPUDebugRender {
         PPUDebugRender {
             patterns: [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
             nametables: [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
@@ -46,7 +46,7 @@ impl PPUDebug {
     }
 
     pub fn do_render<F>(&mut self, render: F) where
-        F : FnOnce(PPUDebugRender) -> () {
+        F : FnOnce(&PPUDebugRender) -> () {
 
         let mut pattern_tables = [0; 0x2000];
         self.hydrate_pattern_tables(&mut pattern_tables);
@@ -58,7 +58,7 @@ impl PPUDebug {
         PPUDebug::fill_sprite_buffer(self.ppu.clone(), &mut buffers.sprites, &pattern_tables);
         PPUDebug::fill_palette_buffer(self.ppu.clone(), &mut buffers.palettes);
 
-        render(buffers);
+        render(&buffers);
     }
 
     fn hydrate_pattern_tables(&mut self, target: &mut[u8]) {
