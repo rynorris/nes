@@ -178,7 +178,7 @@ fn main_loop(
             let frame_time = frame_start.elapsed();
             frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
         }
-
+      
         // Drive rendering.
         video_output.borrow().do_render(|data| {
             video_portal.consume(|portal| {
@@ -206,7 +206,7 @@ fn main_loop(
         }
 
         let request_samples = SAMPLE_RATE / (RENDER_FPS as f32);
-        audio_output.borrow_mut().consume(request_samples as usize, |data| {
+        audio_output.borrow_mut().consume(target_frame_cycles, request_samples as u64, |data| {
             audio_portal.consume(|portal| {
                 portal.extend_from_slice(data);
             });
