@@ -30,9 +30,9 @@ use emulator::state::{NESState, SaveState};
 // CPU clock = 12 master clocks.
 // PPU clock = 4 master clocks.
 pub const NES_MASTER_CLOCK_HZ: u64 = 21_477_272;
-const NES_CPU_CLOCK_FACTOR: u32 = 12;
-const NES_APU_CLOCK_FACTOR: u32 = 24;
-const NES_PPU_CLOCK_FACTOR: u32 = 4;
+pub const NES_CPU_CLOCK_FACTOR: u32 = 12;
+pub const NES_APU_CLOCK_FACTOR: u32 = 24;
+pub const NES_PPU_CLOCK_FACTOR: u32 = 4;
 
 pub struct NES {
     clock: clock::Clock,
