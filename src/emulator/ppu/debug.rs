@@ -10,6 +10,24 @@ pub struct PPUDebug {
     ppu: Rc<RefCell<PPU>>,
 }
 
+pub struct PPUDebugRender {
+    pub patterns: [u8; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
+    pub nametables: [u8; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
+    pub sprites: [u8; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3],
+    pub palettes: [u8; PPUDebug::PALETTE_WIDTH * PPUDebug::PALETTE_HEIGHT * 3],
+}
+
+impl PPUDebugRender {
+    fn new() -> PPUDebugRender {
+        PPUDebugRender {
+            patterns: [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3],
+            nametables: [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3],
+            sprites: [0; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3],
+            palettes: [0; PPUDebug::PALETTE_WIDTH * PPUDebug::PALETTE_HEIGHT * 3],
+        }
+    }
+}
+
 impl PPUDebug {
     pub const PATTERN_WIDTH: usize = 256;
     pub const PATTERN_HEIGHT: usize = 128;
@@ -26,28 +44,20 @@ impl PPUDebug {
         }
     }
 
-    pub fn do_render<F, G, H, I>(&mut self, render_pattern: F, render_nametable: G, render_sprites: H, render_palette: I) where
-        F : FnOnce(&[u8]) -> (),
-        G : FnOnce(&[u8]) -> (),
-        H : FnOnce(&[u8]) -> (),
-        I : FnOnce(&[u8]) -> () {
+    pub fn do_render<F>(&mut self, render: F) where
+        F : FnOnce(PPUDebugRender) -> () {
 
         let mut pattern_tables = [0; 0x2000];
         self.hydrate_pattern_tables(&mut pattern_tables);
 
-        let mut pattern_buffer = [0; PPUDebug::PATTERN_WIDTH * PPUDebug::PATTERN_HEIGHT * 3];
-        let mut nametable_buffer = [0; PPUDebug::NAMETABLE_WIDTH * PPUDebug::NAMETABLE_HEIGHT * 3];
-        let mut sprite_buffer = [0; PPUDebug::SPRITE_WIDTH * PPUDebug::SPRITE_HEIGHT * 3];
-        let mut palette_buffer = [0; PPUDebug::PALETTE_WIDTH * PPUDebug::PALETTE_HEIGHT * 3];
+        let mut buffers = PPUDebugRender::new();
 
-        PPUDebug::fill_pattern_buffer(&mut pattern_buffer, &pattern_tables);
-        PPUDebug::fill_nametable_buffer(self.ppu.clone(), &mut nametable_buffer, &pattern_tables);
-        PPUDebug::fill_sprite_buffer(self.ppu.clone(), &mut sprite_buffer, &pattern_tables);
-        PPUDebug::fill_palette_buffer(self.ppu.clone(), &mut palette_buffer);
-        render_pattern(&pattern_buffer);
-        render_nametable(&nametable_buffer);
-        render_sprites(&sprite_buffer);
-        render_palette(&palette_buffer);
+        PPUDebug::fill_pattern_buffer(&mut buffers.patterns, &pattern_tables);
+        PPUDebug::fill_nametable_buffer(self.ppu.clone(), &mut buffers.nametables, &pattern_tables);
+        PPUDebug::fill_sprite_buffer(self.ppu.clone(), &mut buffers.sprites, &pattern_tables);
+        PPUDebug::fill_palette_buffer(self.ppu.clone(), &mut buffers.palettes);
+
+        render(buffers);
     }
 
     fn hydrate_pattern_tables(&mut self, target: &mut[u8]) {
