@@ -1,19 +1,12 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use emulator::io::Screen;
+use emulator::components::portal::Portal;
 use emulator::apu::debug::APUDebug;
-use emulator::ppu::debug::PPUDebug;
+use emulator::ppu::debug::{PPUDebug, PPUDebugRender};
+
+use ui::controller::DebugMode;
+
 use sdl2::{pixels, rect, render, video};
 
 const SCALE: u8 = 4;
-
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub enum DebugMode {
-    OFF,
-    PPU,
-    APU,
-}
 
 pub struct Compositor {
     canvas: render::Canvas<video::Window>,
@@ -25,18 +18,18 @@ pub struct Compositor {
     palette_texture: render::Texture,
     waveform_texture: render::Texture,
 
-    nes_output: Rc<RefCell<Screen>>,
-    ppu_debug: PPUDebug,
-    apu_debug: APUDebug,
+    nes_output: Portal<Box<[u8]>>,
+    ppu_debug: Portal<PPUDebugRender>,
+    apu_debug: Portal<Box<[u8]>>,
     debug_mode: DebugMode,
 }
 
 impl Compositor {
     pub fn new(
         video: sdl2::VideoSubsystem,
-        nes_output: Rc<RefCell<Screen>>,
-        ppu_debug: PPUDebug,
-        apu_debug: APUDebug,
+        nes_output: Portal<Box<[u8]>>,
+        ppu_debug: Portal<PPUDebugRender>,
+        apu_debug: Portal<Box<[u8]>>,
     ) -> Compositor {
         let mut main_window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
             .position_centered()
@@ -148,7 +141,7 @@ impl Compositor {
     fn render_main(&mut self) {
         self.canvas.clear();
         let texture = &mut self.nes_texture;
-        self.nes_output.borrow().do_render(|data| {
+        self.nes_output.consume(|data| {
             let _ = texture.update(None, data, 256 * 3);
         });
         let _ = self.canvas.copy(&texture, None, None);
@@ -162,12 +155,12 @@ impl Compositor {
         let sprite_texture = &mut self.sprite_texture;
         let palette_texture = &mut self.palette_texture;
 
-        self.ppu_debug.do_render(
-            |patterns| pattern_texture.update(None, patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap(),
-            |nametables| nametable_texture.update(None, nametables, PPUDebug::NAMETABLE_WIDTH * 3).unwrap(),
-            |sprites| sprite_texture.update(None, sprites, PPUDebug::SPRITE_WIDTH * 3).unwrap(),
-            |palettes| palette_texture.update(None, palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap(),
-        );
+        self.ppu_debug.consume(|buffers| {
+            pattern_texture.update(None, &buffers.patterns, PPUDebug::PATTERN_WIDTH * 3).unwrap();
+            nametable_texture.update(None, &buffers.nametables, PPUDebug::NAMETABLE_WIDTH * 3).unwrap();
+            sprite_texture.update(None, &buffers.sprites, PPUDebug::SPRITE_WIDTH * 3).unwrap();
+            palette_texture.update(None, &buffers.palettes, PPUDebug::PALETTE_WIDTH * 3).unwrap();
+        });
 
         let _ = self.debug_canvas.copy(&pattern_texture, None, rect::Rect::new(0, 0, 256, 128));
         let _ = self.debug_canvas.copy(&nametable_texture, None, rect::Rect::new(0, 136, 256, 256));
@@ -180,7 +173,7 @@ impl Compositor {
         self.debug_canvas.clear();
         let waveform_texture = &mut self.waveform_texture;
 
-        self.apu_debug.do_render(
+        self.apu_debug.consume(
             |waveforms| waveform_texture.update(None, waveforms, APUDebug::WAVEFORM_WIDTH * 3).unwrap(),
         );
 
