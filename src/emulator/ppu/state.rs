@@ -28,7 +28,6 @@ impl <'de> SaveState<'de, PPUState> for PPU {
             sprites_x: self.sprites_x.to_vec(),
             scanline: self.scanline,
             cycle: self.cycle,
-            is_odd_frame: self.is_odd_frame,
             tmp_pattern_coords: self.tmp_pattern_coords,
             tmp_attribute_byte: self.tmp_attribute_byte,
             tmp_oam_byte: self.tmp_oam_byte,
@@ -70,7 +69,6 @@ impl <'de> SaveState<'de, PPUState> for PPU {
         self.sprites_x.copy_from_slice(state.sprites_x.as_slice());
         self.scanline = state.scanline;
         self.cycle = state.cycle;
-        self.is_odd_frame = state.is_odd_frame;
         self.tmp_pattern_coords = state.tmp_pattern_coords;
         self.tmp_attribute_byte = state.tmp_attribute_byte;
         self.tmp_oam_byte = state.tmp_oam_byte;
