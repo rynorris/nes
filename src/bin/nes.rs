@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::env;
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -61,6 +62,9 @@ fn main() {
     let state = Portal::new(EmulatorState::new());
     let emu_state = state.clone();
 
+    let ui_sync = Arc::new((Mutex::new(()), Condvar::new()));
+    let emu_sync = ui_sync.clone();
+
     // -- Run --
     let _ = std::thread::spawn(std::panic::AssertUnwindSafe(move || {
         let event_bus = Rc::new(RefCell::new(EventBus::new()));
@@ -80,6 +84,7 @@ fn main() {
         controller.borrow_mut().start();
         event_bus.borrow_mut().register(Box::new(controller.clone()));
         main_loop(
+            emu_sync,
             controller,
             video_output.clone(),
             video_portal.clone(),
@@ -94,7 +99,7 @@ fn main() {
     }));
 
     let ui_res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        ui_loop(&mut compositor, &mut audio_queue, &mut input, state.clone());
+        ui_loop(ui_sync, &mut compositor, &mut audio_queue, &mut input, state.clone());
     }));
 
 
@@ -107,6 +112,7 @@ fn main() {
 }
 
 fn ui_loop(
+    sync: Arc<(Mutex<()>, Condvar)>,
     compositor: &mut Compositor,
     audio_queue: &mut AudioQueue,
     input: &mut InputPump,
@@ -117,11 +123,15 @@ fn ui_loop(
         compositor.render();
         input.pump();
         compositor.set_debug(state_portal.consume(|state| state.debug_mode));
-        thread::sleep(Duration::from_nanos(1000000));
+
+        let &(ref lock, ref cvar) = &*sync;
+        let guard = lock.lock().unwrap();
+        cvar.wait_timeout(guard, Duration::from_millis(1000 / RENDER_FPS)).unwrap();
     }
 }
 
 fn main_loop(
+    sync: Arc<(Mutex<()>, Condvar)>,
     controller: Rc<RefCell<Controller>>,
     video_output: Rc<RefCell<io::Screen>>,
     video_portal: Portal<Box<[u8]>>,
@@ -201,6 +211,10 @@ fn main_loop(
                 portal.extend_from_slice(data);
             });
         });
+
+        // Wake up the render thread immediately if it's waiting.
+        let &(_, ref cvar) = &*sync;
+        cvar.notify_one();
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
         if frame_ns < target_ns_this_frame {
