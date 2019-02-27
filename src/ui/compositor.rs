@@ -20,7 +20,7 @@ pub struct Compositor {
 
     nes_output: Portal<Box<[u8]>>,
     ppu_debug: Portal<Option<PPUDebugRender>>,
-    apu_debug: APUDebug,
+    apu_debug: Portal<Box<[u8]>>,
     debug_mode: DebugMode,
 }
 
@@ -29,7 +29,7 @@ impl Compositor {
         video: sdl2::VideoSubsystem,
         nes_output: Portal<Box<[u8]>>,
         ppu_debug: Portal<Option<PPUDebugRender>>,
-        apu_debug: APUDebug,
+        apu_debug: Portal<Box<[u8]>>,
     ) -> Compositor {
         let mut main_window = video.window("NES", 256 * SCALE as u32, 240 * SCALE as u32)
             .position_centered()
@@ -178,7 +178,7 @@ impl Compositor {
         self.debug_canvas.clear();
         let waveform_texture = &mut self.waveform_texture;
 
-        self.apu_debug.do_render(
+        self.apu_debug.consume(
             |waveforms| waveform_texture.update(None, waveforms, APUDebug::WAVEFORM_WIDTH * 3).unwrap(),
         );
 

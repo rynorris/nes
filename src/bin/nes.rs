@@ -55,9 +55,10 @@ fn main() {
 
     let video_portal = Portal::new(vec![0; 256 * 240 * 3].into_boxed_slice());
     let ppu_debug_portal: Portal<Option<PPUDebugRender>> = Portal::new(Option::None);
+    let apu_debug_portal = Portal::new(vec![0; APUDebug::WAVEFORM_WIDTH * APUDebug::WAVEFORM_HEIGHT * 3].into_boxed_slice());
 
     let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone(), audio_output.clone())));
-    let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug_portal.clone(), apu_debug);
+    let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug_portal.clone(), apu_debug_portal.clone());
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
@@ -74,6 +75,8 @@ fn main() {
             video_portal.clone(),
             ppu_debug,
             ppu_debug_portal.clone(),
+            apu_debug,
+            apu_debug_portal.clone(),
             &mut compositor,
             &mut audio_queue,
             &mut input);
@@ -94,6 +97,8 @@ fn main_loop(
     video_portal: Portal<Box<[u8]>>,
     mut ppu_debug: PPUDebug,
     ppu_debug_portal: Portal<Option<PPUDebugRender>>,
+    mut apu_debug: APUDebug,
+    apu_debug_portal: Portal<Box<[u8]>>,
     compositor: &mut Compositor,
     audio_queue: &mut AudioQueue,
     input: &mut InputPump) {
@@ -144,7 +149,13 @@ fn main_loop(
                     portal.replace(buffers);
                 });
             }),
-            DebugMode::APU => (),
+            DebugMode::APU => {
+                apu_debug.do_render(|data| {
+                    apu_debug_portal.consume(|portal| {
+                        copy_buffer(data, portal);
+                    });
+                });
+            },
             _ => (),
         }
 
