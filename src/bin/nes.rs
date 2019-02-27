@@ -8,6 +8,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use nes::emulator::{NES, NES_MASTER_CLOCK_HZ};
+use nes::emulator::components::portal::Portal;
 use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::EventBus;
@@ -52,8 +53,10 @@ fn main() {
     let video = sdl_context.video().unwrap();
     let audio = sdl_context.audio().unwrap();
 
+    let video_portal = Portal::new(vec![0; 256 * 240 * 3].into_boxed_slice());
+
     let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone(), audio_output.clone())));
-    let mut compositor = Compositor::new(video, video_output.clone(), ppu_debug, apu_debug);
+    let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug, apu_debug);
     let mut audio_queue = AudioQueue::new(audio, audio_output.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
 
@@ -64,7 +67,7 @@ fn main() {
 
     // -- Run --
     let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        main_loop(controller.clone(), &mut compositor, &mut audio_queue, &mut input);
+        main_loop(controller.clone(), video_output.clone(), video_portal.clone(), &mut compositor, &mut audio_queue, &mut input);
     }));
 
     match res {
@@ -76,7 +79,14 @@ fn main() {
     }
 }
 
-fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, audio_queue: &mut AudioQueue, input: &mut InputPump) {
+fn main_loop(
+    controller: Rc<RefCell<Controller>>,
+    video_output: Rc<RefCell<io::Screen>>,
+    video_portal: Portal<Box<[u8]>>,
+    compositor: &mut Compositor,
+    audio_queue: &mut AudioQueue,
+    input: &mut InputPump) {
+
     let started_instant = Instant::now();
     let frames_per_second = RENDER_FPS;
     let mut frame_start = started_instant;
@@ -109,6 +119,15 @@ fn main_loop(controller: Rc<RefCell<Controller>>, compositor: &mut Compositor, a
 
         audio_queue.flush();
         compositor.set_debug(controller.borrow().debug_mode());
+
+        video_output.borrow().do_render(|data| {
+            video_portal.consume(|video| {
+                for (tgt, src) in video.iter_mut().zip(data.iter()) {
+                    *tgt = *src;
+                }
+            });
+        });
+
         compositor.render();
         input.pump();
 

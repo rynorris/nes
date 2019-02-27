@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use emulator::io::Screen;
+use emulator::components::portal::Portal;
 use emulator::apu::debug::APUDebug;
 use emulator::ppu::debug::PPUDebug;
 use sdl2::{pixels, rect, render, video};
@@ -25,7 +22,7 @@ pub struct Compositor {
     palette_texture: render::Texture,
     waveform_texture: render::Texture,
 
-    nes_output: Rc<RefCell<Screen>>,
+    nes_output: Portal<Box<[u8]>>,
     ppu_debug: PPUDebug,
     apu_debug: APUDebug,
     debug_mode: DebugMode,
@@ -34,7 +31,7 @@ pub struct Compositor {
 impl Compositor {
     pub fn new(
         video: sdl2::VideoSubsystem,
-        nes_output: Rc<RefCell<Screen>>,
+        nes_output: Portal<Box<[u8]>>,
         ppu_debug: PPUDebug,
         apu_debug: APUDebug,
     ) -> Compositor {
@@ -148,7 +145,7 @@ impl Compositor {
     fn render_main(&mut self) {
         self.canvas.clear();
         let texture = &mut self.nes_texture;
-        self.nes_output.borrow().do_render(|data| {
+        self.nes_output.consume(|data| {
             let _ = texture.update(None, data, 256 * 3);
         });
         let _ = self.canvas.copy(&texture, None, None);
