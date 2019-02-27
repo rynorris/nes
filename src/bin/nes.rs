@@ -11,7 +11,7 @@ use nes::emulator::{NES, NES_MASTER_CLOCK_HZ};
 use nes::emulator::components::portal::Portal;
 use nes::emulator::ines;
 use nes::emulator::io;
-use nes::emulator::io::event::EventBus;
+use nes::emulator::io::event::{Event, EventBus};
 use nes::emulator::apu::debug::APUDebug;
 use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
 
@@ -57,11 +57,12 @@ fn main() {
     let ppu_debug_portal: Portal<Option<PPUDebugRender>> = Portal::new(Option::None);
     let apu_debug_portal = Portal::new(vec![0; APUDebug::WAVEFORM_WIDTH * APUDebug::WAVEFORM_HEIGHT * 3].into_boxed_slice());
     let audio_portal = Portal::new(Vec::new());
+    let event_portal = Portal::new(Vec::new());
 
     let controller = Rc::new(RefCell::new(Controller::new(nes, video_output.clone(), audio_output.clone())));
     let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug_portal.clone(), apu_debug_portal.clone());
     let mut audio_queue = AudioQueue::new(audio, audio_portal.clone());
-    let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_bus.clone());
+    let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_portal.clone());
 
     controller.borrow_mut().set_rom_name(&rom_name);
     compositor.set_window_title(&format!("[NES] {}", rom_name));
@@ -80,6 +81,8 @@ fn main() {
             apu_debug_portal.clone(),
             audio_output.clone(),
             audio_portal.clone(),
+            event_bus.clone(),
+            event_portal.clone(),
             &mut compositor,
             &mut audio_queue,
             &mut input);
@@ -104,6 +107,8 @@ fn main_loop(
     apu_debug_portal: Portal<Box<[u8]>>,
     audio_output: Rc<RefCell<io::SimpleAudioOut>>,
     audio_portal: Portal<Vec<f32>>,
+    event_bus: Rc<RefCell<EventBus>>,
+    event_portal: Portal<Vec<Event>>,
     compositor: &mut Compositor,
     audio_queue: &mut AudioQueue,
     input: &mut InputPump) {
@@ -173,6 +178,10 @@ fn main_loop(
 
         compositor.render();
         input.pump();
+
+        event_portal.consume(|events| {
+            events.drain(..).for_each(|e| event_bus.borrow_mut().broadcast(e));
+        });
 
         // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
         if frame_ns < target_ns_this_frame {
