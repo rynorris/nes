@@ -1,7 +1,7 @@
 # nes
 NES emulator written in Rust
 
-[![Build Status](https://travis-ci.org/DiscoViking/nes.svg?branch=master)](https://travis-ci.org/DiscoViking/nes) [![codecov](https://codecov.io/gh/DiscoViking/nes/branch/master/graph/badge.svg)](https://codecov.io/gh/DiscoViking/nes)
+[![Build Status](https://travis-ci.org/rynorris/nes.svg?branch=master)](https://travis-ci.org/rynorris/nes) [![codecov](https://codecov.io/gh/rynorris/nes/branch/master/graph/badge.svg)](https://codecov.io/gh/rynorris/nes)
 
 ## Emulator Status
 
