@@ -169,6 +169,14 @@ impl NES {
         cycles
     }
 
+    pub fn tick_multi(&mut self, ticks: u32) -> u64 {
+        let mut cycles = 0u64;
+        for _ in 0 .. ticks {
+            cycles += self.tick()
+        }
+        cycles
+    }
+
     pub fn reset(&mut self) {
         // Silence APU.
         self.apu.borrow_mut().write(0x4015, 0x00);

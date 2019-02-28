@@ -161,10 +161,7 @@ fn main_loop(
 
         while cycles_this_frame < target_frame_cycles && !governer.taking_too_long() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
-            let batch_size = 100;
-            for _ in 0 .. batch_size {
-                cycles_this_frame += controller.borrow_mut().tick();
-            }
+            cycles_this_frame += controller.borrow_mut().tick_multi(100);
         }
       
         // Drive rendering.
