@@ -3,36 +3,44 @@ use std::time::{Duration, Instant};
 
 pub struct Governer {
     target_frame_ns: u64,
-    target_ns_this_frame: u64,
     frame_start_instant: Instant,
+    ahead_ns: i64,
 }
 
 impl Governer {
+    const MIN_BUFFER_NS: i64 = -3_000_000;
+    const MAX_BUFFER_NS: i64 = 3_000_000;
+
     pub fn new(target_fps: u64) -> Governer {
         Governer {
             target_frame_ns: 1_000_000_000 / target_fps,
-            target_ns_this_frame: 1_000_000_000 / target_fps,
             frame_start_instant: Instant::now(),
+            ahead_ns: 0,
         }
     }
 
     pub fn taking_too_long(&self) -> bool {
         let frame_ns = duration_to_ns(self.frame_start_instant.elapsed());
-        return frame_ns > self.target_ns_this_frame;
+        return frame_ns > self.target_frame_ns + (self.ahead_ns as u64);
     }
 
     pub fn synchronize(&mut self) {
         let frame_ns = duration_to_ns(self.frame_start_instant.elapsed());
-        if frame_ns < self.target_ns_this_frame {
-            let sleep_ns = self.target_frame_ns.saturating_sub(frame_ns);
-            thread::sleep(Duration::from_nanos(sleep_ns));
+        self.ahead_ns += self.target_frame_ns as i64;
+        self.ahead_ns -= frame_ns as i64;
+        if self.ahead_ns < Governer::MIN_BUFFER_NS {
+            self.ahead_ns = Governer::MIN_BUFFER_NS;
+        }
+
+        if self.ahead_ns > Governer::MAX_BUFFER_NS {
+            thread::sleep(Duration::from_nanos(self.ahead_ns as u64));
         }
 
         let frame_end_instant = Instant::now();
-        let total_frame_ns = (frame_end_instant - self.frame_start_instant).subsec_nanos() as u64;
-        let oversleep_ns = total_frame_ns.saturating_sub(self.target_ns_this_frame);
-        println!("Rendered frame in {:?}ns.  Overslept by {:?}ns", frame_ns, oversleep_ns);
-        self.target_ns_this_frame = self.target_frame_ns.saturating_sub(oversleep_ns);
+        let total_frame_ns = duration_to_ns(frame_end_instant - self.frame_start_instant);
+        let sleep_ns = total_frame_ns.saturating_sub(frame_ns);
+        self.ahead_ns -= sleep_ns as i64;
+
         self.frame_start_instant = frame_end_instant;
     }
 }
