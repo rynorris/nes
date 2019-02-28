@@ -145,8 +145,8 @@ fn main_loop(
     event_portal: Portal<Vec<Event>>,
     ) {
 
-    let mut overwork_cycles = 0;
-
+    let mut frame_count: u64 = 0;
+    let mut agg_cycles: u64 = 0;
     let mut governer = Governer::new(RENDER_FPS);
 
     while controller.borrow().is_running() {
@@ -154,13 +154,12 @@ fn main_loop(
         let target_frame_cycles = target_hz / RENDER_FPS;
 
         let mut cycles_this_frame = 0;
-        let target_cycles_this_frame = target_frame_cycles.saturating_sub(overwork_cycles);
 
         event_portal.consume(|events| {
             events.drain(..).for_each(|e| event_bus.borrow_mut().broadcast(e));
         });
 
-        while cycles_this_frame < target_cycles_this_frame && !governer.taking_too_long() {
+        while cycles_this_frame < target_frame_cycles && !governer.taking_too_long() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             let batch_size = 100;
             for _ in 0 .. batch_size {
@@ -207,7 +206,19 @@ fn main_loop(
 
         governer.synchronize();
 
-        overwork_cycles = cycles_this_frame.saturating_sub(target_cycles_this_frame);
+        // Calaculate stats.
+        frame_count += 1;
+        agg_cycles += cycles_this_frame;
+        if frame_count % RENDER_FPS == 0 {
+            let avg_cycles = (agg_cycles as f64) / (RENDER_FPS as f64);
+            let avg_frame_ns = governer.avg_frame_duration_ns();
+            let avg_hz = (avg_cycles / avg_frame_ns) * 1_000_000_000f64;
+            println!("FPS: {:.1}, Target Freq: {:.3}MHz, Current Freq: {:.3}MHz",
+                     1_000_000_000f64 / avg_frame_ns,
+                     (target_hz as f64) / 1_000_000f64,
+                     avg_hz / 1_000_000f64);
+            agg_cycles = 0;
+        }
     }
 }
 
