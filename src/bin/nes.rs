@@ -5,10 +5,9 @@ use std::env;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, Condvar};
-use std::thread;
 use std::time::{Duration, Instant};
 
-use nes::emulator::{NES, NES_MASTER_CLOCK_HZ};
+use nes::emulator::NES;
 use nes::emulator::components::portal::Portal;
 use nes::emulator::ines;
 use nes::emulator::io;
@@ -20,6 +19,7 @@ use nes::ui::RENDER_FPS;
 use nes::ui::audio::{AudioQueue, SAMPLE_RATE};
 use nes::ui::controller::{Controller, DebugMode, EmulatorState};
 use nes::ui::compositor::Compositor;
+use nes::ui::governer::Governer;
 use nes::ui::input::InputPump;
 
 fn main() {
@@ -145,38 +145,23 @@ fn main_loop(
     event_portal: Portal<Vec<Event>>,
     ) {
 
-    let started_instant = Instant::now();
-    let frames_per_second = RENDER_FPS;
-    let mut frame_start = started_instant;
-    let mut frame_ix = 0;
-    let mut agg_cycles = 0;
-    let mut agg_start = started_instant;
-    let mut oversleep_ns = 0;
-    let mut overwork_cycles = 0;
+    let mut frame_count: u64 = 0;
+    let mut agg_cycles: u64 = 0;
+    let mut governer = Governer::new(RENDER_FPS);
 
     while controller.borrow().is_running() {
         let target_hz = controller.borrow().target_hz();
-        let target_frame_cycles = target_hz / frames_per_second;
-        let target_frame_ns = 1_000_000_000 / frames_per_second;
+        let target_frame_cycles = target_hz / RENDER_FPS;
 
         let mut cycles_this_frame = 0;
-        let target_ns_this_frame = target_frame_ns.saturating_sub(oversleep_ns);
-        let target_cycles_this_frame = target_frame_cycles.saturating_sub(overwork_cycles);
-        let mut frame_ns = 0;
 
         event_portal.consume(|events| {
             events.drain(..).for_each(|e| event_bus.borrow_mut().broadcast(e));
         });
 
-        while cycles_this_frame < target_cycles_this_frame && frame_ns < target_ns_this_frame {
+        while cycles_this_frame < target_frame_cycles && !governer.taking_too_long() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
-            let batch_size = 100;
-            for _ in 0 .. batch_size {
-                cycles_this_frame += controller.borrow_mut().tick();
-            }
-
-            let frame_time = frame_start.elapsed();
-            frame_ns = frame_time.as_secs() * 1_000_000_000 + (frame_time.subsec_nanos() as u64);
+            cycles_this_frame += controller.borrow_mut().tick_multi(100);
         }
       
         // Drive rendering.
@@ -216,41 +201,19 @@ fn main_loop(
         let &(_, ref cvar) = &*sync;
         cvar.notify_one();
 
-        // If we finished early then calculate sleep and stuff, otherwise just plough onwards.
-        if frame_ns < target_ns_this_frame {
-            let render_end = Instant::now();
-            let render_time = render_end - frame_start;
-            let render_ns = render_time.as_secs() * 1_000_000_000 + (render_time.subsec_nanos() as u64);
-            let sleep_ns = target_ns_this_frame.saturating_sub(render_ns);
+        governer.synchronize();
 
-            thread::sleep(Duration::from_nanos(sleep_ns));
-        }
-
-        let frame_end = Instant::now();
-        // If we slept too long, take that time off the next frame.
-        oversleep_ns = ((frame_end - frame_start).subsec_nanos() as u64).saturating_sub(target_ns_this_frame);
-        overwork_cycles = cycles_this_frame.saturating_sub(target_cycles_this_frame);
-        frame_start = frame_end;
-        
-        // Print debug info here.
+        // Calaculate stats.
+        frame_count += 1;
         agg_cycles += cycles_this_frame;
-        frame_ix = (frame_ix + 1) % frames_per_second;
-        if frame_ix == 0 {
-            let agg_duration = agg_start.elapsed();
-            agg_start = Instant::now();
-
-            let agg_ns = agg_duration.as_secs() * 1_000_000_000 + (agg_duration.subsec_nanos() as u64);
-            let current_hz = (agg_cycles * 1_000_000_000) / agg_ns;
-
-            println!(
-                "Target: {:.3}MHz, Current: {:.3}MHz ({:.2}x).  Took: {}ns to process {} cycles.",
-                (target_hz as f64) / 1_000_000f64,
-                (current_hz as f64) / 1_000_000f64,
-                (current_hz as f64) / (NES_MASTER_CLOCK_HZ as f64),
-                agg_ns,
-                agg_cycles,
-            );
-
+        if frame_count % RENDER_FPS == 0 {
+            let avg_cycles = (agg_cycles as f64) / (RENDER_FPS as f64);
+            let avg_frame_ns = governer.avg_frame_duration_ns();
+            let avg_hz = (avg_cycles / avg_frame_ns) * 1_000_000_000f64;
+            println!("FPS: {:.1}, Target Freq: {:.3}MHz, Current Freq: {:.3}MHz",
+                     1_000_000_000f64 / avg_frame_ns,
+                     (target_hz as f64) / 1_000_000f64,
+                     avg_hz / 1_000_000f64);
             agg_cycles = 0;
         }
     }

@@ -63,6 +63,10 @@ impl Controller {
         self.nes.tick()
     }
 
+    pub fn tick_multi(&mut self, ticks: u32) -> u64 {
+        self.nes.tick_multi(ticks)
+    }
+
     pub fn is_running(&self) -> bool {
         self.state_portal.consume(|state| state.is_running)
     }
