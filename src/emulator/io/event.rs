@@ -59,7 +59,7 @@ impl EventBus {
 
     fn handle_event(&mut self, event: Event) {
         let deque = &mut self.event_queue;
-        for mut handler in self.event_handlers.iter_mut() {
+        for handler in self.event_handlers.iter_mut() {
             handler.handle_event_with_dispatch(&|e| deque.push_back(e), event);
         }
     }
