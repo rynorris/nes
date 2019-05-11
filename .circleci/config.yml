@@ -1,0 +1,27 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: circleci/rust:latest
+    steps:
+      - checkout
+      - restore_cache:
+          key: v1-cargo-{{ checksum "Cargo.lock" }}
+      - name: Build
+        command: cargo build
+      - name: Test
+        command: cargo test
+      - name: Lint
+        command: cargo fmt --write-mode=diff
+      - save_cache:
+          key: v1-cargo-{{ checksum "Cargo.lock" }}
+          paths:
+            - ~/.cargo
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+
