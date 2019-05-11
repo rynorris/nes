@@ -9,6 +9,9 @@ jobs:
       - restore_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
       - run:
+          name: Install SDL
+          command: sudo apt install libsdl2-dev
+      - run:
           name: Build
           command: cargo build
       - run:
