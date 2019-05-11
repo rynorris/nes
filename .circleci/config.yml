@@ -19,7 +19,7 @@ jobs:
           command: cargo test
       - run:
           name: Lint
-          command: cargo fmt --write-mode=diff
+          command: rustup component add rustfmt && cargo fmt --write-mode=diff
       - save_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
           paths:
