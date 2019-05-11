@@ -7,13 +7,13 @@ use std::rc::Rc;
 use crate::emulator::clock::Ticker;
 use crate::emulator::memory::{Reader, Writer};
 
-use self::synth::{DMC, Noise, Pulse, Sweep, Triangle};
+use self::synth::{Noise, Pulse, Sweep, Triangle, DMC};
 
 pub trait AudioOut {
     fn emit(&mut self, sample: f32);
 }
 
-impl <A : AudioOut> AudioOut for Rc<RefCell<A>> {
+impl<A: AudioOut> AudioOut for Rc<RefCell<A>> {
     fn emit(&mut self, sample: f32) {
         self.borrow_mut().emit(sample);
     }
@@ -26,10 +26,9 @@ enum SequenceMode {
 }
 
 const LENGTH_COUNTER_LOOKUP: [u8; 0x20] = [
-    10,254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
-    12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30,
+    10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14, 12, 16, 24, 18, 48, 20, 96, 22,
+    192, 24, 72, 26, 16, 28, 32, 30,
 ];
-
 
 pub struct APU {
     output: Box<AudioOut>,
@@ -92,14 +91,14 @@ impl Ticker for APU {
                 7457 => {
                     self.clock_linear_and_envelope();
                     self.clock_length_counters();
-                },
+                }
                 11186 => self.clock_linear_and_envelope(),
                 14915 => {
                     self.clock_linear_and_envelope();
                     self.clock_length_counters();
                     self.cycle_counter = 0;
                     self.irq_flag = self.irq_enabled;
-                },
+                }
                 _ => (),
             },
             SequenceMode::FiveStep => match self.cycle_counter {
@@ -107,13 +106,13 @@ impl Ticker for APU {
                 7457 => {
                     self.clock_linear_and_envelope();
                     self.clock_length_counters();
-                },
+                }
                 11186 => self.clock_linear_and_envelope(),
                 18641 => {
                     self.clock_linear_and_envelope();
                     self.clock_length_counters();
                     self.cycle_counter = 0;
-                },
+                }
                 _ => (),
             },
         };
@@ -146,72 +145,77 @@ impl Writer for APU {
         match address {
             0x4000 => {
                 write_first_pulse_register(&mut self.pulse_1, byte);
-            },
+            }
             0x4001 => {
                 write_sweep_register(&mut self.pulse_1.sweep, byte);
             }
             0x4002 => {
                 write_second_pulse_register(&mut self.pulse_1, byte);
-            },
+            }
             0x4003 => {
                 write_third_pulse_register(&mut self.pulse_1, byte);
-            },
+            }
             0x4004 => {
                 write_first_pulse_register(&mut self.pulse_2, byte);
-            },
+            }
             0x4005 => {
                 write_sweep_register(&mut self.pulse_2.sweep, byte);
             }
             0x4006 => {
                 write_second_pulse_register(&mut self.pulse_2, byte);
-            },
+            }
             0x4007 => {
                 write_third_pulse_register(&mut self.pulse_2, byte);
-            },
+            }
             0x4008 => {
                 self.triangle.linear_reload_value = byte & 0x7F;
                 self.triangle.halt_length = (byte & 0x80) != 0;
                 self.triangle.control_flag = (byte & 0x80) != 0;
-            },
+            }
             0x400A => {
                 let new_period = (self.triangle.timer.period() & 0xFF00) | (byte as u16);
                 self.triangle.timer.set_period(new_period);
-            },
+            }
             0x400B => {
                 self.triangle.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
-                let new_period = (self.triangle.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
+                let new_period =
+                    (self.triangle.timer.period() & 0x00FF) | (((byte & 0x7) as u16) << 8);
                 self.triangle.timer.set_period(new_period);
                 self.triangle.linear_reload_flag = true;
-            },
+            }
             0x400C => {
                 self.noise.halt_length = (byte & 0x20) != 0;
                 self.noise.envelope.loop_flag = (byte & 0x20) != 0;
                 self.noise.envelope.constant_volume = (byte & 0x10) != 0;
                 self.noise.envelope.set_volume(byte & 0x0F);
                 self.noise.envelope.restart();
-            },
+            }
             0x400E => {
                 self.noise.mode = byte & 0x80 != 0;
-                self.noise.timer.set_period(Noise::PERIOD_LOOKUP[(byte & 0x0F) as usize]);
+                self.noise
+                    .timer
+                    .set_period(Noise::PERIOD_LOOKUP[(byte & 0x0F) as usize]);
             }
             0x400F => {
                 self.noise.length = LENGTH_COUNTER_LOOKUP[(byte >> 3) as usize];
                 self.noise.envelope.restart();
-            },
+            }
             0x4010 => {
                 self.dmc.irq_enabled = byte & 0x80 != 0;
                 self.dmc.loop_flag = byte & 0x40 != 0;
-                self.dmc.timer.set_period(DMC::PERIOD_LOOKUP[(byte & 0x0F) as usize]);
-            },
+                self.dmc
+                    .timer
+                    .set_period(DMC::PERIOD_LOOKUP[(byte & 0x0F) as usize]);
+            }
             0x4011 => {
                 self.dmc.volume = byte & 0x7F;
-            },
+            }
             0x4012 => {
                 self.dmc.sample_addr = 0xC000 | ((byte as u16) << 6);
-            },
+            }
             0x4013 => {
                 self.dmc.sample_len = ((byte as u16) << 4) + 1;
-            },
+            }
             0x4015 => {
                 self.dmc.irq_flag = false;
                 if (byte >> 4) & 0x1 != 0 {
@@ -247,7 +251,7 @@ impl Writer for APU {
                     self.pulse_1.enabled = false;
                     self.pulse_1.length = 0;
                 }
-            },
+            }
             0x4017 => {
                 self.sequence_mode = if byte & 0x80 == 0 {
                     SequenceMode::FourStep
@@ -264,7 +268,7 @@ impl Writer for APU {
                 }
 
                 self.cycle_counter = 0;
-            },
+            }
             _ => (),
         }
     }
@@ -275,17 +279,31 @@ impl Reader for APU {
         match address {
             0x4015 => {
                 let mut status = 0;
-                if self.pulse_1.length != 0 { status |= 1 };
-                if self.pulse_2.length != 0 { status |= 1 << 1 };
-                if self.triangle.length != 0 { status |= 1 << 2 };
-                if self.noise.length != 0 { status |= 1 << 3 };
-                if self.dmc.bytes_remaining != 0 { status |= 1 << 4 };
-                if self.dmc.irq_flag { status |= 1 << 5 };
-                if self.irq_flag { status |= 1 << 6 };
+                if self.pulse_1.length != 0 {
+                    status |= 1
+                };
+                if self.pulse_2.length != 0 {
+                    status |= 1 << 1
+                };
+                if self.triangle.length != 0 {
+                    status |= 1 << 2
+                };
+                if self.noise.length != 0 {
+                    status |= 1 << 3
+                };
+                if self.dmc.bytes_remaining != 0 {
+                    status |= 1 << 4
+                };
+                if self.dmc.irq_flag {
+                    status |= 1 << 5
+                };
+                if self.irq_flag {
+                    status |= 1 << 6
+                };
 
                 self.irq_flag = false;
                 status
-            },
+            }
             _ => 0,
         }
     }

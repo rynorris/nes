@@ -10,7 +10,6 @@ pub struct AudioQueue {
 }
 
 impl AudioQueue {
-
     pub fn new(audio: sdl2::AudioSubsystem, output: Portal<Vec<f32>>) -> AudioQueue {
         let spec = audio::AudioSpecDesired {
             freq: Some(SAMPLE_RATE as i32),
@@ -25,10 +24,7 @@ impl AudioQueue {
 
         queue.resume();
 
-        AudioQueue {
-            output,
-            queue,
-        }
+        AudioQueue { output, queue }
     }
 
     pub fn flush(&mut self) {

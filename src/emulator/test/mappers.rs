@@ -29,7 +29,10 @@ macro_rules! test_mapper {
                 let (mut nes_2, _, image_2) = prepare_ete_test(&path);
                 nes_2.hydrate(state);
                 run_for(&mut nes_2, $cycles / 2);
-                assert_image(&image_2, test_resource_path(&format!("mappers/{}.bmp", $rom)));
+                assert_image(
+                    &image_2,
+                    test_resource_path(&format!("mappers/{}.bmp", $rom)),
+                );
             }
         }
     };

@@ -18,11 +18,10 @@ fn test_render_simple_background() {
 
     // Fill the first nametable with this tile.
     // Actually don't need to do anything, since 0 is the correct value.
-    
+
     // PPUMASK.  Enable background only.
     ppu.write(0x2001, 0b0000_1010);
 
-   
     // Tick forward the PPU 89342 cycles (one frame).
     for _ in 0..40000 {
         ppu.tick();

@@ -18,7 +18,7 @@ fn test_nestest_visual() {
 
     // Start tests.
     event_bus.borrow_mut().broadcast(Event::KeyDown(Key::A));
-   
+
     // Wait for tests to finish and check they pass.
     run_for(&mut nes, 7_000_000);
     assert_image(&image, test_resource_path("nestest/capture_02_passed.bmp"));
@@ -42,9 +42,11 @@ fn test_nestest_savestate() {
 
     let (mut nes_2, _, image_2) = prepare_ete_test(&path);
     nes_2.hydrate(state);
-   
+
     // Wait for tests to finish and check they pass.
     run_for(&mut nes_2, 3_000_000);
-    assert_image(&image_2, test_resource_path("nestest/capture_02_passed.bmp"));
+    assert_image(
+        &image_2,
+        test_resource_path("nestest/capture_02_passed.bmp"),
+    );
 }
-

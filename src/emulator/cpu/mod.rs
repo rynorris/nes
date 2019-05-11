@@ -1,6 +1,6 @@
 mod addressing;
-mod instructions;
 mod flags;
+mod instructions;
 mod opcodes;
 mod trace;
 
@@ -19,8 +19,8 @@ use crate::emulator::util;
 
 // Program vector locations.
 pub const START_VECTOR: u16 = 0xFFFC;
-pub const IRQ_VECTOR: u16= 0xFFFE;
-pub const NMI_VECTOR: u16= 0xFFFA;
+pub const IRQ_VECTOR: u16 = 0xFFFE;
+pub const NMI_VECTOR: u16 = 0xFFFA;
 
 // Only buffer the last ~1 second of trace to prevent blowing up.
 // Even this produces a ~150mb trace file!
@@ -34,7 +34,7 @@ pub enum Flag {
     D = 1 << 3, // BCD Mode
     I = 1 << 2, // Interrupt Disable
     Z = 1 << 1, // Zero
-    C = 1, // Carry
+    C = 1,      // Carry
 }
 
 impl Into<u8> for Flag {
@@ -53,7 +53,6 @@ pub struct CPU {
     // X Index Register
     x: u8,
 
-    
     y: u8,
 
     // Stack Pointer
@@ -103,7 +102,7 @@ impl clock::Ticker for CPU {
     #[inline]
     fn tick(&mut self) -> u32 {
         let instr_cycles = self.execute_next_instruction();
-        let irq_cycles =  if self.should_non_maskable_interrupt() {
+        let irq_cycles = if self.should_non_maskable_interrupt() {
             self.non_maskable_interrupt()
         } else if self.should_interrupt() {
             self.interrupt()
@@ -159,8 +158,16 @@ impl CPU {
         self.pc = saved_pc;
 
         // Now we have the number of bytes, lets trace out the instruction.
-        let b1 = if num_bytes > 0 { Some(self.memory.read(self.pc + 1)) } else { None };
-        let b2 = if num_bytes > 1 { Some(self.memory.read(self.pc + 2)) } else { None };
+        let b1 = if num_bytes > 0 {
+            Some(self.memory.read(self.pc + 1))
+        } else {
+            None
+        };
+        let b2 = if num_bytes > 1 {
+            Some(self.memory.read(self.pc + 2))
+        } else {
+            None
+        };
 
         (opcode, b1, b2)
     }
@@ -219,7 +226,9 @@ impl CPU {
         should
     }
 
-    fn decode_instruction(opcode: u8) -> (instructions::Operation, addressing::AddressingMode, u32) {
+    fn decode_instruction(
+        opcode: u8,
+    ) -> (instructions::Operation, addressing::AddressingMode, u32) {
         // Note: Maintain list in alphabetical order.
         match opcode {
             // ADC
@@ -472,7 +481,6 @@ impl CPU {
     }
 }
 
-
 // CPU Debug tracing functions.
 impl CPU {
     fn trace_byte(&mut self, byte: u8) {
@@ -515,7 +523,7 @@ impl CPU {
         self.is_tracing = false;
     }
 
-    pub fn flush_trace<W : Write>(&mut self, w: &mut W) {
+    pub fn flush_trace<W: Write>(&mut self, w: &mut W) {
         let mut buf = BufWriter::new(w);
         println!("Flushing {} instructions.", self.trace_buffer.len() / 10);
         let before = Instant::now();
@@ -527,14 +535,17 @@ impl CPU {
                     [_, _, _, _, _, _, _, _, _, _] => {
                         trace::write_trace_frame(&mut buf, args);
                         write!(buf, "\n").unwrap();
-                    },
+                    }
                     _ => (),
                 };
             }
         }
         let elapsed = before.elapsed();
         let elapsed_ns = elapsed.as_secs() * 1_000_000_000 + (elapsed.subsec_nanos() as u64);
-        println!("Done flushing!  Took {:.2}s", (elapsed_ns as f64) / 1_000_000_000f64);
+        println!(
+            "Done flushing!  Took {:.2}s",
+            (elapsed_ns as f64) / 1_000_000_000f64
+        );
         self.clear_trace();
     }
 
@@ -544,7 +555,7 @@ impl CPU {
 }
 
 // CPU Save State functionality.
-impl <'de> state::SaveState<'de, state::CPUState> for CPU {
+impl<'de> state::SaveState<'de, state::CPUState> for CPU {
     fn freeze(&mut self) -> state::CPUState {
         state::CPUState {
             a: self.a,

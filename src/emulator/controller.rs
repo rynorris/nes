@@ -6,9 +6,14 @@ use crate::emulator::state::{ControllerState, SaveState};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Button {
-    Start, Select,
-    A, B,
-    Up, Down, Left, Right,
+    Start,
+    Select,
+    A,
+    B,
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 pub type KeyMap = HashMap<Key, Button>;
@@ -35,7 +40,7 @@ impl Controller {
     ];
 
     pub fn new(keymap: KeyMap) -> Controller {
-        Controller { 
+        Controller {
             keymap,
             keystate: HashMap::new(),
             strobe_ix: 0,
@@ -51,18 +56,18 @@ impl EventHandler for Controller {
                 if let Some(button) = self.keymap.get(&key) {
                     self.keystate.insert(*button, true);
                 }
-            },
+            }
             Event::KeyUp(key) => {
                 if let Some(button) = self.keymap.get(&key) {
                     self.keystate.insert(*button, false);
                 }
-            },
+            }
         }
     }
 }
 
 impl Reader for Controller {
-    fn read(&mut self, _address: u16) -> u8  {
+    fn read(&mut self, _address: u16) -> u8 {
         // If strobe bit is 1, constantly reset state.
         if self.register & 1 != 0 {
             self.strobe_ix = 0;
@@ -83,7 +88,7 @@ impl Writer for Controller {
     }
 }
 
-impl <'de> SaveState<'de, ControllerState> for Controller {
+impl<'de> SaveState<'de, ControllerState> for Controller {
     fn freeze(&mut self) -> ControllerState {
         ControllerState {
             strobe_ix: self.strobe_ix,

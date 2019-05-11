@@ -5,10 +5,10 @@ use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 
 use dirs;
-use flate2::Compression;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
-use serde::{Serialize, Deserialize};
+use flate2::Compression;
+use serde::{Deserialize, Serialize};
 use serde_json::Serializer;
 
 use crate::emulator::ppu::MirrorMode;
@@ -44,9 +44,14 @@ pub fn save_state(nes: &mut NES, name: &str) -> Result<(), String> {
 
     let gzip = GzEncoder::new(state_file, Compression::best());
     let mut serializer = Serializer::new(gzip);
-    state.serialize(&mut serializer).map_err(|e| e.to_string())?;
+    state
+        .serialize(&mut serializer)
+        .map_err(|e| e.to_string())?;
 
-    serializer.into_inner().try_finish().map_err(|e| e.to_string())?;
+    serializer
+        .into_inner()
+        .try_finish()
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 

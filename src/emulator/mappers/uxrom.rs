@@ -51,7 +51,7 @@ impl Mapper for UXROM {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for UXROM {
+impl<'de> SaveState<'de, MapperState> for UXROM {
     fn freeze(&mut self) -> MapperState {
         MapperState::UXROM(UXROMState {
             prg_bank: self.prg_bank,
@@ -64,7 +64,7 @@ impl <'de> SaveState<'de, MapperState> for UXROM {
             MapperState::UXROM(s) => {
                 self.prg_bank = s.prg_bank;
                 self.chr_mem.hydrate(s.chr_mem);
-            },
+            }
             _ => panic!("Incompatible mapper state for UXROM mapper: {:?}", state),
         }
     }

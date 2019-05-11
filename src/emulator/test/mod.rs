@@ -16,12 +16,12 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use self::md5::{Md5, Digest};
+use self::md5::{Digest, Md5};
 
 use crate::emulator::ines;
 use crate::emulator::io;
-use crate::emulator::io::sdl::ImageCapture;
 use crate::emulator::io::event::EventBus;
+use crate::emulator::io::sdl::ImageCapture;
 use crate::emulator::NES;
 
 fn run_for(nes: &mut NES, cycles: u64) {
@@ -31,21 +31,24 @@ fn run_for(nes: &mut NES, cycles: u64) {
     }
 }
 
-fn prepare_ete_test<P : AsRef<Path>>(path: P) -> (NES, Rc<RefCell<EventBus>>, ImageCapture) {
+fn prepare_ete_test<P: AsRef<Path>>(path: P) -> (NES, Rc<RefCell<EventBus>>, ImageCapture) {
     let rom = ines::ROM::load(path);
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
     let output = Rc::new(RefCell::new(io::Screen::new()));
-    let audio = io::nop::DummyAudio{};
+    let audio = io::nop::DummyAudio {};
     let image = ImageCapture::new(output.clone());
     let nes = NES::new(event_bus.clone(), output, audio, rom);
     (nes, event_bus, image)
 }
 
-fn load_and_run_blargg_test_rom<P : AsRef<Path>>(rom_path: P) -> (u8, String) {
+fn load_and_run_blargg_test_rom<P: AsRef<Path>>(rom_path: P) -> (u8, String) {
     load_and_run_blargg_test_rom_with_cycles(rom_path, 100_000_000)
 }
 
-fn load_and_run_blargg_test_rom_with_cycles<P : AsRef<Path>>(rom_path: P, max_cycles: u64) -> (u8, String) {
+fn load_and_run_blargg_test_rom_with_cycles<P: AsRef<Path>>(
+    rom_path: P,
+    max_cycles: u64,
+) -> (u8, String) {
     let (mut nes, _, _) = prepare_ete_test(rom_path);
     run_blargg_test_rom(&mut nes, max_cycles)
 }
@@ -59,7 +62,10 @@ fn run_blargg_test_rom(nes: &mut NES, max_cycles: u64) -> (u8, String) {
         status = nes.cpu.borrow_mut().load_memory(0x6000);
 
         if cycles > 20_000_000 {
-            panic!("Test took too long to start.  Gave up after {} cycles.", cycles);
+            panic!(
+                "Test took too long to start.  Gave up after {} cycles.",
+                cycles
+            );
         }
     }
 
@@ -71,7 +77,10 @@ fn run_blargg_test_rom(nes: &mut NES, max_cycles: u64) -> (u8, String) {
         cycles += 1;
         if cycles > max_cycles {
             let output = collect_test_output(nes);
-            panic!("Test took too long to end.  Gave up after {} cycles.  Current output: {}", cycles, output);
+            panic!(
+                "Test took too long to end.  Gave up after {} cycles.  Current output: {}",
+                cycles, output
+            );
         }
     }
 
@@ -84,7 +93,7 @@ fn run_blargg_test_rom(nes: &mut NES, max_cycles: u64) -> (u8, String) {
 fn collect_test_output(nes: &mut NES) -> String {
     // Collect output.
     let mut text_buf = vec![];
-    for ix in 0 .. 1000 {
+    for ix in 0..1000 {
         let byte = nes.cpu.borrow_mut().load_memory(0x6004 + ix);
         if byte == 0x00 {
             break;

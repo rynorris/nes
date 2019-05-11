@@ -7,10 +7,7 @@ pub struct Divider {
 
 impl Divider {
     pub fn new(period: u16) -> Divider {
-        Divider {
-            period,
-            counter: 0,
-        }
+        Divider { period, counter: 0 }
     }
 
     pub fn clock(&mut self) -> bool {
@@ -71,7 +68,9 @@ impl Envelope {
         } else {
             if self.divider.clock() {
                 if self.decay_level == 0 {
-                    if self.loop_flag { self.decay_level = 15 }
+                    if self.loop_flag {
+                        self.decay_level = 15
+                    }
                 } else {
                     self.decay_level -= 1;
                 }
@@ -188,7 +187,11 @@ impl Pulse {
 
     pub fn clock(&mut self) {
         if self.timer.clock() {
-            self.sequence_ix = if self.sequence_ix == 0 { 7 } else { self.sequence_ix - 1 }
+            self.sequence_ix = if self.sequence_ix == 0 {
+                7
+            } else {
+                self.sequence_ix - 1
+            }
         }
 
         self.sweep.clock(self.timer.period());
@@ -224,7 +227,7 @@ impl Pulse {
             return 0;
         }
 
-        self.envelope.volume() 
+        self.envelope.volume()
     }
 
     pub fn restart(&mut self) {
@@ -247,8 +250,8 @@ pub struct Triangle {
 
 impl Triangle {
     pub const SEQUENCE: [u8; 32] = [
-        15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+        12, 13, 14, 15,
     ];
 
     pub fn new() -> Triangle {
@@ -378,7 +381,7 @@ pub struct DMC {
     pub sample_len: u16,
 
     // State.
-    prg_rom: Box<dyn Reader>,  // Read-only access to ROM.
+    prg_rom: Box<dyn Reader>, // Read-only access to ROM.
     sample_buffer: Option<u8>,
     current_addr: u16,
     pub bytes_remaining: u16,
@@ -389,7 +392,9 @@ pub struct DMC {
 }
 
 impl DMC {
-    pub const PERIOD_LOOKUP: [u16; 16] = [428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106,  84,  72,  54];
+    pub const PERIOD_LOOKUP: [u16; 16] = [
+        428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54,
+    ];
 
     pub fn new(prg_rom: Box<dyn Reader>) -> DMC {
         DMC {
@@ -431,7 +436,9 @@ impl DMC {
             let byte = self.prg_rom.read(self.current_addr);
             self.sample_buffer = Some(byte);
             self.current_addr = self.current_addr.wrapping_add(1);
-            if self.current_addr == 0 { self.current_addr = 0x8000 };
+            if self.current_addr == 0 {
+                self.current_addr = 0x8000
+            };
 
             self.bytes_remaining = self.bytes_remaining.saturating_sub(1);
             if self.bytes_remaining == 0 {

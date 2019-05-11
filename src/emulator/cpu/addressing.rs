@@ -4,7 +4,7 @@ use crate::emulator::util;
 // An addressing mode calculates the final operand address, and returns it along with any extra
 // cycles it too, e.g. as the result of crossing a page boundary.
 // After finding the address, the function should leave the PC pointing at the next opcode.
-pub type AddressingMode = fn (cpu: &mut cpu::CPU) -> (u16, u32);
+pub type AddressingMode = fn(cpu: &mut cpu::CPU) -> (u16, u32);
 
 fn load_memory_from_pc(cpu: &mut cpu::CPU) -> u8 {
     let addr = cpu.pc;
@@ -12,7 +12,7 @@ fn load_memory_from_pc(cpu: &mut cpu::CPU) -> u8 {
 }
 
 // Implied: no operand.
-// Due to a quirk in the nature of the processor, even when doing implied addressing, 
+// Due to a quirk in the nature of the processor, even when doing implied addressing,
 // the CPU will read the next byte of memory and then discard it.
 pub fn implied(cpu: &mut cpu::CPU) -> (u16, u32) {
     let _ = load_memory_from_pc(cpu);
@@ -185,7 +185,7 @@ pub fn indirect(cpu: &mut cpu::CPU) -> (u16, u32) {
     cpu.pc += 1;
     let iah = load_memory_from_pc(cpu);
     cpu.pc += 1;
-    
+
     let addr = util::combine_bytes(iah, ial);
     let target = load_addr_within_page(cpu, addr);
     (target, 0)

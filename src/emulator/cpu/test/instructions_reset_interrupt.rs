@@ -35,4 +35,3 @@ fn test_brk() {
     assert_eq!(cpu.stack_pop(), (stored_pc >> 8) as u8); // PCH was stored.
     assert_eq!(cycles, 7);
 }
-

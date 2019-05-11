@@ -1,7 +1,6 @@
 use crate::emulator::memory::{Mapper, Memory};
 use crate::emulator::ppu::MirrorMode;
-use crate::emulator::state::{MapperState, MMC1State, SaveState};
-
+use crate::emulator::state::{MMC1State, MapperState, SaveState};
 
 // iNES Mapper 1: MMC1
 // 2 switchable 16k PRG ROM banks.
@@ -60,15 +59,15 @@ impl MMC1 {
             0 | 1 => {
                 self.prg_offsets[0] = self.prg_offset((self.prg_bank as u32) & 0x0E);
                 self.prg_offsets[1] = self.prg_offset(((self.prg_bank as u32) | 0x01) & 0x0F);
-            },
+            }
             2 => {
                 self.prg_offsets[0] = 0;
                 self.prg_offsets[1] = self.prg_offset((self.prg_bank as u32) & 0x0F);
-            },
+            }
             3 => {
                 self.prg_offsets[0] = self.prg_offset((self.prg_bank as u32) & 0x0F);
                 self.prg_offsets[1] = self.prg_offset((self.prg_rom.len() as u32) / 0x4000 - 1);
-            },
+            }
             _ => panic!("Invalid prg control value: {:b}", self.control),
         }
 
@@ -76,11 +75,11 @@ impl MMC1 {
             0 => {
                 self.chr_offsets[0] = self.chr_offset((self.chr_bank_1 as u32) & 0x1E);
                 self.chr_offsets[1] = self.chr_offset((self.chr_bank_1 as u32) | 0x01);
-            },
+            }
             1 => {
                 self.chr_offsets[0] = self.chr_offset((self.chr_bank_1 as u32) & 0x1F);
                 self.chr_offsets[1] = self.chr_offset((self.chr_bank_2 as u32) & 0x1F);
-            },
+            }
             _ => panic!("Invalid chr control value: {:b}", self.control),
         }
     }
@@ -99,14 +98,18 @@ impl Mapper for MMC1 {
         let rel = address;
         let bank = rel / 0x1000;
         let offset = rel % 0x1000;
-        self.chr_mem.get((self.chr_offsets[bank as usize] + (offset as u32)) as usize)
+        self.chr_mem
+            .get((self.chr_offsets[bank as usize] + (offset as u32)) as usize)
     }
 
     fn write_chr(&mut self, address: u16, byte: u8) {
         let rel = address;
         let bank = rel / 0x1000;
         let offset = rel % 0x1000;
-        self.chr_mem.put((self.chr_offsets[bank as usize] + (offset as u32)) as usize, byte);
+        self.chr_mem.put(
+            (self.chr_offsets[bank as usize] + (offset as u32)) as usize,
+            byte,
+        );
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
@@ -163,7 +166,7 @@ impl Mapper for MMC1 {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for MMC1 {
+impl<'de> SaveState<'de, MapperState> for MMC1 {
     fn freeze(&mut self) -> MapperState {
         MapperState::MMC1(MMC1State {
             load_register: self.load_register,
@@ -190,7 +193,7 @@ impl <'de> SaveState<'de, MapperState> for MMC1 {
                 self.prg_offsets.copy_from_slice(s.prg_offsets.as_slice());
                 self.chr_offsets.copy_from_slice(s.chr_offsets.as_slice());
                 self.chr_mem.hydrate(s.chr_mem);
-            },
+            }
             _ => panic!("Incompatible mapper state for MMC1 mapper: {:?}", state),
         }
     }

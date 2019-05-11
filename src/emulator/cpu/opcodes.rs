@@ -1,5 +1,7 @@
 macro_rules! opcode {
-    ($name:ident, $value:expr) => (pub const $name: u8 = $value;)
+    ($name:ident, $value:expr) => {
+        pub const $name: u8 = $value;
+    };
 }
 
 opcode!(ADC_IMM, 0x69);

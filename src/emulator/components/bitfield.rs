@@ -5,18 +5,18 @@ pub struct BitField {
 
 impl BitField {
     pub fn new() -> BitField {
-        BitField{byte: 0x00}
+        BitField { byte: 0x00 }
     }
 
-    pub fn is_set<F : Into<u8>>(&self, mask: F) -> bool {
+    pub fn is_set<F: Into<u8>>(&self, mask: F) -> bool {
         self.byte & (mask.into()) != 0
     }
 
-    pub fn set<F : Into<u8>>(&mut self, mask: F) {
+    pub fn set<F: Into<u8>>(&mut self, mask: F) {
         self.byte = self.byte | mask.into();
     }
 
-    pub fn clear<F : Into<u8>>(&mut self, mask: F) {
+    pub fn clear<F: Into<u8>>(&mut self, mask: F) {
         self.byte = self.byte & !mask.into();
     }
 
@@ -57,5 +57,3 @@ fn tests() {
     assert_eq!(bits.is_set(bit1), false);
     assert_eq!(bits.is_set(bit2), false);
 }
-
-

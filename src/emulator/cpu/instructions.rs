@@ -59,7 +59,11 @@ pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let (addr, addr_cycles) = load_addr(cpu);
     let mem = cpu.load_memory(addr);
 
-    let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
+    let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) {
+        1
+    } else {
+        0
+    };
     let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) && cpu.dec_arith_on {
         // BCD arithmetic.
         let hex_a = util::bcd_to_hex(cpu.a);
@@ -80,7 +84,7 @@ pub fn adc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
         let (res, carry2) = res.overflowing_add(carry_val);
         (res, carry1 || carry2)
     };
-    
+
     // Set carry flag.
     if carry {
         cpu.p.set(cpu::flags::Flag::C);
@@ -112,7 +116,11 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     let (addr, addr_cycles) = load_addr(cpu);
     let mem = cpu.load_memory(addr);
 
-    let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) { 1 } else { 0 };
+    let carry_val: u8 = if cpu.p.is_set(cpu::flags::Flag::C) {
+        1
+    } else {
+        0
+    };
     let (res, carry) = if cpu.p.is_set(cpu::flags::Flag::D) && cpu.dec_arith_on {
         // BCD arithmetic.
         let hex_a = util::bcd_to_hex(cpu.a);
@@ -133,7 +141,7 @@ pub fn sbc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
         let (res, carry2) = cpu.a.overflowing_add(minus_m);
         (res, carry1 || carry2)
     };
-    
+
     // Set carry flag.
     if carry {
         cpu.p.set(cpu::flags::Flag::C);
@@ -256,7 +264,11 @@ pub fn jmp(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
 }
 
 // Common functionality for branch instructions.
-fn branch_if(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode, should_branch: bool) -> u32 {
+fn branch_if(
+    cpu: &mut cpu::CPU,
+    load_addr: cpu::addressing::AddressingMode,
+    should_branch: bool,
+) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
     if should_branch {
         cpu.pc = addr;
@@ -315,7 +327,11 @@ pub fn bvc(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode) -> u3
     branch_if(cpu, load_addr, should_branch)
 }
 
-fn compare_instruction(cpu: &mut cpu::CPU, load_addr: cpu::addressing::AddressingMode, compare_with: u8) -> u32 {
+fn compare_instruction(
+    cpu: &mut cpu::CPU,
+    load_addr: cpu::addressing::AddressingMode,
+    compare_with: u8,
+) -> u32 {
     let (addr, addr_cycles) = load_addr(cpu);
     let mem = cpu.load_memory(addr);
 

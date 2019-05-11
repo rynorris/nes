@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::emulator::apu::synth::{Noise, Pulse, Triangle, DMC};
 use crate::emulator::apu::APU;
-use crate::emulator::apu::synth::{DMC, Noise, Pulse, Triangle};
 
 pub struct APUDebug {
     apu: Rc<RefCell<APU>>,
@@ -25,13 +25,13 @@ impl APUDebug {
         dummy_noise.envelope.set_volume(1);
         dummy_noise.envelope.constant_volume = true;
 
-        APUDebug {
-            apu,
-            dummy_noise,
-        }
+        APUDebug { apu, dummy_noise }
     }
 
-    pub fn do_render<F>(&mut self, render_waveforms: F) where F: FnOnce(&[u8]) -> () {
+    pub fn do_render<F>(&mut self, render_waveforms: F)
+    where
+        F: FnOnce(&[u8]) -> (),
+    {
         let mut waveform_buffer = [0; APUDebug::WAVEFORM_WIDTH * APUDebug::WAVEFORM_HEIGHT * 3];
 
         self.fill_waveform_buffer(&mut waveform_buffer);
@@ -60,7 +60,7 @@ impl APUDebug {
         }
 
         let mut prev_y = 0;
-        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+        for dx in 0..APUDebug::WAVEFORM_WIDTH {
             // Draw one column at a time.
             let seq_ix = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
             let dy = (15 - seq[seq_ix % 8] * amplitude + 8) as usize;
@@ -73,7 +73,7 @@ impl APUDebug {
                     (dy, prev_y)
                 };
 
-                for ix in from ..= to {
+                for ix in from..=to {
                     buffer[(((y + ix) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
                 }
             }
@@ -90,7 +90,7 @@ impl APUDebug {
             return;
         }
 
-        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+        for dx in 0..APUDebug::WAVEFORM_WIDTH {
             let seq_ix = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
             let dy = (15 - Triangle::SEQUENCE[seq_ix % 32] + 8) as usize;
 
@@ -110,14 +110,18 @@ impl APUDebug {
 
         let mut prev_seq = 0;
         let mut prev_y = 0;
-        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+        for dx in 0..APUDebug::WAVEFORM_WIDTH {
             let seq = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
             if seq != prev_seq {
                 dummy_noise.clock();
                 prev_seq = seq;
             }
             // hack back in the volume from the real noise.
-            let amplitude = if dummy_noise.volume() > 0 { noise.envelope.volume() } else { 0 };
+            let amplitude = if dummy_noise.volume() > 0 {
+                noise.envelope.volume()
+            } else {
+                0
+            };
             let dy = (15 - amplitude + 8) as usize;
             if prev_y != 0 && dy != prev_y {
                 // Draw vertical connecting bar.
@@ -127,7 +131,7 @@ impl APUDebug {
                     (dy, prev_y)
                 };
 
-                for ix in from ..= to {
+                for ix in from..=to {
                     buffer[(((y + ix) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
                 }
             }
@@ -140,16 +144,16 @@ impl APUDebug {
         // Drawing the actual sample seems too complex for little value.
         // For now just display an indicator of how much time is left on the sample.
         let bar_width = (dmc.bytes_remaining / 8) as usize;
-        let inverse_width = (APUDebug::WAVEFORM_WIDTH / 2).saturating_sub(bar_width/2);
-        
-        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+        let inverse_width = (APUDebug::WAVEFORM_WIDTH / 2).saturating_sub(bar_width / 2);
+
+        for dx in 0..APUDebug::WAVEFORM_WIDTH {
             if dx < inverse_width || APUDebug::WAVEFORM_WIDTH - dx < inverse_width {
                 continue;
             }
 
             buffer[(((y + 16) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
 
-            let half_inverse_width = (APUDebug::WAVEFORM_WIDTH / 2).saturating_sub(bar_width/4);
+            let half_inverse_width = (APUDebug::WAVEFORM_WIDTH / 2).saturating_sub(bar_width / 4);
             if dx < half_inverse_width || APUDebug::WAVEFORM_WIDTH - dx < half_inverse_width {
                 continue;
             }
@@ -160,7 +164,7 @@ impl APUDebug {
 
     fn draw_silence(buffer: &mut [u8], x: usize, y: usize) {
         // Base volume level is at 15, +8 to center it in the 32px tall box.
-        for dx in 0 .. APUDebug::WAVEFORM_WIDTH {
+        for dx in 0..APUDebug::WAVEFORM_WIDTH {
             buffer[(((y + 15 + 8) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
         }
     }

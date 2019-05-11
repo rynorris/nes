@@ -4,10 +4,10 @@ use std::fs::File;
 use std::rc::Rc;
 
 use crate::emulator::components::portal::Portal;
-use crate::emulator::io::{SimpleAudioOut, Screen};
 use crate::emulator::io::event::{Event, EventHandler, Key};
-use crate::emulator::{NES, NES_MASTER_CLOCK_HZ};
+use crate::emulator::io::{Screen, SimpleAudioOut};
 use crate::emulator::state::{load_state, save_state};
+use crate::emulator::{NES, NES_MASTER_CLOCK_HZ};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DebugMode {
@@ -45,10 +45,12 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn new(nes: NES,
-               screen: Rc<RefCell<Screen>>,
-               audio_output: Rc<RefCell<SimpleAudioOut>>,
-               state_portal: Portal<EmulatorState>) -> Controller {
+    pub fn new(
+        nes: NES,
+        screen: Rc<RefCell<Screen>>,
+        audio_output: Rc<RefCell<SimpleAudioOut>>,
+        state_portal: Portal<EmulatorState>,
+    ) -> Controller {
         Controller {
             nes,
             rom_name: None,
@@ -104,7 +106,9 @@ impl Controller {
     pub fn set_target_hz(&mut self, hz: u64) {
         self.state_portal.consume(|state| state.target_hz = hz);
         self.screen.borrow_mut().set_double_buffering(hz > 200_000);
-        self.audio_output.borrow_mut().set_enabled(hz >= 10_000_000 && hz <= 50_000_000);
+        self.audio_output
+            .borrow_mut()
+            .set_enabled(hz >= 10_000_000 && hz <= 50_000_000);
     }
 
     pub fn target_hz(&self) -> u64 {
@@ -139,7 +143,7 @@ impl Controller {
 
     pub fn debug_print(&mut self, start: u16, len: u16) {
         println!("CPU Memory starting from ${:X}", start);
-        for ix in 0 .. len {
+        for ix in 0..len {
             print!("{:02X} ", self.nes.cpu.borrow_mut().load_memory(start + ix));
         }
         println!("");
@@ -171,11 +175,11 @@ impl Controller {
         } else {
             // Set speed.
             let target_hz = match num {
-                1 => 0,  // Paused.
-                2 => 20_000,  // Scanlines.
-                3 => 200_000,  // Frames.
+                1 => 0,          // Paused.
+                2 => 20_000,     // Scanlines.
+                3 => 200_000,    // Frames.
                 4 => 2_000_000,  // 1/10 Slow-mo.
-                5 => 10_000_000,  // 1/2 Slow-mo.
+                5 => 10_000_000, // 1/2 Slow-mo.
                 6 => NES_MASTER_CLOCK_HZ,
                 7 => NES_MASTER_CLOCK_HZ * 2,
                 8 => NES_MASTER_CLOCK_HZ * 3,
@@ -203,8 +207,11 @@ impl EventHandler for Controller {
                             self.set_tracing(true);
                             self.nes.cpu.borrow_mut().start_tracing();
                         }
-                        println!("CPU Tracing: {}", if self.is_tracing() { "ON" } else { "OFF" });
-                    },
+                        println!(
+                            "CPU Tracing: {}",
+                            if self.is_tracing() { "ON" } else { "OFF" }
+                        );
+                    }
                     Key::Return => {
                         self.dump_trace();
                     }
@@ -222,10 +229,10 @@ impl EventHandler for Controller {
                     Key::Backspace => self.reset(),
                     _ => (),
                 };
-            },
+            }
             Event::KeyUp(key) => {
                 self.key_states.insert(key, false);
-            },
+            }
         };
     }
 }

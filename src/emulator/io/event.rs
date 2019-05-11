@@ -12,22 +12,66 @@ pub enum Event {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Key {
-    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    Backquote, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9, Num0,
-    Up, Down, Left, Right,
-    Minus, Equals, Backspace,
-    Escape, Return, Tab, Space,
-    Shift, Control,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    Backquote,
+    Num1,
+    Num2,
+    Num3,
+    Num4,
+    Num5,
+    Num6,
+    Num7,
+    Num8,
+    Num9,
+    Num0,
+    Up,
+    Down,
+    Left,
+    Right,
+    Minus,
+    Equals,
+    Backspace,
+    Escape,
+    Return,
+    Tab,
+    Space,
+    Shift,
+    Control,
 }
 
 pub trait EventHandler {
     fn handle_event(&mut self, event: Event);
-    fn handle_event_with_dispatch(&mut self, _dispatch: &FnOnce (Event) -> (), event: Event) {
+    fn handle_event_with_dispatch(&mut self, _dispatch: &FnOnce(Event) -> (), event: Event) {
         self.handle_event(event);
     }
 }
 
-impl <H : EventHandler> EventHandler for Rc<RefCell<H>> {
+impl<H: EventHandler> EventHandler for Rc<RefCell<H>> {
     fn handle_event(&mut self, event: Event) {
         self.borrow_mut().handle_event(event);
     }

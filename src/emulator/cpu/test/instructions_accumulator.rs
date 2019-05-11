@@ -196,4 +196,3 @@ fn test_nop_does_nothing_and_takes_2_cycles() {
     let cycles = run_program(&mut cpu, &[0xEA]);
     assert_eq!(cycles, 2);
 }
-

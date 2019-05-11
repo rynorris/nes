@@ -1,6 +1,6 @@
 use crate::emulator::memory::{Mapper, Memory};
 use crate::emulator::ppu::MirrorMode;
-use crate::emulator::state::{MapperState, MMC3State, SaveState};
+use crate::emulator::state::{MMC3State, MapperState, SaveState};
 
 // 1x 8kb PRG RAM - right now we have this sram outside the mappers, so ignored here.
 // 4x 8kb switchable PRG ROM
@@ -72,14 +72,62 @@ impl Mapper for MMC3 {
     fn read_chr(&mut self, address: u16) -> u8 {
         let (bank_ix, bank_size) = match address {
             // CHR banks.
-            0x0000 ... 0x03FF => if self.chr_inversion { (2, 0x400) } else { (0, 0x800) },
-            0x0400 ... 0x07FF => if self.chr_inversion { (3, 0x400) } else { (0, 0x800) },
-            0x0800 ... 0x0BFF => if self.chr_inversion { (4, 0x400) } else { (1, 0x800) },
-            0x0C00 ... 0x0FFF => if self.chr_inversion { (5, 0x400) } else { (1, 0x800) },
-            0x1000 ... 0x13FF => if self.chr_inversion { (0, 0x800) } else { (2, 0x400) },
-            0x1400 ... 0x17FF => if self.chr_inversion { (0, 0x800) } else { (3, 0x400) },
-            0x1800 ... 0x1BFF => if self.chr_inversion { (1, 0x800) } else { (4, 0x400) },
-            0x1C00 ... 0x1FFF => if self.chr_inversion { (1, 0x800) } else { (5, 0x400) },
+            0x0000...0x03FF => {
+                if self.chr_inversion {
+                    (2, 0x400)
+                } else {
+                    (0, 0x800)
+                }
+            }
+            0x0400...0x07FF => {
+                if self.chr_inversion {
+                    (3, 0x400)
+                } else {
+                    (0, 0x800)
+                }
+            }
+            0x0800...0x0BFF => {
+                if self.chr_inversion {
+                    (4, 0x400)
+                } else {
+                    (1, 0x800)
+                }
+            }
+            0x0C00...0x0FFF => {
+                if self.chr_inversion {
+                    (5, 0x400)
+                } else {
+                    (1, 0x800)
+                }
+            }
+            0x1000...0x13FF => {
+                if self.chr_inversion {
+                    (0, 0x800)
+                } else {
+                    (2, 0x400)
+                }
+            }
+            0x1400...0x17FF => {
+                if self.chr_inversion {
+                    (0, 0x800)
+                } else {
+                    (3, 0x400)
+                }
+            }
+            0x1800...0x1BFF => {
+                if self.chr_inversion {
+                    (1, 0x800)
+                } else {
+                    (4, 0x400)
+                }
+            }
+            0x1C00...0x1FFF => {
+                if self.chr_inversion {
+                    (1, 0x800)
+                } else {
+                    (5, 0x400)
+                }
+            }
             _ => panic!("Unexpected address: ${:X}", address),
         };
 
@@ -107,10 +155,34 @@ impl Mapper for MMC3 {
     fn read_prg(&mut self, address: u16) -> u8 {
         let (bank_ix, bank_size) = match address {
             // PRG banks.
-            0x8000 ... 0x9FFF => if self.prg_inversion { (8, 0x2000) } else { (6, 0x2000) },
-            0xA000 ... 0xBFFF => if self.prg_inversion { (7, 0x2000) } else { (7, 0x2000) },
-            0xC000 ... 0xDFFF => if self.prg_inversion { (6, 0x2000) } else { (8, 0x2000) },
-            0xE000 ... 0xFFFF => if self.prg_inversion { (9, 0x2000) } else { (9, 0x2000) },
+            0x8000...0x9FFF => {
+                if self.prg_inversion {
+                    (8, 0x2000)
+                } else {
+                    (6, 0x2000)
+                }
+            }
+            0xA000...0xBFFF => {
+                if self.prg_inversion {
+                    (7, 0x2000)
+                } else {
+                    (7, 0x2000)
+                }
+            }
+            0xC000...0xDFFF => {
+                if self.prg_inversion {
+                    (6, 0x2000)
+                } else {
+                    (8, 0x2000)
+                }
+            }
+            0xE000...0xFFFF => {
+                if self.prg_inversion {
+                    (9, 0x2000)
+                } else {
+                    (9, 0x2000)
+                }
+            }
             _ => panic!("Unexpected address: ${:X}", address),
         };
 
@@ -122,7 +194,7 @@ impl Mapper for MMC3 {
 
     fn write_prg(&mut self, address: u16, byte: u8) {
         // The MMC3 has 4 pairs of registers at $8000-$9FFF, $A000-$BFFF, $C000-$DFFF, and $E000-$FFFF
-        //   - even addresses ($8000, $8002, etc.) select the low register 
+        //   - even addresses ($8000, $8002, etc.) select the low register
         //   - odd addresses ($8001, $8003, etc.) select the high register in each pair.
         // These can be broken into two independent functional units:
         //   - memory mapping ($8000, $8001, $A000, $A001)
@@ -139,15 +211,18 @@ impl Mapper for MMC3 {
                     // Handle PRG and CHR separately.
                     if self.bank_select >= 6 {
                         // PRG, 8kb banks, ignores top 2 bits.
-                        self.bank_registers[self.bank_select] = (((byte & 0x3F) as usize) << 13) % self.prg_rom.len();
+                        self.bank_registers[self.bank_select] =
+                            (((byte & 0x3F) as usize) << 13) % self.prg_rom.len();
                     } else if self.bank_select <= 1 {
                         // 2kb CHR banks can only select even banks.
-                        self.bank_registers[self.bank_select] = (((byte & 0xFE) as usize) << 10) % self.chr_mem.len();
+                        self.bank_registers[self.bank_select] =
+                            (((byte & 0xFE) as usize) << 10) % self.chr_mem.len();
                     } else {
-                        self.bank_registers[self.bank_select] = ((byte as usize) << 10) % self.chr_mem.len();
+                        self.bank_registers[self.bank_select] =
+                            ((byte as usize) << 10) % self.chr_mem.len();
                     }
                 }
-            },
+            }
             0xA000 => {
                 if address & 0x1 == 0 {
                     // 0xA000, even => mirror mode.
@@ -159,7 +234,7 @@ impl Mapper for MMC3 {
                     // 0xA000, odd => PRG RAM protect
                     // Unimplemented for compatibility with MMC6.
                 }
-            },
+            }
             0xC000 => {
                 if address & 0x1 == 0 {
                     // 0xC000, even => IRQ Latch
@@ -168,7 +243,7 @@ impl Mapper for MMC3 {
                     // 0xC000, odd => IRQ Reload
                     self.irq_reload_flag = true;
                 }
-            },
+            }
             0xE000 => {
                 if address & 0x1 == 0 {
                     // 0xE000, even => IRQ disable
@@ -178,7 +253,7 @@ impl Mapper for MMC3 {
                     // 0xE000, odd => IRQ enable
                     self.irq_enabled = true;
                 }
-            },
+            }
 
             _ => panic!("Unexpected address: ${:X}", address),
         }
@@ -193,7 +268,7 @@ impl Mapper for MMC3 {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for MMC3 {
+impl<'de> SaveState<'de, MapperState> for MMC3 {
     fn freeze(&mut self) -> MapperState {
         MapperState::MMC3(MMC3State {
             bank_registers: self.bank_registers.to_vec(),
@@ -215,7 +290,8 @@ impl <'de> SaveState<'de, MapperState> for MMC3 {
     fn hydrate(&mut self, state: MapperState) {
         match state {
             MapperState::MMC3(s) => {
-                self.bank_registers.copy_from_slice(s.bank_registers.as_slice());
+                self.bank_registers
+                    .copy_from_slice(s.bank_registers.as_slice());
                 self.bank_select = s.bank_select;
                 self.prg_inversion = s.prg_inversion;
                 self.chr_inversion = s.chr_inversion;
@@ -227,7 +303,7 @@ impl <'de> SaveState<'de, MapperState> for MMC3 {
                 self.ppu_a12_low_counter = s.ppu_a12_low_counter;
                 self.mirror_mode = s.mirror_mode;
                 self.chr_mem.hydrate(s.chr_mem);
-            },
+            }
             _ => panic!("Incompatible mapper state for MMC3 mapper: {:?}", state),
         }
     }

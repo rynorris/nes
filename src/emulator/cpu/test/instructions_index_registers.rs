@@ -481,4 +481,3 @@ fn test_tya_sets_zero_flag() {
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), true);
     assert_eq!(cycles, 2);
 }
-

@@ -47,7 +47,7 @@ pub fn hex_to_bcd(hex: u8) -> u8 {
 
 pub fn reverse_bits(mut byte: u8) -> u8 {
     let mut target = 0x00;
-    for _ in 0 .. 8 {
+    for _ in 0..8 {
         target <<= 1;
         target |= byte & 0x01;
         byte >>= 1;

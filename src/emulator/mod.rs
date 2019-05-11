@@ -8,8 +8,8 @@ pub mod ines;
 pub mod io;
 pub mod mappers;
 pub mod memory;
-pub mod state;
 pub mod ppu;
+pub mod state;
 pub mod util;
 
 #[cfg(test)]
@@ -20,8 +20,8 @@ use std::rc::Rc;
 
 use crate::emulator::apu::AudioOut;
 use crate::emulator::controller::Button;
-use crate::emulator::io::Screen;
 use crate::emulator::io::event::{EventBus, Key};
+use crate::emulator::io::Screen;
 use crate::emulator::memory::{IORegisters, Writer};
 use crate::emulator::state::{NESState, SaveState};
 
@@ -50,8 +50,15 @@ pub struct NES {
 }
 
 impl NES {
-    pub fn new<A>(event_bus: Rc<RefCell<EventBus>>, screen: Rc<RefCell<Screen>>, audio: A, rom: ines::ROM) -> NES where
-    A: AudioOut + 'static {
+    pub fn new<A>(
+        event_bus: Rc<RefCell<EventBus>>,
+        screen: Rc<RefCell<Screen>>,
+        audio: A,
+        rom: ines::ROM,
+    ) -> NES
+    where
+        A: AudioOut + 'static,
+    {
         // Create master clock.
         let mut clock = clock::Clock::new();
 
@@ -71,29 +78,36 @@ impl NES {
         );
 
         let ppu = Rc::new(RefCell::new(ppu::PPU::new(
-                    ppu_memory,
-                    Box::new(screen.clone()))));
+            ppu_memory,
+            Box::new(screen.clone()),
+        )));
 
         // Create APU.
         let apu = Rc::new(RefCell::new(apu::APU::new(
-                    Box::new(audio),
-                    Box::new(memory::PrgMapper::new(mapper.clone())),
-                    )));
+            Box::new(audio),
+            Box::new(memory::PrgMapper::new(mapper.clone())),
+        )));
 
         // Create controllers.
-        let joy1 = Rc::new(RefCell::new(controller::Controller::new([
-           (Key::Z, Button::A),
-           (Key::X, Button::B),
-           (Key::A, Button::Start),
-           (Key::S, Button::Select),
-           (Key::Up, Button::Up),
-           (Key::Down, Button::Down),
-           (Key::Left, Button::Left),
-           (Key::Right, Button::Right),
-        ].iter().cloned().collect())));
+        let joy1 = Rc::new(RefCell::new(controller::Controller::new(
+            [
+                (Key::Z, Button::A),
+                (Key::X, Button::B),
+                (Key::A, Button::Start),
+                (Key::S, Button::Select),
+                (Key::Up, Button::Up),
+                (Key::Down, Button::Down),
+                (Key::Left, Button::Left),
+                (Key::Right, Button::Right),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+        )));
 
-        let joy2 = Rc::new(RefCell::new(controller::Controller::new([
-        ].iter().cloned().collect())));
+        let joy2 = Rc::new(RefCell::new(controller::Controller::new(
+            [].iter().cloned().collect(),
+        )));
 
         event_bus.borrow_mut().register(Box::new(joy1.clone()));
         event_bus.borrow_mut().register(Box::new(joy2.clone()));
@@ -110,17 +124,14 @@ impl NES {
             Box::new(ppu.clone()),
             Box::new(io_registers.clone()),
             Box::new(sram.clone()),
-            Box::new(memory::PrgMapper::new(mapper.clone()))
+            Box::new(memory::PrgMapper::new(mapper.clone())),
         );
 
         let cpu = Rc::new(RefCell::new(cpu::new(Box::new(cpu_memory))));
         cpu.borrow_mut().disable_bcd();
         cpu.borrow_mut().startup_sequence();
 
-        let dma_controller = DMAController::new(
-            io_registers.clone(),
-            cpu.clone()
-        );
+        let dma_controller = DMAController::new(io_registers.clone(), cpu.clone());
 
         // Wire up the clock timings.
         let cpu_ticker = clock::ScaledTicker::new(Box::new(dma_controller), NES_CPU_CLOCK_FACTOR);
@@ -171,7 +182,7 @@ impl NES {
 
     pub fn tick_multi(&mut self, ticks: u32) -> u64 {
         let mut cycles = 0u64;
-        for _ in 0 .. ticks {
+        for _ in 0..ticks {
             cycles += self.tick()
         }
         cycles
@@ -180,7 +191,7 @@ impl NES {
     pub fn reset(&mut self) {
         // Silence APU.
         self.apu.borrow_mut().write(0x4015, 0x00);
-        
+
         // Restart CPU.
         self.cpu.borrow_mut().startup_sequence();
     }
@@ -194,12 +205,15 @@ pub struct DMAController {
 }
 
 impl DMAController {
-    pub fn new(io_registers: Rc<RefCell<IORegisters>>, cpu: Rc<RefCell<cpu::CPU>>) -> DMAController {
+    pub fn new(
+        io_registers: Rc<RefCell<IORegisters>>,
+        cpu: Rc<RefCell<cpu::CPU>>,
+    ) -> DMAController {
         DMAController {
             copies_remaining: 0,
             base_address: 0,
             io_registers,
-            cpu, 
+            cpu,
         }
     }
 }
@@ -212,12 +226,15 @@ impl clock::Ticker for DMAController {
                 // DMA triggered.
                 self.base_address = (byte as u16) << 8;
                 self.copies_remaining = 256;
-            },
+            }
         }
 
         if self.copies_remaining > 0 {
             // CPU is suspended during copy.
-            let byte = self.cpu.borrow_mut().load_memory(self.base_address.wrapping_add(256 - self.copies_remaining));
+            let byte = self
+                .cpu
+                .borrow_mut()
+                .load_memory(self.base_address.wrapping_add(256 - self.copies_remaining));
             self.cpu.borrow_mut().store_memory(0x2004, byte);
             self.copies_remaining -= 1;
             2
@@ -227,7 +244,7 @@ impl clock::Ticker for DMAController {
     }
 }
 
-impl <'de> SaveState<'de, NESState> for NES {
+impl<'de> SaveState<'de, NESState> for NES {
     fn freeze(&mut self) -> NESState {
         NESState {
             cpu: self.cpu.borrow_mut().freeze(),

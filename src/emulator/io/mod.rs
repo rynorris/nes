@@ -56,8 +56,12 @@ impl Screen {
         }
     }
 
-    pub fn do_render<F : FnOnce(&[u8]) -> ()>(&self, render: F) {
-        let buffer = if self.double_buffering { &self.backup_buffer } else { &self.screen_buffer };
+    pub fn do_render<F: FnOnce(&[u8]) -> ()>(&self, render: F) {
+        let buffer = if self.double_buffering {
+            &self.backup_buffer
+        } else {
+            &self.screen_buffer
+        };
         render(buffer);
     }
 
@@ -66,7 +70,7 @@ impl Screen {
     }
 }
 
-impl <'de> SaveState<'de, ScreenState> for Screen {
+impl<'de> SaveState<'de, ScreenState> for Screen {
     fn freeze(&mut self) -> ScreenState {
         ScreenState {
             scanline: self.scanline,
@@ -102,8 +106,7 @@ impl SimpleAudioOut {
             // Sample rate: 894886Hz.
             //   - from: 0Hz,   to: 20kHz,    gain: 1, ripple/att: 5dB
             //   - from: 30kHz, to: 446443Hz, gain: 0, ripple/att: -90dB
-            fir_filter: FIRFilter::new(
-                vec![
+            fir_filter: FIRFilter::new(vec![
                 -0.000026911389850328808,
                 -0.00003081140855425942,
                 -0.00004779032648771152,
@@ -319,7 +322,7 @@ impl SimpleAudioOut {
                 -0.00004779032648771152,
                 -0.00003081140855425942,
                 -0.000026911389850328808,
-                ]),
+            ]),
             low_pass_filter: LowPassFilter::new(35_000.0, SimpleAudioOut::APU_CLOCK),
             high_pass_filter_1: HighPassFilter::new(440.0, sample_rate),
             high_pass_filter_2: HighPassFilter::new(90.0, sample_rate),
@@ -329,7 +332,12 @@ impl SimpleAudioOut {
 
     // master_cycles indicates the number of master clock cycles which have elapsed.
     // num_samples indicates how many samples we should output that into.
-    pub fn consume<F : FnOnce(&[f32]) -> ()>(&mut self, master_cycles: u64, num_samples: u64, consume: F) {
+    pub fn consume<F: FnOnce(&[f32]) -> ()>(
+        &mut self,
+        master_cycles: u64,
+        num_samples: u64,
+        consume: F,
+    ) {
         if self.buffer.len() == 0 || num_samples == 0 || !self.enabled {
             self.buffer.clear();
             return;
@@ -343,7 +351,7 @@ impl SimpleAudioOut {
         let step = (apu_cycles as f64) / (num_samples as f64);
 
         let mut counter = 0.0;
-        for ix in 0 .. total {
+        for ix in 0..total {
             self.fir_filter.shift(self.buffer[ix]);
 
             counter += 1.0;
@@ -353,7 +361,7 @@ impl SimpleAudioOut {
                 buf.push(sample);
             }
         }
-        
+
         consume(&buf);
         self.buffer.clear();
     }
@@ -428,10 +436,10 @@ struct FIRFilter {
 }
 
 impl FIRFilter {
-    pub fn new(impulse_response: Vec<f32>) -> FIRFilter  {
+    pub fn new(impulse_response: Vec<f32>) -> FIRFilter {
         let order = impulse_response.len();
         let mut buffer = VecDeque::with_capacity(order);
-        for _ in 0 .. order {
+        for _ in 0..order {
             buffer.push_back(0.0);
         }
 
@@ -452,7 +460,7 @@ impl FIRFilter {
 
     fn compute_sample(&self) -> f32 {
         let mut sample = 0.0;
-        for ix in 0 .. self.impulse_response.len() {
+        for ix in 0..self.impulse_response.len() {
             sample += self.buffer[ix] * self.impulse_response[ix];
         }
         sample

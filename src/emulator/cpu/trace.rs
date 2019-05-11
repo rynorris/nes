@@ -2,11 +2,16 @@ use std::io::Write;
 
 use crate::emulator::cpu::opcodes;
 
-pub fn write_trace_frame<W : Write>(w: &mut W, frame: &[u8]) {
+pub fn write_trace_frame<W: Write>(w: &mut W, frame: &[u8]) {
     if let [a, x, y, sp, pch, pcl, p, opcode, arg1, arg2] = frame {
         write!(w, "{:02X}{:02X}  ", pch, pcl).unwrap();
         write!(w, "{}", format_instruction(*opcode, *arg1, *arg2)).unwrap();
-        write!(w, "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}", a, x, y, p, sp).unwrap();
+        write!(
+            w,
+            "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+            a, x, y, p, sp
+        )
+        .unwrap();
     }
 }
 
@@ -280,13 +285,21 @@ pub fn format_instruction(opcode: u8, b1: u8, b2: u8) -> String {
         opcodes::TSX => ("TSX", 0, format_implied()),
         opcodes::TXS => ("TXS", 0, format_implied()),
 
-        _ => panic!("Unknown opcode: {:X}", opcode)
+        _ => panic!("Unknown opcode: {:X}", opcode),
     };
 
     let mut output = format!("{:02X} ", opcode);
-    let b1_str = if num_args >= 1 { format!("{:02X} ", b1) } else { String::from("   ") };
+    let b1_str = if num_args >= 1 {
+        format!("{:02X} ", b1)
+    } else {
+        String::from("   ")
+    };
     output.push_str(&b1_str);
-    let b2_str = if num_args >= 2 { format!("{:02X}  ", b2) } else { String::from("    ") };
+    let b2_str = if num_args >= 2 {
+        format!("{:02X}  ", b2)
+    } else {
+        String::from("    ")
+    };
     output.push_str(&b2_str);
     output.push_str(&format!("{} {:<28}", opstring, human));
 

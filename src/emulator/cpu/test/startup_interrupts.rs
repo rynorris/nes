@@ -23,15 +23,16 @@ fn test_interrupt_during_simple_program() {
     // Interrupt routine lives at address 0x6000.
     load_data(&mut cpu.memory, 0x0099, &[0x34]);
     let program = [
-        opcodes::LDA_ZPG, 0x99,  // LDA 0x34
-        opcodes::ADC_IMM, 0x56,  // ADC # 0x56
-        opcodes::STA_ABS, 0xEF, 0xBE,  // STA 0xBEEF
+        opcodes::LDA_ZPG,
+        0x99, // LDA 0x34
+        opcodes::ADC_IMM,
+        0x56, // ADC # 0x56
+        opcodes::STA_ABS,
+        0xEF,
+        0xBE, // STA 0xBEEF
     ];
 
-    let interrupt_routine = [
-        opcodes::LDX_IMM, 0x24,
-        opcodes::RTI,
-    ];
+    let interrupt_routine = [opcodes::LDX_IMM, 0x24, opcodes::RTI];
 
     // Load programs.
     load_data(&mut cpu.memory, 0x8000, &program);
@@ -63,4 +64,3 @@ fn test_interrupt_during_simple_program() {
     // Check interrupt routine ran.
     assert_eq!(cpu.x, 0x24);
 }
-

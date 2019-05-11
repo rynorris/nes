@@ -52,7 +52,7 @@ impl Mapper for ColorDreams {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for ColorDreams {
+impl<'de> SaveState<'de, MapperState> for ColorDreams {
     fn freeze(&mut self) -> MapperState {
         MapperState::ColorDreams(ColorDreamsState {
             prg_bank: self.prg_bank,
@@ -67,9 +67,11 @@ impl <'de> SaveState<'de, MapperState> for ColorDreams {
                 self.prg_bank = s.prg_bank;
                 self.chr_bank = s.chr_bank;
                 self.chr_mem.hydrate(s.chr_mem);
-            },
-            _ => panic!("Incompatible mapper state for ColorDreams mapper: {:?}", state),
+            }
+            _ => panic!(
+                "Incompatible mapper state for ColorDreams mapper: {:?}",
+                state
+            ),
         }
     }
 }
-

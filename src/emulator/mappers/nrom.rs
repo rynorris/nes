@@ -13,7 +13,11 @@ pub struct NROM {
 
 impl NROM {
     pub fn new(prg_rom: Memory, chr_rom: Memory, mirror_mode: MirrorMode) -> NROM {
-        NROM { prg_rom, chr_rom, mirror_mode }
+        NROM {
+            prg_rom,
+            chr_rom,
+            mirror_mode,
+        }
     }
 }
 
@@ -27,7 +31,8 @@ impl Mapper for NROM {
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
-        self.prg_rom.get(((address - 0x8000) % self.prg_rom.len() as u16) as usize)
+        self.prg_rom
+            .get(((address - 0x8000) % self.prg_rom.len() as u16) as usize)
     }
 
     fn write_prg(&mut self, _address: u16, _byte: u8) {
@@ -39,7 +44,7 @@ impl Mapper for NROM {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for NROM {
+impl<'de> SaveState<'de, MapperState> for NROM {
     fn freeze(&mut self) -> MapperState {
         MapperState::NROM
     }

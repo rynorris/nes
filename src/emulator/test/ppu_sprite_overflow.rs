@@ -38,4 +38,3 @@ fn test_ppu_sprite_overflow_05() {
     assert_eq!(status, 0x00);
     assert_eq!(output, "\n05-emulator\n\nPassed\n");
 }
-
