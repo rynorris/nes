@@ -8,12 +8,15 @@ jobs:
       - checkout
       - restore_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
-      - name: Build
-        command: cargo build
-      - name: Test
-        command: cargo test
-      - name: Lint
-        command: cargo fmt --write-mode=diff
+      - run:
+          name: Build
+          command: cargo build
+      - run:
+          name: Test
+          command: cargo test
+      - run:
+          name: Lint
+          command: cargo fmt --write-mode=diff
       - save_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
           paths:
