@@ -11,8 +11,8 @@ use flate2::write::GzEncoder;
 use serde::{Serialize, Deserialize};
 use serde_json::Serializer;
 
-use emulator::ppu::MirrorMode;
-use emulator::NES;
+use crate::emulator::ppu::MirrorMode;
+use crate::emulator::NES;
 
 pub trait SaveState<'de, T: Serialize + Deserialize<'de>> {
     fn freeze(&mut self) -> T;

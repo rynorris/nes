@@ -10,12 +10,12 @@ mod test;
 use std::io::{BufWriter, Write};
 use std::time::Instant;
 
-use emulator::clock;
-use emulator::components::bitfield::BitField;
-use emulator::components::ringbuffer::RingBuffer;
-use emulator::memory::ReadWriter;
-use emulator::state;
-use emulator::util;
+use crate::emulator::clock;
+use crate::emulator::components::bitfield::BitField;
+use crate::emulator::components::ringbuffer::RingBuffer;
+use crate::emulator::memory::ReadWriter;
+use crate::emulator::state;
+use crate::emulator::util;
 
 // Program vector locations.
 pub const START_VECTOR: u16 = 0xFFFC;
@@ -526,7 +526,7 @@ impl CPU {
                 match args {
                     [_, _, _, _, _, _, _, _, _, _] => {
                         trace::write_trace_frame(&mut buf, args);
-                        write!(buf, "\n");
+                        write!(buf, "\n").unwrap();
                     },
                     _ => (),
                 };

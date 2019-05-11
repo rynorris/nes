@@ -1,4 +1,4 @@
-use emulator::memory::Reader;
+use crate::emulator::memory::Reader;
 
 pub struct Divider {
     period: u16,

@@ -6,10 +6,10 @@ pub mod sdl;
 use std::collections::VecDeque;
 use std::f32::consts::PI;
 
-use emulator::apu;
-use emulator::ppu;
-use emulator::state::{SaveState, ScreenState};
-use emulator::NES_APU_CLOCK_FACTOR;
+use crate::emulator::apu;
+use crate::emulator::ppu;
+use crate::emulator::state::{SaveState, ScreenState};
+use crate::emulator::NES_APU_CLOCK_FACTOR;
 
 pub trait Graphics {
     fn draw_screen(&mut self, pixel_data: &[u8]);

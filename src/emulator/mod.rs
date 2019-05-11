@@ -18,12 +18,12 @@ mod test;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::apu::AudioOut;
-use emulator::controller::Button;
-use emulator::io::Screen;
-use emulator::io::event::{EventBus, Key};
-use emulator::memory::{IORegisters, Writer};
-use emulator::state::{NESState, SaveState};
+use crate::emulator::apu::AudioOut;
+use crate::emulator::controller::Button;
+use crate::emulator::io::Screen;
+use crate::emulator::io::event::{EventBus, Key};
+use crate::emulator::memory::{IORegisters, Writer};
+use crate::emulator::state::{NESState, SaveState};
 
 // Timings (NTSC).
 // Master clock = 21.477272 MHz ~= 46.5ns per clock.

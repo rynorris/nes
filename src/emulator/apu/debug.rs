@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::apu::APU;
-use emulator::apu::synth::{DMC, Noise, Pulse, Triangle};
+use crate::emulator::apu::APU;
+use crate::emulator::apu::synth::{DMC, Noise, Pulse, Triangle};
 
 pub struct APUDebug {
     apu: Rc<RefCell<APU>>,

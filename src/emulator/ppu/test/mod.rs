@@ -1,9 +1,9 @@
 mod background;
 mod data;
 
-use emulator::memory;
-use emulator::memory::Writer;
-use emulator::ppu::{Colour, Mirrorer, MirrorMode, PPU, VideoOut};
+use crate::emulator::memory;
+use crate::emulator::memory::Writer;
+use crate::emulator::ppu::{Colour, Mirrorer, MirrorMode, PPU, VideoOut};
 
 fn new_ppu(output: Box<VideoOut>) -> PPU {
     let ppu_memory = memory::PPUMemory::new(

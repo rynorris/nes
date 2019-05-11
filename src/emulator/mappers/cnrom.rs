@@ -1,6 +1,6 @@
-use emulator::memory::{Mapper, Memory};
-use emulator::ppu::MirrorMode;
-use emulator::state::{CNROMState, MapperState, SaveState};
+use crate::emulator::memory::{Mapper, Memory};
+use crate::emulator::ppu::MirrorMode;
+use crate::emulator::state::{CNROMState, MapperState, SaveState};
 
 // iNES Mapper 3: CNROM
 // Non-switchable PRG ROM, mirrorred to fill the space.

@@ -1,16 +1,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::ines;
-use emulator::io;
-use emulator::io::event::EventBus;
-use emulator::io::sdl::ImageCapture;
-use emulator::NES;
+use crate::emulator::ines;
+use crate::emulator::io;
+use crate::emulator::io::event::EventBus;
+use crate::emulator::io::sdl::ImageCapture;
+use crate::emulator::NES;
 
-use emulator::test::assert_image;
-use emulator::test::load_and_run_blargg_test_rom;
-use emulator::test::run_for;
-use emulator::test::test_resource_path;
+use crate::emulator::test::assert_image;
+use crate::emulator::test::load_and_run_blargg_test_rom;
+use crate::emulator::test::run_for;
+use crate::emulator::test::test_resource_path;
 
 
 #[test]

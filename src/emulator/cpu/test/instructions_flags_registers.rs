@@ -1,7 +1,7 @@
-use emulator::cpu;
+use crate::emulator::cpu;
 
-use emulator::cpu::test::new_cpu;
-use emulator::cpu::test::run_program;
+use crate::emulator::cpu::test::new_cpu;
+use crate::emulator::cpu::test::run_program;
 
 #[test]
 fn test_sec() {

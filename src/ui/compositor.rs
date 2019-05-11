@@ -1,8 +1,8 @@
-use emulator::components::portal::Portal;
-use emulator::apu::debug::APUDebug;
-use emulator::ppu::debug::{PPUDebug, PPUDebugRender};
+use crate::emulator::components::portal::Portal;
+use crate::emulator::apu::debug::APUDebug;
+use crate::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
 
-use ui::controller::DebugMode;
+use crate::ui::controller::DebugMode;
 
 use sdl2::{pixels, rect, render, video};
 

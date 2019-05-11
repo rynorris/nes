@@ -1,5 +1,5 @@
-use emulator::cpu;
-use emulator::util;
+use crate::emulator::cpu;
+use crate::emulator::util;
 
 pub type Operation = fn(&mut cpu::CPU, cpu::addressing::AddressingMode) -> u32;
 

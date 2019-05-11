@@ -1,5 +1,5 @@
-use emulator::test::load_and_run_blargg_test_rom;
-use emulator::test::test_resource_path;
+use crate::emulator::test::load_and_run_blargg_test_rom;
+use crate::emulator::test::test_resource_path;
 
 // -- ppu_sprite_overflow test ROMs --
 // TODO: Add test for 03 once my CPU is timed cycle-accurate.

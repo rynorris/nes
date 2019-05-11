@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::ppu::{Mirrorer, MirrorMode};
-use emulator::state::{MapperState, MemoryState, SaveState};
+use crate::emulator::ppu::{Mirrorer, MirrorMode};
+use crate::emulator::state::{MapperState, MemoryState, SaveState};
 
 const ADDRESS_SPACE: usize = 65536;
 

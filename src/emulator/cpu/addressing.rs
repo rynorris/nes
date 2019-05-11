@@ -1,5 +1,5 @@
-use emulator::cpu;
-use emulator::util;
+use crate::emulator::cpu;
+use crate::emulator::util;
 
 // An addressing mode calculates the final operand address, and returns it along with any extra
 // cycles it too, e.g. as the result of crossing a page boundary.

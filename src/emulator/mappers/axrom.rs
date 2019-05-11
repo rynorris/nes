@@ -1,6 +1,6 @@
-use emulator::memory::{Mapper, Memory};
-use emulator::ppu::MirrorMode;
-use emulator::state::{AXROMState, MapperState, SaveState};
+use crate::emulator::memory::{Mapper, Memory};
+use crate::emulator::ppu::MirrorMode;
+use crate::emulator::state::{AXROMState, MapperState, SaveState};
 
 // iNES Mapper 7: AXROM
 // 32kb switchable PRG ROM.

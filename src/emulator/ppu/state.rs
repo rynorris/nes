@@ -1,5 +1,5 @@
-use emulator::ppu::PPU;
-use emulator::state::{PPUState, SaveState};
+use crate::emulator::ppu::PPU;
+use crate::emulator::state::{PPUState, SaveState};
 
 impl <'de> SaveState<'de, PPUState> for PPU {
     fn freeze(&mut self) -> PPUState {

@@ -18,11 +18,11 @@ use std::rc::Rc;
 
 use self::md5::{Md5, Digest};
 
-use emulator::ines;
-use emulator::io;
-use emulator::io::sdl::ImageCapture;
-use emulator::io::event::EventBus;
-use emulator::NES;
+use crate::emulator::ines;
+use crate::emulator::io;
+use crate::emulator::io::sdl::ImageCapture;
+use crate::emulator::io::event::EventBus;
+use crate::emulator::NES;
 
 fn run_for(nes: &mut NES, cycles: u64) {
     let mut n = 0;
