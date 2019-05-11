@@ -191,7 +191,6 @@ fn test_cmp_immediate_gt() {
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::Z), false);
     assert_eq!(cpu.p.is_set(cpu::flags::Flag::V), false);
     assert_eq!(cycles, 2);
-
 }
 
 #[test]

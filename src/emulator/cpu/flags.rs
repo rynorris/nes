@@ -5,7 +5,7 @@ pub enum Flag {
     D = 1 << 3, // BCD Mode
     I = 1 << 2, // Interrupt Disable
     Z = 1 << 1, // Zero
-    C = 1, // Carry
+    C = 1,      // Carry
 }
 
 impl Into<u8> for Flag {

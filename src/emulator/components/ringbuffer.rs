@@ -6,7 +6,7 @@ pub struct RingBuffer<T> {
     data: VecDeque<T>,
 }
 
-impl <T> RingBuffer<T> {
+impl<T> RingBuffer<T> {
     pub fn new(capacity: usize) -> RingBuffer<T> {
         RingBuffer {
             capacity,

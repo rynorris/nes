@@ -48,7 +48,7 @@ pub trait VideoOut {
     fn emit(&mut self, c: Colour);
 }
 
-impl <V : VideoOut> VideoOut for Rc<RefCell<V>> {
+impl<V: VideoOut> VideoOut for Rc<RefCell<V>> {
     fn emit(&mut self, c: Colour) {
         self.borrow_mut().emit(c);
     }
@@ -224,7 +224,7 @@ impl PPU {
             sprites_attribute: [0; 8],
             sprites_x: [0; 8],
             scanline: 261,
-            cycle:  0,
+            cycle: 0,
             tmp_pattern_coords: 0,
             tmp_attribute_byte: 0,
             tmp_oam_byte: 0,
@@ -248,10 +248,13 @@ impl PPU {
     // Returns how many PPU cycles the tick took.
     fn tick_internal(&mut self) -> u16 {
         let cycles = match self.scanline {
-            0 ... 239 | 261 => self.tick_render_scanline(),
+            0...239 | 261 => self.tick_render_scanline(),
             240 => self.tick_idle_scanline(),
-            241 ... 260 => self.tick_vblank_scanline(),
-            _ => panic!("Scanline index should never exceed 261.  Got {}.", self.scanline),
+            241...260 => self.tick_vblank_scanline(),
+            _ => panic!(
+                "Scanline index should never exceed 261.  Got {}.",
+                self.scanline
+            ),
         };
 
         self.cycle = self.cycle + cycles;
@@ -276,19 +279,22 @@ impl PPU {
 
             // The data for each tile is fetched durnig this phase.
             // This where the actual pixels for the scanline are output.
-            1 ... 256 => self.tick_render_cycle(),
+            1...256 => self.tick_render_cycle(),
 
             // The tile data for the sprites on the next scanline are fetched during this phase.
-            257 ... 320 => self.tick_sprite_fetch_cycle(),
+            257...320 => self.tick_sprite_fetch_cycle(),
 
             // This is where the first two tiles of the next scanline are fetched and loaded into
             // the shift registers.
-            321 ... 336 => self.tick_prefetch_tiles_cycle(),
+            321...336 => self.tick_prefetch_tiles_cycle(),
 
             // Finally, here two bytes are fetched, but the purpose is unknown.
-            337 ... 340 => self.tick_unknown_fetch(),
+            337...340 => self.tick_unknown_fetch(),
 
-            _ => panic!("PPU cycle index should never exceed 341.  Got {}.", self.cycle),
+            _ => panic!(
+                "PPU cycle index should never exceed 341.  Got {}.",
+                self.cycle
+            ),
         };
 
         // Sprite evaluation.
@@ -322,7 +328,11 @@ impl PPU {
             self.ppustatus.set(flags::PPUSTATUS::V);
         }
         // Otherwise idle.
-        if self.cycle == 0 { 1 } else { 340 }
+        if self.cycle == 0 {
+            1
+        } else {
+            340
+        }
     }
 
     fn tick_idle_cycle(&mut self) -> u16 {
@@ -365,7 +375,7 @@ impl PPU {
         }
 
         self.fetch_tile_data();
-        
+
         // Finally shift all the registers.
         self.shift_registers();
         1
@@ -415,26 +425,27 @@ impl PPU {
             1 => {
                 let addr = self.tile_address();
                 self.tmp_pattern_coords = self.memory.read(addr);
-            },
+            }
 
             // 2. Attribute table byte.
             3 => {
                 let addr = self.attribute_address();
-                let shift = ((self.coarse_y_scroll() << 1) & 0b100) | (self.coarse_x_scroll() & 0b10);
+                let shift =
+                    ((self.coarse_y_scroll() << 1) & 0b100) | (self.coarse_x_scroll() & 0b10);
                 self.tmp_attribute_byte = self.memory.read(addr) >> shift;
-            },
+            }
 
             // 3. Tile bitmap low.
             5 => {
                 let addr = self.pattern_address_low();
                 self.tile_latch_low = self.memory.read(addr);
-            },
+            }
 
             // 4. Tile bitmap high.
             7 => {
                 let addr = self.pattern_address_high();
                 self.tile_latch_high = self.memory.read(addr);
-            },
+            }
 
             // Do nothing on inbetween cycles.
             _ => (),
@@ -477,11 +488,17 @@ impl PPU {
 
         // Trigger sprite 0-hit.
         // Note it does not occur if x = 255 for obscure reasons.
-        if bg_colour != 0 && sprite_colour != 0 && sprite_ix == 0 && self.sprite_0_this_line  && self.cycle != 256 {
+        if bg_colour != 0
+            && sprite_colour != 0
+            && sprite_ix == 0
+            && self.sprite_0_this_line
+            && self.cycle != 256
+        {
             self.ppustatus.set(flags::PPUSTATUS::S);
         }
 
-        let colour_addr = if sprite_colour != 0 && (sprite_attribute & 0x20 == 0 || bg_colour == 0) {
+        let colour_addr = if sprite_colour != 0 && (sprite_attribute & 0x20 == 0 || bg_colour == 0)
+        {
             // Render sprite.
             PPU::palette_address((sprite_attribute & 0x3) | 0x04, sprite_colour)
         } else if bg_colour != 0 {
@@ -511,9 +528,17 @@ impl PPU {
         match self.cycle {
             0 => self.sprite_reset_state(),
             // These 2 phases do not occur on the pre-render scanline.
-            1 ... 64 => if self.scanline != 261 { self.sprite_init_cycle() },
-            65 ... 256 => if self.scanline != 261 { self.sprite_evaluation_cycle() },
-            257 ... 320 => self.sprite_fetch_cycle(),
+            1...64 => {
+                if self.scanline != 261 {
+                    self.sprite_init_cycle()
+                }
+            }
+            65...256 => {
+                if self.scanline != 261 {
+                    self.sprite_evaluation_cycle()
+                }
+            }
+            257...320 => self.sprite_fetch_cycle(),
             _ => (),
         }
     }
@@ -546,14 +571,19 @@ impl PPU {
             return;
         }
 
-        let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::H) { 16 } else { 8 };
+        let sprite_height = if self.ppuctrl.is_set(flags::PPUCTRL::H) {
+            16
+        } else {
+            8
+        };
         let min_y = self.scanline.saturating_sub(sprite_height - 1);
         let max_y = self.scanline;
 
         match self.sprite_eval_phase {
             0 => {
                 // Phase 0: Sprite copy phase.
-                self.secondary_oam[((self.sprites_copied * 4) + self.sprite_m) as usize] = self.tmp_oam_byte;
+                self.secondary_oam[((self.sprites_copied * 4) + self.sprite_m) as usize] =
+                    self.tmp_oam_byte;
                 if self.sprite_queued_copies > 0 {
                     // Mid-way through a copy.  Keep going.
                     self.sprite_m += 1;
@@ -590,7 +620,7 @@ impl PPU {
                     // We've filled up secondary OAM.  Go to phase 1.
                     self.sprite_eval_phase = 1;
                 }
-            },
+            }
             1 => {
                 // Phase 1: Sprite overflow.
                 // Keep looping through like before, checking for overflow.
@@ -624,11 +654,11 @@ impl PPU {
                     self.sprite_eval_phase = 2;
                     self.sprite_n = 0;
                 }
-            },
+            }
             2 => {
                 // Phase 2: All done.
                 // Do nothing.
-            },
+            }
             _ => panic!("Unexpected sprite eval phase: {}", self.sprite_eval_phase),
         }
     }
@@ -656,7 +686,14 @@ impl PPU {
             true => (((tile_no as u16) & 1) << 12, tile_no & 0xFE),
 
             // Unset = 8x8 mode, table decided by S flag.
-            false => (if self.ppuctrl.is_set(flags::PPUCTRL::S) { 0x1000 } else { 0x0000 }, tile_no),
+            false => (
+                if self.ppuctrl.is_set(flags::PPUCTRL::S) {
+                    0x1000
+                } else {
+                    0x0000
+                },
+                tile_no,
+            ),
         };
 
         let mut offset = self.scanline.saturating_sub(y as u16);
@@ -756,29 +793,29 @@ impl PPU {
     // Scrolling is complex, so split out the logic here.
     fn increment_coarse_x(&mut self) {
         if self.coarse_x_scroll() == 31 {
-            self.v &= !0x001F;  // Coarse X = 0.
-            self.v ^= 0x0400;  // Switch horizontal nametable.
+            self.v &= !0x001F; // Coarse X = 0.
+            self.v ^= 0x0400; // Switch horizontal nametable.
         } else {
-            self.v += 1;  // Increment coarse X.
+            self.v += 1; // Increment coarse X.
         }
     }
 
     fn increment_y(&mut self) {
         if self.fine_y_scroll() < 7 {
-            self.v += 0x1000;  // Increment fine Y.
+            self.v += 0x1000; // Increment fine Y.
         } else {
-            self.v &= !0x7000;  // Fine Y = 0.
+            self.v &= !0x7000; // Fine Y = 0.
             let mut coarse_y = self.coarse_y_scroll();
             if coarse_y == 29 {
                 coarse_y = 0;
-                self.v ^= 0x0800;  // Switch vertical nametable.
+                self.v ^= 0x0800; // Switch vertical nametable.
             } else if coarse_y == 31 {
                 coarse_y = 0;
             } else {
                 coarse_y += 1;
             }
 
-            self.v = (self.v & !0x03E0) | ((coarse_y as u16) << 5);  // Put coarse_y back into v.
+            self.v = (self.v & !0x03E0) | ((coarse_y as u16) << 5); // Put coarse_y back into v.
         }
     }
 
@@ -791,21 +828,21 @@ impl PPU {
         0x23C0  // Attribute table base.
             | (self.v & 0x0C00)  // Select nametable.
             | ((self.coarse_y_scroll() << 1) & 0b111000)  // Y component.
-            | ((self.coarse_x_scroll() >> 2) & 0b111)  // X component.
+            | ((self.coarse_x_scroll() >> 2) & 0b111) // X component.
     }
 
     fn pattern_address_low(&self) -> u16 {
         (if self.ppuctrl.is_set(flags::PPUCTRL::B) { 1 << 12 } else { 0 })  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b0000  // Lower bit plane.
-            | self.fine_y_scroll()  // Fine Y offset.
+            | self.fine_y_scroll() // Fine Y offset.
     }
 
     fn pattern_address_high(&self) -> u16 {
         (if self.ppuctrl.is_set(flags::PPUCTRL::B) { 1 << 12 } else { 0 })  // Left or right half of sprite table.
             | ((self.tmp_pattern_coords as u16) << 4)  // Tile coordinates.
             | 0b1000  // Upper bit plane.
-            | self.fine_y_scroll()  // Fine Y offset.
+            | self.fine_y_scroll() // Fine Y offset.
     }
 
     fn bg_palette_index(&self) -> u8 {
@@ -822,7 +859,7 @@ impl PPU {
     }
 
     fn sprite_colour(&self) -> (u8, u8, u8) {
-        for ix in 0 .. self.num_sprites {
+        for ix in 0..self.num_sprites {
             // Don't consider inactive sprites.
             if self.sprites_x[ix as usize] > 0 {
                 continue;
@@ -840,7 +877,7 @@ impl PPU {
     }
 
     fn shift_sprite_registers(&mut self) {
-        for ix in 0 .. 8 {
+        for ix in 0..8 {
             // Decrement x if non-zero, otherwise shift tiles.
             if self.sprites_x[ix] > 0 {
                 self.sprites_x[ix] -= 1;
@@ -854,7 +891,7 @@ impl PPU {
     fn palette_address(index: u8, colour: u8) -> u16 {
         0x3F00  // Palette memory.
             | ((index << 2) as u16) // Palette select.
-            | (colour as u16)  // Colour select.
+            | (colour as u16) // Colour select.
     }
 
     // Utility methods to query internal state.

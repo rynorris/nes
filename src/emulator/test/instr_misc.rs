@@ -28,4 +28,3 @@ fn test_instr_misc_03() {
     assert_eq!(status, 0x00);
     assert_eq!(output, "\n02-branch_wrap\n\nPassed\n");
 }
-

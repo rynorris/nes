@@ -4,8 +4,8 @@ use std::io::{BufRead, BufReader, Read};
 use crate::emulator::clock::Ticker;
 use crate::emulator::cpu;
 
-use crate::emulator::test::test_resource_path;
 use crate::emulator::cpu::test::new_cpu;
+use crate::emulator::test::test_resource_path;
 
 #[test]
 fn test_nestest() {
@@ -77,7 +77,7 @@ fn load_rom(cpu: &mut cpu::CPU) {
     let mut contents = vec![];
     match file.read_to_end(&mut contents) {
         Err(cause) => panic!("Failed to read file: {}", cause),
-        Ok(_) => ()
+        Ok(_) => (),
     };
 
     // Hack for now.  Later should properly map memory.

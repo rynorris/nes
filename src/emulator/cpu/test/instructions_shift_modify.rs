@@ -478,4 +478,3 @@ fn test_dec_absolute_x() {
     assert_eq!(cpu.load_memory(0xBEEF), 0xAA);
     assert_eq!(cycles, 7);
 }
-

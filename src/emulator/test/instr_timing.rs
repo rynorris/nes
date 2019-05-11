@@ -12,7 +12,6 @@ use crate::emulator::test::load_and_run_blargg_test_rom;
 use crate::emulator::test::run_for;
 use crate::emulator::test::test_resource_path;
 
-
 #[test]
 fn test_instr_timing_1() {
     let path = test_resource_path("instr_timing/rom_singles/1-instr_timing.nes");
@@ -20,7 +19,7 @@ fn test_instr_timing_1() {
     let event_bus = Rc::new(RefCell::new(EventBus::new()));
     let output = Rc::new(RefCell::new(io::Screen::new()));
     let mut image = ImageCapture::new(output.clone());
-    let audio = io::nop::DummyAudio{};
+    let audio = io::nop::DummyAudio {};
     let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);
 
     // This test tests official instructions followed by unofficial.
@@ -28,7 +27,10 @@ fn test_instr_timing_1() {
     // the image proves we're done with official instructions.
     // Note: this is a very long test.
     run_for(&mut nes, 220_500_000);
-    assert_image(&mut image, test_resource_path("instr_timing/1-instr_timing.bmp"));
+    assert_image(
+        &mut image,
+        test_resource_path("instr_timing/1-instr_timing.bmp"),
+    );
 }
 
 #[test]

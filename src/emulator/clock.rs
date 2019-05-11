@@ -27,7 +27,7 @@ impl Ticker for ScaledTicker {
     }
 }
 
-impl <T : Ticker> Ticker for Rc<RefCell<T>> {
+impl<T: Ticker> Ticker for Rc<RefCell<T>> {
     #[inline]
     fn tick(&mut self) -> u32 {
         self.borrow_mut().tick()
@@ -61,8 +61,8 @@ impl Clock {
                 let cycles = self.tickers[node.ticker_ix].tick();
                 node.next_tick_cycle = self.elapsed_cycles + (cycles as u64);
                 cycles_waited
-            },
-            None => 0
+            }
+            None => 0,
         }
     }
 
@@ -108,9 +108,7 @@ mod test {
 
     impl DummyTicker {
         fn new() -> DummyTicker {
-            DummyTicker {
-                value: 0,
-            }
+            DummyTicker { value: 0 }
         }
     }
 

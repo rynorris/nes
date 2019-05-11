@@ -4,23 +4,23 @@ use std::cell::RefCell;
 use std::env;
 use std::path::Path;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex, Condvar};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
-use nes::emulator::NES;
+use nes::emulator::apu::debug::APUDebug;
 use nes::emulator::components::portal::Portal;
 use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::{Event, EventBus};
-use nes::emulator::apu::debug::APUDebug;
 use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
+use nes::emulator::NES;
 
-use nes::ui::RENDER_FPS;
 use nes::ui::audio::{AudioQueue, SAMPLE_RATE};
-use nes::ui::controller::{Controller, DebugMode, EmulatorState};
 use nes::ui::compositor::Compositor;
+use nes::ui::controller::{Controller, DebugMode, EmulatorState};
 use nes::ui::governer::Governer;
 use nes::ui::input::InputPump;
+use nes::ui::RENDER_FPS;
 
 fn main() {
     // -- Handle Args --
@@ -32,7 +32,6 @@ fn main() {
         Some(path) => path,
     };
 
-
     // -- Initialize --
 
     let rom = ines::ROM::load(rom_path);
@@ -41,19 +40,24 @@ fn main() {
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or(String::from("unknown"));
 
-
-
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
     let audio = sdl_context.audio().unwrap();
 
     let video_portal = Portal::new(vec![0; 256 * 240 * 3].into_boxed_slice());
     let ppu_debug_portal: Portal<PPUDebugRender> = Portal::new(PPUDebugRender::new());
-    let apu_debug_portal = Portal::new(vec![0; APUDebug::WAVEFORM_WIDTH * APUDebug::WAVEFORM_HEIGHT * 3].into_boxed_slice());
+    let apu_debug_portal = Portal::new(
+        vec![0; APUDebug::WAVEFORM_WIDTH * APUDebug::WAVEFORM_HEIGHT * 3].into_boxed_slice(),
+    );
     let audio_portal = Portal::new(Vec::new());
     let event_portal = Portal::new(Vec::new());
 
-    let mut compositor = Compositor::new(video, video_portal.clone(), ppu_debug_portal.clone(), apu_debug_portal.clone());
+    let mut compositor = Compositor::new(
+        video,
+        video_portal.clone(),
+        ppu_debug_portal.clone(),
+        apu_debug_portal.clone(),
+    );
     let mut audio_queue = AudioQueue::new(audio, audio_portal.clone());
     let mut input = InputPump::new(sdl_context.event_pump().unwrap(), event_portal.clone());
 
@@ -71,18 +75,26 @@ fn main() {
         let video_output = Rc::new(RefCell::new(io::Screen::new()));
         let audio_output = Rc::new(RefCell::new(io::SimpleAudioOut::new(SAMPLE_RATE)));
 
-        let nes = NES::new(event_bus.clone(), video_output.clone(), audio_output.clone(), rom);
+        let nes = NES::new(
+            event_bus.clone(),
+            video_output.clone(),
+            audio_output.clone(),
+            rom,
+        );
         let ppu_debug = PPUDebug::new(nes.ppu.clone());
         let apu_debug = APUDebug::new(nes.apu.clone());
 
         let controller = Rc::new(RefCell::new(Controller::new(
-                    nes,
-                    video_output.clone(),
-                    audio_output.clone(),
-                    emu_state)));
+            nes,
+            video_output.clone(),
+            audio_output.clone(),
+            emu_state,
+        )));
         controller.borrow_mut().set_rom_name(&rom_name);
         controller.borrow_mut().start();
-        event_bus.borrow_mut().register(Box::new(controller.clone()));
+        event_bus
+            .borrow_mut()
+            .register(Box::new(controller.clone()));
         main_loop(
             emu_sync,
             controller,
@@ -95,19 +107,25 @@ fn main() {
             audio_output.clone(),
             audio_portal.clone(),
             event_bus.clone(),
-            event_portal.clone());
+            event_portal.clone(),
+        );
     }));
 
     let ui_res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        ui_loop(ui_sync, &mut compositor, &mut audio_queue, &mut input, state.clone());
+        ui_loop(
+            ui_sync,
+            &mut compositor,
+            &mut audio_queue,
+            &mut input,
+            state.clone(),
+        );
     }));
-
 
     match ui_res {
         Ok(_) => (),
         Err(_) => {
             println!("Panic in main loop.  Exiting.");
-        },
+        }
     }
 }
 
@@ -116,8 +134,8 @@ fn ui_loop(
     compositor: &mut Compositor,
     audio_queue: &mut AudioQueue,
     input: &mut InputPump,
-    state_portal: Portal<EmulatorState>) {
-
+    state_portal: Portal<EmulatorState>,
+) {
     while state_portal.consume(|state| state.is_running) {
         audio_queue.flush();
         compositor.render();
@@ -126,7 +144,8 @@ fn ui_loop(
 
         let &(ref lock, ref cvar) = &*sync;
         let guard = lock.lock().unwrap();
-        cvar.wait_timeout(guard, Duration::from_millis(1000 / RENDER_FPS)).unwrap();
+        cvar.wait_timeout(guard, Duration::from_millis(1000 / RENDER_FPS))
+            .unwrap();
     }
 }
 
@@ -143,8 +162,7 @@ fn main_loop(
     audio_portal: Portal<Vec<f32>>,
     event_bus: Rc<RefCell<EventBus>>,
     event_portal: Portal<Vec<Event>>,
-    ) {
-
+) {
     let mut frame_count: u64 = 0;
     let mut agg_cycles: u64 = 0;
     let mut governer = Governer::new(RENDER_FPS);
@@ -156,14 +174,16 @@ fn main_loop(
         let mut cycles_this_frame = 0;
 
         event_portal.consume(|events| {
-            events.drain(..).for_each(|e| event_bus.borrow_mut().broadcast(e));
+            events
+                .drain(..)
+                .for_each(|e| event_bus.borrow_mut().broadcast(e));
         });
 
         while cycles_this_frame < target_frame_cycles && !governer.taking_too_long() {
             // Batching ticks here is a massive perf win since finding the elapsed time is costly.
             cycles_this_frame += controller.borrow_mut().tick_multi(100);
         }
-      
+
         // Drive rendering.
         video_output.borrow().do_render(|data| {
             video_portal.consume(|portal| {
@@ -186,16 +206,18 @@ fn main_loop(
                         copy_buffer(data, portal);
                     });
                 });
-            },
+            }
             _ => (),
         }
 
         let request_samples = SAMPLE_RATE / (RENDER_FPS as f32);
-        audio_output.borrow_mut().consume(target_frame_cycles, request_samples as u64, |data| {
-            audio_portal.consume(|portal| {
-                portal.extend_from_slice(data);
+        audio_output
+            .borrow_mut()
+            .consume(target_frame_cycles, request_samples as u64, |data| {
+                audio_portal.consume(|portal| {
+                    portal.extend_from_slice(data);
+                });
             });
-        });
 
         // Wake up the render thread immediately if it's waiting.
         let &(_, ref cvar) = &*sync;
@@ -210,16 +232,18 @@ fn main_loop(
             let avg_cycles = (agg_cycles as f64) / (RENDER_FPS as f64);
             let avg_frame_ns = governer.avg_frame_duration_ns();
             let avg_hz = (avg_cycles / avg_frame_ns) * 1_000_000_000f64;
-            println!("FPS: {:.1}, Target Freq: {:.3}MHz, Current Freq: {:.3}MHz",
-                     1_000_000_000f64 / avg_frame_ns,
-                     (target_hz as f64) / 1_000_000f64,
-                     avg_hz / 1_000_000f64);
+            println!(
+                "FPS: {:.1}, Target Freq: {:.3}MHz, Current Freq: {:.3}MHz",
+                1_000_000_000f64 / avg_frame_ns,
+                (target_hz as f64) / 1_000_000f64,
+                avg_hz / 1_000_000f64
+            );
             agg_cycles = 0;
         }
     }
 }
 
-fn copy_buffer(src_buf: &[u8], tgt_buf:  &mut [u8]) {
+fn copy_buffer(src_buf: &[u8], tgt_buf: &mut [u8]) {
     for (tgt, src) in tgt_buf.iter_mut().zip(src_buf.iter()) {
         *tgt = *src;
     }

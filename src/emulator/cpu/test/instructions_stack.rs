@@ -3,8 +3,8 @@ use crate::emulator::util;
 
 use crate::emulator::cpu::test::load_program;
 use crate::emulator::cpu::test::new_cpu;
-use crate::emulator::cpu::test::run_program;
 use crate::emulator::cpu::test::run_instructions;
+use crate::emulator::cpu::test::run_program;
 
 #[test]
 fn test_jsr() {
@@ -146,4 +146,3 @@ fn test_plp_ignores_bits_4_and_5() {
     assert_eq!(cpu.p.as_byte(), 0xCF);
     assert_eq!(cycles, 4);
 }
-

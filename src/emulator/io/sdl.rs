@@ -13,9 +13,7 @@ pub struct ImageCapture {
 
 impl ImageCapture {
     pub fn new(screen: Rc<RefCell<Screen>>) -> ImageCapture {
-        ImageCapture {
-            screen,
-        }
+        ImageCapture { screen }
     }
 
     // SDL2 must already be initialized when this is called.

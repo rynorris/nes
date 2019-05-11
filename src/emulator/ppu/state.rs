@@ -1,7 +1,7 @@
 use crate::emulator::ppu::PPU;
 use crate::emulator::state::{PPUState, SaveState};
 
-impl <'de> SaveState<'de, PPUState> for PPU {
+impl<'de> SaveState<'de, PPUState> for PPU {
     fn freeze(&mut self) -> PPUState {
         PPUState {
             ppuctrl: self.ppuctrl.as_byte(),
@@ -62,10 +62,14 @@ impl <'de> SaveState<'de, PPUState> for PPU {
         self.attribute_latch_1 = state.attribute_latch_1;
         self.attribute_latch_2 = state.attribute_latch_2;
         self.oam.copy_from_slice(state.oam.as_slice());
-        self.secondary_oam.copy_from_slice(state.secondary_oam.as_slice());
-        self.sprites_tile_high.copy_from_slice(state.sprites_tile_high.as_slice());
-        self.sprites_tile_low.copy_from_slice(state.sprites_tile_low.as_slice());
-        self.sprites_attribute.copy_from_slice(state.sprites_attribute.as_slice());
+        self.secondary_oam
+            .copy_from_slice(state.secondary_oam.as_slice());
+        self.sprites_tile_high
+            .copy_from_slice(state.sprites_tile_high.as_slice());
+        self.sprites_tile_low
+            .copy_from_slice(state.sprites_tile_low.as_slice());
+        self.sprites_attribute
+            .copy_from_slice(state.sprites_attribute.as_slice());
         self.sprites_x.copy_from_slice(state.sprites_x.as_slice());
         self.scanline = state.scanline;
         self.cycle = state.cycle;

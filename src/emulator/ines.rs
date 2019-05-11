@@ -14,7 +14,7 @@ pub struct ROM {
 }
 
 impl ROM {
-    pub fn load<P : AsRef<Path>>(path: P) -> ROM {
+    pub fn load<P: AsRef<Path>>(path: P) -> ROM {
         let mut file = match File::open(path) {
             Err(cause) => panic!("Couldn't open file: {}", cause),
             Ok(file) => file,
@@ -26,9 +26,7 @@ impl ROM {
             Ok(_) => (),
         };
 
-        ROM {
-            data: contents,
-        }
+        ROM { data: contents }
     }
 
     pub fn mapper_number(&self) -> u8 {
@@ -78,13 +76,29 @@ impl ROM {
         let mirror_mode = self.mirror_mode();
 
         match self.mapper_number() {
-            0 => Rc::new(RefCell::new(mappers::NROM::new(prg_rom, chr_mem, mirror_mode))),
+            0 => Rc::new(RefCell::new(mappers::NROM::new(
+                prg_rom,
+                chr_mem,
+                mirror_mode,
+            ))),
             1 => Rc::new(RefCell::new(mappers::MMC1::new(prg_rom, chr_mem))),
-            2 => Rc::new(RefCell::new(mappers::UXROM::new(prg_rom, chr_mem, mirror_mode))),
-            3 => Rc::new(RefCell::new(mappers::CNROM::new(prg_rom, chr_mem, mirror_mode))),
+            2 => Rc::new(RefCell::new(mappers::UXROM::new(
+                prg_rom,
+                chr_mem,
+                mirror_mode,
+            ))),
+            3 => Rc::new(RefCell::new(mappers::CNROM::new(
+                prg_rom,
+                chr_mem,
+                mirror_mode,
+            ))),
             4 => Rc::new(RefCell::new(mappers::MMC3::new(prg_rom, chr_mem))),
             7 => Rc::new(RefCell::new(mappers::AXROM::new(prg_rom, chr_mem))),
-            11 => Rc::new(RefCell::new(mappers::ColorDreams::new(prg_rom, chr_mem, mirror_mode))),
+            11 => Rc::new(RefCell::new(mappers::ColorDreams::new(
+                prg_rom,
+                chr_mem,
+                mirror_mode,
+            ))),
             _ => panic!("Unknown mapper: {}", self.mapper_number()),
         }
     }

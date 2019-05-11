@@ -34,7 +34,8 @@ impl Mapper for CNROM {
     }
 
     fn read_prg(&mut self, address: u16) -> u8 {
-        self.prg_rom.get(((address - 0x8000) % self.prg_rom.len() as u16) as usize)
+        self.prg_rom
+            .get(((address - 0x8000) % self.prg_rom.len() as u16) as usize)
     }
 
     fn write_prg(&mut self, _address: u16, byte: u8) {
@@ -46,7 +47,7 @@ impl Mapper for CNROM {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for CNROM {
+impl<'de> SaveState<'de, MapperState> for CNROM {
     fn freeze(&mut self) -> MapperState {
         MapperState::CNROM(CNROMState {
             chr_bank: self.chr_bank,
@@ -59,7 +60,7 @@ impl <'de> SaveState<'de, MapperState> for CNROM {
             MapperState::CNROM(s) => {
                 self.chr_bank = s.chr_bank;
                 self.chr_mem.hydrate(s.chr_mem);
-            },
+            }
             _ => panic!("Incompatible mapper state for CNROM mapper: {:?}", state),
         }
     }

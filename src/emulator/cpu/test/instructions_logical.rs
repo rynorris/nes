@@ -321,4 +321,3 @@ fn test_eor_indirect_indexed() {
     assert_eq!(cpu.a, 0b0111_0110);
     assert_eq!(cycles, 5);
 }
-

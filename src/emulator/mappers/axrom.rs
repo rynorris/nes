@@ -53,7 +53,7 @@ impl Mapper for AXROM {
     }
 }
 
-impl <'de> SaveState<'de, MapperState> for AXROM {
+impl<'de> SaveState<'de, MapperState> for AXROM {
     fn freeze(&mut self) -> MapperState {
         MapperState::AXROM(AXROMState {
             mirror_mode: self.mirror_mode,
@@ -68,7 +68,7 @@ impl <'de> SaveState<'de, MapperState> for AXROM {
                 self.mirror_mode = s.mirror_mode;
                 self.prg_bank = s.prg_bank;
                 self.chr_mem.hydrate(s.chr_mem);
-            },
+            }
             _ => panic!("Incompatible mapper state for AXROM mapper: {:?}", state),
         }
     }

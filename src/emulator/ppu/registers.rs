@@ -1,15 +1,19 @@
 use crate::emulator::components::latch;
-use crate::emulator::ppu::flags;
-use crate::emulator::ppu::PPU;
 use crate::emulator::memory::Reader;
 use crate::emulator::memory::Writer;
+use crate::emulator::ppu::flags;
+use crate::emulator::ppu::PPU;
 
 impl PPU {
     fn ppuaddr_increment(&self) -> u16 {
         // Increment controlled by bit 2 of PPUCTRL.
         // 0 -> increment by 1
         // 1 -> incrmement by 32
-        if self.ppuctrl.is_set(flags::PPUCTRL::I) { 32 } else { 1 }
+        if self.ppuctrl.is_set(flags::PPUCTRL::I) {
+            32
+        } else {
+            1
+        }
     }
 }
 
@@ -37,7 +41,7 @@ impl Reader for PPU {
                 self.ppustatus.clear(flags::PPUSTATUS::V);
                 self.write_latch.reset();
                 Some(byte)
-            },
+            }
 
             // OAMADDR - write-only
             3 => None,
@@ -51,7 +55,7 @@ impl Reader for PPU {
                 } else {
                     None
                 }
-            },
+            }
 
             // PPUSCROLL - write-only
             5 => None,
@@ -61,7 +65,7 @@ impl Reader for PPU {
 
             // PPUDATA
             7 => {
-                // Note that 
+                // Note that
                 // Read from ppu memory and increment v.
                 let addr = self.v;
                 let byte = self.memory.read(addr);
@@ -92,7 +96,7 @@ impl Reader for PPU {
                         Some(byte)
                     }
                 }
-            },
+            }
 
             _ => panic!("Unexpected PPU register address: {}", address),
         };
@@ -101,7 +105,7 @@ impl Reader for PPU {
             Some(b) => {
                 self.bus_latch = b;
                 b
-            },
+            }
             None => self.bus_latch,
         }
     }
@@ -117,7 +121,7 @@ impl Writer for PPU {
                 self.ppuctrl.load_byte(byte);
                 self.t &= 0xF3FF;
                 self.t |= ((byte & 0b11) as u16) << 10;
-            },
+            }
 
             // PPUMASK
             1 => self.ppumask.load_byte(byte),
@@ -137,7 +141,7 @@ impl Writer for PPU {
                     self.oam[addr as usize] = byte;
                     self.oamaddr = self.oamaddr.wrapping_add(1);
                 }
-            },
+            }
 
             // PPUSCROLL
             // Write 2 bytes sequentially, controlled by a latch.
@@ -150,7 +154,7 @@ impl Writer for PPU {
                         self.t &= 0xFFE0;
                         self.t |= (byte >> 3) as u16;
                         self.fine_x = byte & 0x07;
-                    },
+                    }
                     latch::State::ON => {
                         // Second write is to Y scroll.
                         // High 5 bits go to coarse Y in temporary VRAM address.
@@ -163,7 +167,7 @@ impl Writer for PPU {
 
                 // Flip the latch.
                 self.write_latch.toggle();
-            },
+            }
 
             // PPUADDR
             // Write 2 bytes sequentially to specify a 16bit address.
@@ -177,7 +181,7 @@ impl Writer for PPU {
                         self.t &= 0x00FF;
                         self.t |= (byte as u16) << 8;
                         self.t &= 0x3FFF;
-                    },
+                    }
                     latch::State::ON => {
                         // Second write is the low byte.
                         self.t &= 0xFF00;
@@ -206,7 +210,7 @@ impl Writer for PPU {
                     let inc = self.ppuaddr_increment();
                     self.v = self.v.wrapping_add(inc);
                 }
-            },
+            }
 
             _ => panic!("Unexpected PPU register address: {}", address),
         }

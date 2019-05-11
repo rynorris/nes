@@ -11,10 +11,7 @@ pub struct InputPump {
 
 impl InputPump {
     pub fn new(event_pump: sdl2::EventPump, events: Portal<Vec<Event>>) -> InputPump {
-        InputPump {
-            event_pump,
-            events,
-        }
+        InputPump { event_pump, events }
     }
 
     pub fn pump(&mut self) {
@@ -98,6 +95,6 @@ fn convert_sdl_keycode_to_internal(keycode: Keycode) -> Option<Key> {
         Keycode::LShift => Some(Key::Shift),
         Keycode::LCtrl => Some(Key::Control),
 
-        _ => None
+        _ => None,
     }
 }
