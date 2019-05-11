@@ -20,6 +20,9 @@ jobs:
       - run:
           name: Lint
           command: rustup component add rustfmt && cargo fmt --all -- --check
+      - run:
+          name: Coverage
+          command: ./scripts/codecov.sh
       - save_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
           paths:
