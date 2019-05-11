@@ -1,4 +1,4 @@
-use emulator::apu::AudioOut;
+use crate::emulator::apu::AudioOut;
 
 pub struct DummyAudio;
 

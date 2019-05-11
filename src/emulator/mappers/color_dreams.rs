@@ -1,6 +1,6 @@
-use emulator::memory::{Mapper, Memory};
-use emulator::ppu::MirrorMode;
-use emulator::state::{ColorDreamsState, MapperState, SaveState};
+use crate::emulator::memory::{Mapper, Memory};
+use crate::emulator::ppu::MirrorMode;
+use crate::emulator::state::{ColorDreamsState, MapperState, SaveState};
 
 // iNES Mapper 11: Color Dreams
 // Up to 4 switchable 32kb PRG ROM banks.

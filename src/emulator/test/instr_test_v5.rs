@@ -1,5 +1,5 @@
-use emulator::test::load_and_run_blargg_test_rom_with_cycles;
-use emulator::test::test_resource_path;
+use crate::emulator::test::load_and_run_blargg_test_rom_with_cycles;
+use crate::emulator::test::test_resource_path;
 
 #[test]
 fn test_instr_test_v5_official_only() {

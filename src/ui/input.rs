@@ -1,5 +1,5 @@
-use emulator::components::portal::Portal;
-use emulator::io::event::{Event, Key};
+use crate::emulator::components::portal::Portal;
+use crate::emulator::io::event::{Event, Key};
 use sdl2::event;
 use sdl2::keyboard::Keycode;
 

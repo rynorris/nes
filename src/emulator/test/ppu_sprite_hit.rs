@@ -1,5 +1,5 @@
-use emulator::test::load_and_run_blargg_test_rom;
-use emulator::test::test_resource_path;
+use crate::emulator::test::load_and_run_blargg_test_rom;
+use crate::emulator::test::test_resource_path;
 
 // -- ppu_sprite_hit test ROMs --
 // TODO: Get tests 09 and 10 to pass once my CPU/PPU timing is PPU-cycle accurate.

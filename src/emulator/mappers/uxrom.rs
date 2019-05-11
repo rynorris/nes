@@ -1,6 +1,6 @@
-use emulator::memory::{Mapper, Memory};
-use emulator::ppu::MirrorMode;
-use emulator::state::{MapperState, SaveState, UXROMState};
+use crate::emulator::memory::{Mapper, Memory};
+use crate::emulator::ppu::MirrorMode;
+use crate::emulator::state::{MapperState, SaveState, UXROMState};
 
 // iNES Mapper 2: UXROM
 // 16k switchable + 16k fixed PRG ROM.

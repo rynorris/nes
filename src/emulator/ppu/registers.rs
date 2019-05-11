@@ -1,8 +1,8 @@
-use emulator::components::latch;
-use emulator::ppu::flags;
-use emulator::ppu::PPU;
-use emulator::memory::Reader;
-use emulator::memory::Writer;
+use crate::emulator::components::latch;
+use crate::emulator::ppu::flags;
+use crate::emulator::ppu::PPU;
+use crate::emulator::memory::Reader;
+use crate::emulator::memory::Writer;
 
 impl PPU {
     fn ppuaddr_increment(&self) -> u16 {

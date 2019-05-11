@@ -11,9 +11,9 @@ mod nestest;
 mod programs;
 mod startup_interrupts;
 
-use emulator::cpu;
-use emulator::memory;
-use emulator::memory::ReadWriter;
+use crate::emulator::cpu;
+use crate::emulator::memory;
+use crate::emulator::memory::ReadWriter;
 
 pub const PROGRAM_ROOT: u16 = 0xF000;
 fn new_cpu() -> cpu::CPU {

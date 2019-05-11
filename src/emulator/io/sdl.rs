@@ -5,7 +5,7 @@ use std::rc::Rc;
 use sdl2::pixels;
 use sdl2::surface;
 
-use emulator::io::Screen;
+use crate::emulator::io::Screen;
 
 pub struct ImageCapture {
     screen: Rc<RefCell<Screen>>,

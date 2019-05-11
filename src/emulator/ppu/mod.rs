@@ -9,11 +9,11 @@ mod test;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::clock;
-use emulator::components::bitfield::BitField;
-use emulator::components::latch;
-use emulator::memory::{PPUMemory, Reader};
-use emulator::util;
+use crate::emulator::clock;
+use crate::emulator::components::bitfield::BitField;
+use crate::emulator::components::latch;
+use crate::emulator::memory::{PPUMemory, Reader};
+use crate::emulator::util;
 
 // Colours represented as a single byte:
 // 76543210

@@ -5,9 +5,9 @@ use std::path::Path;
 use std::rc::Rc;
 use std::vec::Vec;
 
-use emulator::mappers;
-use emulator::memory::{Mapper, Memory};
-use emulator::ppu;
+use crate::emulator::mappers;
+use crate::emulator::memory::{Mapper, Memory};
+use crate::emulator::ppu;
 
 pub struct ROM {
     data: Vec<u8>,

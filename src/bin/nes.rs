@@ -5,7 +5,7 @@ use std::env;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, Condvar};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use nes::emulator::NES;
 use nes::emulator::components::portal::Portal;

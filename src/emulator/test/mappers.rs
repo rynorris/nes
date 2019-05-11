@@ -4,12 +4,12 @@
 macro_rules! test_mapper {
     ($name:ident, $rom:expr, $cycles:expr) => {
         mod $name {
-            use emulator::state::SaveState;
+            use crate::emulator::state::SaveState;
 
-            use emulator::test::assert_image;
-            use emulator::test::prepare_ete_test;
-            use emulator::test::run_for;
-            use emulator::test::test_resource_path;
+            use crate::emulator::test::assert_image;
+            use crate::emulator::test::prepare_ete_test;
+            use crate::emulator::test::run_for;
+            use crate::emulator::test::test_resource_path;
 
             #[test]
             fn test() {

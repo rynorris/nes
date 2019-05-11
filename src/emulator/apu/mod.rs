@@ -4,8 +4,8 @@ mod synth;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::clock::Ticker;
-use emulator::memory::{Reader, Writer};
+use crate::emulator::clock::Ticker;
+use crate::emulator::memory::{Reader, Writer};
 
 use self::synth::{DMC, Noise, Pulse, Sweep, Triangle};
 

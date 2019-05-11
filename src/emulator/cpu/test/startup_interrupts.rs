@@ -1,8 +1,8 @@
-use emulator::cpu;
-use emulator::cpu::opcodes;
+use crate::emulator::cpu;
+use crate::emulator::cpu::opcodes;
 
-use emulator::cpu::test::load_data;
-use emulator::cpu::test::new_cpu;
+use crate::emulator::cpu::test::load_data;
+use crate::emulator::cpu::test::new_cpu;
 
 #[test]
 fn test_startup_sequence() {

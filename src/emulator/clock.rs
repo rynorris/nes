@@ -100,7 +100,7 @@ mod test {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    use emulator::clock::{Clock, ScaledTicker, Ticker};
+    use crate::emulator::clock::{Clock, ScaledTicker, Ticker};
 
     struct DummyTicker {
         value: u16,

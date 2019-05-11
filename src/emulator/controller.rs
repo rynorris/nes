@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use emulator::io::event::{Event, EventHandler, Key};
-use emulator::memory::{Reader, Writer};
-use emulator::state::{ControllerState, SaveState};
+use crate::emulator::io::event::{Event, EventHandler, Key};
+use crate::emulator::memory::{Reader, Writer};
+use crate::emulator::state::{ControllerState, SaveState};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Button {

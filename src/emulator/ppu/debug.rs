@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use emulator::io::palette;
-use emulator::memory::Reader;
-use emulator::ppu::flags;
-use emulator::ppu::{Colour, PPU};
+use crate::emulator::io::palette;
+use crate::emulator::memory::Reader;
+use crate::emulator::ppu::flags;
+use crate::emulator::ppu::{Colour, PPU};
 
 pub struct PPUDebug {
     ppu: Rc<RefCell<PPU>>,

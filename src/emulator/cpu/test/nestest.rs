@@ -1,11 +1,11 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 
-use emulator::clock::Ticker;
-use emulator::cpu;
+use crate::emulator::clock::Ticker;
+use crate::emulator::cpu;
 
-use emulator::test::test_resource_path;
-use emulator::cpu::test::new_cpu;
+use crate::emulator::test::test_resource_path;
+use crate::emulator::cpu::test::new_cpu;
 
 #[test]
 fn test_nestest() {

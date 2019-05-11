@@ -1,10 +1,10 @@
-use emulator::cpu;
+use crate::emulator::cpu;
 
-use emulator::cpu::test::load_data;
-use emulator::cpu::test::load_program;
-use emulator::cpu::test::new_cpu;
-use emulator::cpu::test::run_instructions;
-use emulator::cpu::test::run_program;
+use crate::emulator::cpu::test::load_data;
+use crate::emulator::cpu::test::load_program;
+use crate::emulator::cpu::test::new_cpu;
+use crate::emulator::cpu::test::run_instructions;
+use crate::emulator::cpu::test::run_program;
 
 #[test]
 fn test_jmp_absolute() {

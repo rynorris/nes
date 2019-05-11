@@ -1,6 +1,6 @@
-use emulator::memory::{Mapper, Memory};
-use emulator::ppu::MirrorMode;
-use emulator::state::{MapperState, MMC3State, SaveState};
+use crate::emulator::memory::{Mapper, Memory};
+use crate::emulator::ppu::MirrorMode;
+use crate::emulator::state::{MapperState, MMC3State, SaveState};
 
 // 1x 8kb PRG RAM - right now we have this sram outside the mappers, so ignored here.
 // 4x 8kb switchable PRG ROM

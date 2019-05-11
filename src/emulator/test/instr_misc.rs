@@ -1,5 +1,5 @@
-use emulator::test::load_and_run_blargg_test_rom;
-use emulator::test::test_resource_path;
+use crate::emulator::test::load_and_run_blargg_test_rom;
+use crate::emulator::test::test_resource_path;
 
 // -- instr_misc test ROMs --
 // TODO: Get 03 and 04 to pass and add tests for them.
