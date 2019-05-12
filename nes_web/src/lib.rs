@@ -5,10 +5,10 @@ use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 
-use nes::emulator::NES;
 use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::EventBus;
+use nes::emulator::NES;
 
 #[wasm_bindgen]
 pub struct Emulator {
@@ -21,16 +21,19 @@ pub struct Emulator {
 #[wasm_bindgen]
 impl Emulator {
     pub fn new(rom_data: Vec<u8>) -> Emulator {
-            let event_bus = Rc::new(RefCell::new(EventBus::new()));
-            let video_out = Rc::new(RefCell::new(io::Screen::new()));
-            let audio_out = Rc::new(RefCell::new(io::SimpleAudioOut::new(48_000.0)));
-            let rom = ines::ROM::from_bytes(rom_data);
+        let event_bus = Rc::new(RefCell::new(EventBus::new()));
+        let video_out = Rc::new(RefCell::new(io::Screen::new()));
+        let audio_out = Rc::new(RefCell::new(io::SimpleAudioOut::new(48_000.0)));
+        let rom = ines::ROM::from_bytes(rom_data);
 
-            let nes = NES::new(event_bus.clone(), video_out.clone(), audio_out.clone(), rom);
+        let nes = NES::new(event_bus.clone(), video_out.clone(), audio_out.clone(), rom);
 
-            Emulator {
-                nes, event_bus, video_out, audio_out,
-            }
+        Emulator {
+            nes,
+            event_bus,
+            video_out,
+            audio_out,
+        }
     }
 
     pub fn run(&mut self, ticks: u32) -> u64 {
@@ -50,9 +53,11 @@ impl Emulator {
 
     pub fn get_audio(&self, master_cycles: u64, num_samples: u64) -> Vec<f32> {
         let mut buf: Vec<f32> = vec![];
-        self.audio_out.borrow_mut().consume(master_cycles, num_samples, |audio| {
-            buf.extend_from_slice(audio);
-        });
+        self.audio_out
+            .borrow_mut()
+            .consume(master_cycles, num_samples, |audio| {
+                buf.extend_from_slice(audio);
+            });
         return buf;
     }
 

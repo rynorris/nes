@@ -91,7 +91,9 @@ pub enum Key {
 
 pub fn convert_wasm_event_to_internal(event: Event) -> event::Event {
     match event.event_type {
-        EventType::KeyDown => event::Event::KeyDown(convert_wasm_key_to_internal(event.key.unwrap())),
+        EventType::KeyDown => {
+            event::Event::KeyDown(convert_wasm_key_to_internal(event.key.unwrap()))
+        }
         EventType::KeyUp => event::Event::KeyUp(convert_wasm_key_to_internal(event.key.unwrap())),
     }
 }
