@@ -28,7 +28,6 @@ use crate::portal::Portal;
 
 pub const RENDER_FPS: u64 = 60;
 
-
 fn main() {
     // -- Handle Args --
 
