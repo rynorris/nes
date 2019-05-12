@@ -26,7 +26,11 @@ impl ROM {
             Ok(_) => (),
         };
 
-        ROM { data: contents }
+        ROM::from_bytes(contents)
+    }
+
+    pub fn from_bytes(data: Vec<u8>) -> ROM {
+        ROM { data }
     }
 
     pub fn mapper_number(&self) -> u8 {

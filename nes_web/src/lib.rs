@@ -18,10 +18,11 @@ pub struct Emulator {
 
 #[wasm_bindgen]
 impl Emulator {
-    pub fn new(rom: ines::ROM) -> Emulator {
+    pub fn new(rom_data: Vec<u8>) -> Emulator {
             let event_bus = Rc::new(RefCell::new(EventBus::new()));
             let video_out = Rc::new(RefCell::new(io::Screen::new()));
             let audio_out = Rc::new(RefCell::new(io::SimpleAudioOut::new(48_000.0)));
+            let rom = ines::ROM::from_bytes(rom_data);
 
             let nes = NES::new(event_bus.clone(), video_out.clone(), audio_out.clone(), rom);
 
