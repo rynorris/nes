@@ -1,3 +1,5 @@
+pub mod event;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -31,8 +33,8 @@ impl Emulator {
             }
     }
 
-    pub fn run(&mut self, ticks: u32) {
-        self.nes.tick_multi(ticks);
+    pub fn run(&mut self, ticks: u32) -> u64 {
+        self.nes.tick_multi(ticks)
     }
 
     pub fn get_frame(&self) -> Vec<u8> {
@@ -44,5 +46,19 @@ impl Emulator {
         });
 
         return buf.to_vec();
+    }
+
+    pub fn get_audio(&self, master_cycles: u64, num_samples: u64) -> Vec<f32> {
+        let mut buf: Vec<f32> = vec![];
+        self.audio_out.borrow_mut().consume(master_cycles, num_samples, |audio| {
+            buf.extend_from_slice(audio);
+        });
+        return buf;
+    }
+
+    pub fn broadcast(&self, e: event::Event) {
+        let internal_event = event::convert_wasm_event_to_internal(e);
+        println!("{:?}", internal_event);
+        self.event_bus.borrow_mut().broadcast(internal_event);
     }
 }
