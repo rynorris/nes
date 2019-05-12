@@ -1,8 +1,8 @@
-use crate::emulator::apu::debug::APUDebug;
-use crate::emulator::components::portal::Portal;
-use crate::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
+use nes::emulator::apu::debug::APUDebug;
+use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
 
-use crate::ui::controller::DebugMode;
+use crate::controller::DebugMode;
+use crate::portal::Portal;
 
 use sdl2::{pixels, rect, render, video};
 

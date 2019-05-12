@@ -1,26 +1,13 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::emulator::ines;
-use crate::emulator::io;
-use crate::emulator::io::event::EventBus;
-use crate::emulator::io::sdl::ImageCapture;
-use crate::emulator::NES;
-
 use crate::emulator::test::assert_image;
 use crate::emulator::test::load_and_run_blargg_test_rom;
+use crate::emulator::test::prepare_ete_test;
 use crate::emulator::test::run_for;
 use crate::emulator::test::test_resource_path;
 
 #[test]
 fn test_instr_timing_1() {
     let path = test_resource_path("instr_timing/rom_singles/1-instr_timing.nes");
-    let rom = ines::ROM::load(&path.into_os_string().into_string().unwrap());
-    let event_bus = Rc::new(RefCell::new(EventBus::new()));
-    let output = Rc::new(RefCell::new(io::Screen::new()));
-    let mut image = ImageCapture::new(output.clone());
-    let audio = io::nop::DummyAudio {};
-    let mut nes = NES::new(event_bus.clone(), output.clone(), audio, rom);
+    let (mut nes, _, mut image) = prepare_ete_test(&path);
 
     // This test tests official instructions followed by unofficial.
     // Since we don't implement unofficial instructions, we need to run for just enough CPU cycles until

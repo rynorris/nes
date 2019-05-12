@@ -1,4 +1,4 @@
-use crate::emulator::components::portal::Portal;
+use crate::portal::Portal;
 
 use sdl2::audio;
 

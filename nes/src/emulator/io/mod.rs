@@ -1,7 +1,6 @@
 pub mod event;
 pub mod nop;
 pub mod palette;
-pub mod sdl;
 
 use std::collections::VecDeque;
 use std::f32::consts::PI;
