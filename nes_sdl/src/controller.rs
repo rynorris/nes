@@ -1,11 +1,19 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{create_dir_all, File};
+use std::path::PathBuf;
 use std::rc::Rc;
+
+use dirs;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use serde::Serialize;
+use serde_json::Serializer;
 
 use nes::emulator::io::event::{Event, EventHandler, Key};
 use nes::emulator::io::{Screen, SimpleAudioOut};
-use nes::emulator::state::{load_state, save_state};
+use nes::emulator::state::SaveState;
 use nes::emulator::{NES, NES_MASTER_CLOCK_HZ};
 
 use crate::portal::Portal;
@@ -34,6 +42,51 @@ impl EmulatorState {
             debug_mode: DebugMode::APU,
         }
     }
+}
+
+fn save_state_dir() -> PathBuf {
+    let mut path = match dirs::data_dir() {
+        Some(path) => path,
+        None => panic!("Couldn't get data dir!"),
+    };
+
+    path.push("nes");
+    path.push("save_states");
+    path
+}
+
+fn save_state_file_path(name: &str) -> PathBuf {
+    let mut state_file_path = save_state_dir();
+    state_file_path.push(format!("{}.gz", name));
+    state_file_path
+}
+
+fn save_state(nes: &mut NES, name: &str) -> Result<(), String> {
+    create_dir_all(save_state_dir()).map_err(|e| e.to_string())?;
+    let state_file = File::create(save_state_file_path(name)).map_err(|e| e.to_string())?;
+    let gzip = GzEncoder::new(state_file, Compression::best());
+    let mut serializer = Serializer::new(gzip);
+
+    let state = nes.freeze();
+
+    state
+        .serialize(&mut serializer)
+        .map_err(|e| e.to_string())?;
+
+    serializer
+        .into_inner()
+        .try_finish()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub fn load_state(nes: &mut NES, name: &str) -> Result<(), String> {
+    let state_file = File::open(save_state_file_path(name)).map_err(|e| e.to_string())?;
+    let gzip = GzDecoder::new(state_file);
+    let state = serde_json::from_reader(gzip).map_err(|e| e.to_string())?;
+    nes.hydrate(state);
+    Ok(())
 }
 
 pub struct Controller {

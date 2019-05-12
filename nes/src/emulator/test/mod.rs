@@ -1,3 +1,4 @@
+mod image_capture;
 mod instr_misc;
 mod instr_test_v5;
 mod instr_timing;
@@ -13,13 +14,14 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use self::md5::{Digest, Md5};
+use md5::{Digest, Md5};
 
 use crate::emulator::ines;
 use crate::emulator::io;
 use crate::emulator::io::event::EventBus;
-use crate::emulator::io::sdl::ImageCapture;
 use crate::emulator::NES;
+
+use image_capture::ImageCapture;
 
 fn run_for(nes: &mut NES, cycles: u64) {
     let mut n = 0;
