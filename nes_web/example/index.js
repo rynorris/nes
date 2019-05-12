@@ -1,8 +1,6 @@
 import { Emulator, Event, Key } from "nes_web";
 
-window.nes_audio = new AudioContext();
-var compressor = window.nes_audio.createDynamicsCompressor();
-compressor.connect(window.nes_audio.destination);
+const nes_audio = new AudioContext();
 
 const render = nes => {
     const screen = document.getElementById("screen");
@@ -34,7 +32,7 @@ const queue_audio = (nes, cycles, samples) => {
         return;
     }
 
-    const ctx = window.nes_audio;
+    const ctx = nes_audio;
     const audioBuffer = ctx.createBuffer(1, buf.length, 48000);
     audioBuffer.getChannelData(0).set(buf);
     const source = ctx.createBufferSource();
