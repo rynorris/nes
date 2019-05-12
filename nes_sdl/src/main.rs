@@ -1,5 +1,3 @@
-extern crate nes;
-
 pub mod audio;
 pub mod compositor;
 pub mod controller;
