@@ -9,6 +9,8 @@ mod test;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use serde::{Deserialize, Serialize};
+
 use crate::emulator::clock;
 use crate::emulator::components::bitfield::BitField;
 use crate::emulator::components::latch;
