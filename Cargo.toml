@@ -2,6 +2,7 @@
 members = [
     "nes",
     "nes_sdl",
+    "nes_web",
 ]
 
 [profile.release]
