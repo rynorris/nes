@@ -1,5 +1,12 @@
 extern crate nes;
 
+pub mod audio;
+pub mod compositor;
+pub mod controller;
+pub mod governer;
+pub mod input;
+pub mod portal;
+
 use std::cell::RefCell;
 use std::env;
 use std::path::Path;
@@ -8,19 +15,21 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
 use nes::emulator::apu::debug::APUDebug;
-use nes::emulator::components::portal::Portal;
 use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::{Event, EventBus};
 use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
 use nes::emulator::NES;
 
-use nes::ui::audio::{AudioQueue, SAMPLE_RATE};
-use nes::ui::compositor::Compositor;
-use nes::ui::controller::{Controller, DebugMode, EmulatorState};
-use nes::ui::governer::Governer;
-use nes::ui::input::InputPump;
-use nes::ui::RENDER_FPS;
+use crate::audio::{AudioQueue, SAMPLE_RATE};
+use crate::compositor::Compositor;
+use crate::controller::{Controller, DebugMode, EmulatorState};
+use crate::governer::Governer;
+use crate::input::InputPump;
+use crate::portal::Portal;
+
+pub const RENDER_FPS: u64 = 60;
+
 
 fn main() {
     // -- Handle Args --

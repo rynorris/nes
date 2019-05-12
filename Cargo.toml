@@ -1,19 +1,8 @@
-[package]
-name = "nes"
-version = "0.1.0"
-authors = ["Ryan Norris <rynorris@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-base64 = "0.10"
-dirs = "1.0"
-md-5 = "0.8"
-sdl2 = { version = "0.31", features = ["unsafe_textures"] }
-serde = "1.0"
-serde_derive = "1.0"
-serde_bytes = "0.10"
-serde_json = "1.0"
-flate2 = "1.0"
+[workspace]
+members = [
+    "nes",
+    "nes_sdl",
+]
 
 [profile.release]
 debug = true

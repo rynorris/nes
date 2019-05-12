@@ -1,7 +1,8 @@
-use crate::emulator::components::portal::Portal;
-use crate::emulator::io::event::{Event, Key};
+use nes::emulator::io::event::{Event, Key};
 use sdl2::event;
 use sdl2::keyboard::Keycode;
+
+use crate::portal::Portal;
 
 // Responsible for collecting SDL events and rebroadcasting them as internal events.
 pub struct InputPump {

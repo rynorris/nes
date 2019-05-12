@@ -3,11 +3,12 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::rc::Rc;
 
-use crate::emulator::components::portal::Portal;
-use crate::emulator::io::event::{Event, EventHandler, Key};
-use crate::emulator::io::{Screen, SimpleAudioOut};
-use crate::emulator::state::{load_state, save_state};
-use crate::emulator::{NES, NES_MASTER_CLOCK_HZ};
+use nes::emulator::io::event::{Event, EventHandler, Key};
+use nes::emulator::io::{Screen, SimpleAudioOut};
+use nes::emulator::state::{load_state, save_state};
+use nes::emulator::{NES, NES_MASTER_CLOCK_HZ};
+
+use crate::portal::Portal;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DebugMode {

@@ -1,0 +1,10 @@
+[package]
+name = "nes_sdl"
+version = "0.1.0"
+authors = ["Ryan Norris <rynorris@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+nes = { path = "../nes" }
+dirs = "1.0"
+sdl2 = { version = "0.31", features = ["unsafe_textures"] }
