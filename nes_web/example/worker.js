@@ -2,7 +2,7 @@ const toArrayBuffer = array => array.buffer.slice(array.byteOffset, array.byteLe
 
 const CYCLES_PER_SECOND = 21477272;
 const FRAMES_PER_SECOND = (1000 / 16);
-const CYCLES_PER_FRAME = 1.5 * CYCLES_PER_SECOND / FRAMES_PER_SECOND;
+const CYCLES_PER_FRAME = CYCLES_PER_SECOND / FRAMES_PER_SECOND;
 
 import("nes_web")
     .then(({ Emulator, Event, Key }) => {
