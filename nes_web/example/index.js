@@ -1,4 +1,7 @@
+const screen = document.getElementById("screen");
+
 const init = () => {
+    const AudioContext = window["AudioContext"] || window["webkitAudioContext"];
     const nes_audio = new AudioContext();
     const worker = new Worker("worker.js");
 
@@ -36,7 +39,6 @@ const init = () => {
     }
 
     const render = frame => {
-        const screen = document.getElementById("screen");
         const tgt = document.createElement("canvas");
         tgt.width = 256;
         tgt.height = 240;
@@ -94,13 +96,17 @@ const selectRom = files => {
         .then(([worker,  rom]) => {
             worker.postMessage({ kind: "rom", data: rom }, [rom]);
 
-            document.onkeydown = event => {
+            screen.onkeydown = event => {
+                event.preventDefault();
                 worker.postMessage({ kind: "keydown", key: event.key });
             };
 
-            document.onkeyup = event => {
+            screen.onkeyup = event => {
+                event.preventDefault();
                 worker.postMessage({ kind: "keyup", key: event.key });
             };
+
+            screen.focus();
         });
 
 
