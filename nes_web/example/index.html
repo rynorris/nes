@@ -5,8 +5,12 @@
     <title>WASM NES</title>
   </head>
   <body>
-    <canvas id="screen" width="512", height="480"></canvas>
-    <input type="file" id="rom-selector" onchange="selectRom(this.files)">
-    <script src="./app.js"></script>
+    <canvas id="screen" width="512", height="480", style="background: black" tabIndex=0></canvas>
+    <div>
+        <label for="rom_selector">Choose a ROM to play (.nes file)</label>
+        <input type="file" id="rom-selector" name="rom_selector" accept=".nes" onchange="selectRom(this.files)">
+        <div>Controls: A = Start, S = Select, Z = A, X = B, Arrow Keys = D-Pad</div>
+    </div>
+    <script src="app.js"></script>
   </body>
 </html>
