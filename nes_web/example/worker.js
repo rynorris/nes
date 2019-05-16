@@ -63,6 +63,7 @@ import("nes_web")
             var key;
             switch (data.kind) {
                 case "rom":
+                    stopRunning();
                     loadRom(data.data);
                     break;
                 case "keydown":
@@ -79,5 +80,8 @@ import("nes_web")
                     break;
             }
         };
+
+        // "ready" message
+        postMessage({});
     });
 
