@@ -263,7 +263,7 @@ impl Mapper for MMC3 {
         self.mirror_mode
     }
 
-    fn irq_triggered(&mut self) -> bool {
+    fn irq_triggered(&self) -> bool {
         self.irq_flag
     }
 }
