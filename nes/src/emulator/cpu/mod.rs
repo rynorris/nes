@@ -45,7 +45,7 @@ impl Into<u8> for Flag {
 
 pub struct CPU {
     // Connection to main memory.
-    memory: Box<ReadWriter>,
+    memory: Box<dyn ReadWriter>,
 
     // Accumulator
     a: u8,
@@ -79,7 +79,7 @@ pub struct CPU {
     trace_buffer: RingBuffer<u8>,
 }
 
-pub fn new(memory: Box<ReadWriter>) -> CPU {
+pub fn new(memory: Box<dyn ReadWriter>) -> CPU {
     let mut p = BitField::new();
     p.load_byte(0x00);
     CPU {

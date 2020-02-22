@@ -70,7 +70,7 @@ pub trait Mirrorer {
 
 pub struct PPU {
     // Device to output rendered pixels to.
-    output: Box<VideoOut>,
+    output: Box<dyn VideoOut>,
 
     // --- Registers.
 
@@ -199,7 +199,7 @@ impl clock::Ticker for PPU {
 }
 
 impl PPU {
-    pub fn new(memory: PPUMemory, output: Box<VideoOut>) -> PPU {
+    pub fn new(memory: PPUMemory, output: Box<dyn VideoOut>) -> PPU {
         PPU {
             output: output,
             ppuctrl: BitField::new(),
@@ -250,9 +250,9 @@ impl PPU {
     // Returns how many PPU cycles the tick took.
     fn tick_internal(&mut self) -> u16 {
         let cycles = match self.scanline {
-            0...239 | 261 => self.tick_render_scanline(),
+            0..=239 | 261 => self.tick_render_scanline(),
             240 => self.tick_idle_scanline(),
-            241...260 => self.tick_vblank_scanline(),
+            241..=260 => self.tick_vblank_scanline(),
             _ => panic!(
                 "Scanline index should never exceed 261.  Got {}.",
                 self.scanline
@@ -281,17 +281,17 @@ impl PPU {
 
             // The data for each tile is fetched durnig this phase.
             // This where the actual pixels for the scanline are output.
-            1...256 => self.tick_render_cycle(),
+            1..=256 => self.tick_render_cycle(),
 
             // The tile data for the sprites on the next scanline are fetched during this phase.
-            257...320 => self.tick_sprite_fetch_cycle(),
+            257..=320 => self.tick_sprite_fetch_cycle(),
 
             // This is where the first two tiles of the next scanline are fetched and loaded into
             // the shift registers.
-            321...336 => self.tick_prefetch_tiles_cycle(),
+            321..=336 => self.tick_prefetch_tiles_cycle(),
 
             // Finally, here two bytes are fetched, but the purpose is unknown.
-            337...340 => self.tick_unknown_fetch(),
+            337..=340 => self.tick_unknown_fetch(),
 
             _ => panic!(
                 "PPU cycle index should never exceed 341.  Got {}.",
@@ -530,17 +530,17 @@ impl PPU {
         match self.cycle {
             0 => self.sprite_reset_state(),
             // These 2 phases do not occur on the pre-render scanline.
-            1...64 => {
+            1..=64 => {
                 if self.scanline != 261 {
                     self.sprite_init_cycle()
                 }
             }
-            65...256 => {
+            65..=256 => {
                 if self.scanline != 261 {
                     self.sprite_evaluation_cycle()
                 }
             }
-            257...320 => self.sprite_fetch_cycle(),
+            257..=320 => self.sprite_fetch_cycle(),
             _ => (),
         }
     }

@@ -66,7 +66,7 @@ pub enum Key {
 
 pub trait EventHandler {
     fn handle_event(&mut self, event: Event);
-    fn handle_event_with_dispatch(&mut self, _dispatch: &FnOnce(Event) -> (), event: Event) {
+    fn handle_event_with_dispatch(&mut self, _dispatch: &dyn FnOnce(Event) -> (), event: Event) {
         self.handle_event(event);
     }
 }

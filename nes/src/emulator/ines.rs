@@ -74,7 +74,7 @@ impl ROM {
         }
     }
 
-    pub fn get_mapper(&self) -> Rc<RefCell<Mapper>> {
+    pub fn get_mapper(&self) -> Rc<RefCell<dyn Mapper>> {
         let prg_rom = self.prg_rom();
         let chr_mem = self.chr_mem();
         let mirror_mode = self.mirror_mode();
