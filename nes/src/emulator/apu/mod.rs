@@ -63,7 +63,7 @@ impl APU {
         }
     }
 
-    pub fn irq_triggered(&mut self) -> bool {
+    pub fn irq_triggered(&self) -> bool {
         self.irq_flag || self.dmc.irq_flag
     }
 
