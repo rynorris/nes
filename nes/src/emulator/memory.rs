@@ -60,7 +60,7 @@ impl IORegisters {
 impl Reader for IORegisters {
     fn read(&mut self, address: u16) -> u8 {
         match address {
-            0x4000...0x4013 | 0x4015 => self.apu.read(address),
+            0x4000..=0x4013 | 0x4015 => self.apu.read(address),
             0x4014 => self.oamdma.unwrap_or(0),
             0x4016 => self.joy1.read(address),
             0x4017 => self.joy2.read(address),
@@ -72,7 +72,7 @@ impl Reader for IORegisters {
 impl Writer for IORegisters {
     fn write(&mut self, address: u16, byte: u8) {
         match address {
-            0x4000...0x4013 | 0x4015 => self.apu.write(address, byte),
+            0x4000..=0x4013 | 0x4015 => self.apu.write(address, byte),
             0x4014 => self.oamdma = Some(byte),
             0x4016 => self.joy1.write(address, byte),
             0x4017 => {
@@ -112,11 +112,11 @@ impl CPUMemory {
 
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         match address {
-            0x0000...0x1FFF => Some((&mut self.ram, address & 0x7FF)),
-            0x2000...0x3FFF => Some((&mut self.ppu_registers, address & 0x7)),
-            0x4000...0x401F => Some((&mut self.io_registers, address)),
-            0x6000...0x7FFF => Some((&mut self.sram, address - 0x6000)),
-            0x8000...0xFFFF => Some((&mut self.prg_rom, address)),
+            0x0000..=0x1FFF => Some((&mut self.ram, address & 0x7FF)),
+            0x2000..=0x3FFF => Some((&mut self.ppu_registers, address & 0x7)),
+            0x4000..=0x401F => Some((&mut self.io_registers, address)),
+            0x6000..=0x7FFF => Some((&mut self.sram, address - 0x6000)),
+            0x8000..=0xFFFF => Some((&mut self.prg_rom, address)),
             _ => None,
         }
     }
@@ -158,8 +158,8 @@ impl PPUMemory {
     fn map(&mut self, address: u16) -> Option<(&mut Box<dyn ReadWriter>, u16)> {
         // Whole thing is mirrored above $4000.
         match address & 0x3FFF {
-            0x0000...0x1FFF => Some((&mut self.chr_mem, address & 0x3FFF)),
-            0x2000...0x3EFF => {
+            0x0000..=0x1FFF => Some((&mut self.chr_mem, address & 0x3FFF)),
+            0x2000..=0x3EFF => {
                 // Nametable and nametable mirrors.
                 // Note that we don't just literally mirror the address horizontally/vertically.
                 // We need to make sure we always read from one of just 2 banks of memory.
@@ -172,7 +172,7 @@ impl PPUMemory {
                 let mirrored_addr = (nt_bank << 10) | (address & 0x03FF);
                 Some((&mut self.vram, mirrored_addr & 0x3FFF))
             }
-            0x3F00...0x3FFF => {
+            0x3F00..=0x3FFF => {
                 // Palettes and palette mirrors.
                 let mirrored_addr = if address % 4 == 0 {
                     // Colour 0 in sprite palettes is mirrored to the BG palettes.

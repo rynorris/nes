@@ -39,7 +39,7 @@ pub struct NES {
     pub cpu: Rc<RefCell<cpu::CPU>>,
     pub ppu: Rc<RefCell<ppu::PPU>>,
     pub apu: Rc<RefCell<apu::APU>>,
-    pub mapper: Rc<RefCell<memory::Mapper>>,
+    pub mapper: Rc<RefCell<dyn memory::Mapper>>,
     pub ram: Rc<RefCell<memory::Memory>>,
     pub sram: Rc<RefCell<memory::Memory>>,
     pub vram: Rc<RefCell<memory::Memory>>,

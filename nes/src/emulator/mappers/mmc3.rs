@@ -72,56 +72,56 @@ impl Mapper for MMC3 {
     fn read_chr(&mut self, address: u16) -> u8 {
         let (bank_ix, bank_size) = match address {
             // CHR banks.
-            0x0000...0x03FF => {
+            0x0000..=0x03FF => {
                 if self.chr_inversion {
                     (2, 0x400)
                 } else {
                     (0, 0x800)
                 }
             }
-            0x0400...0x07FF => {
+            0x0400..=0x07FF => {
                 if self.chr_inversion {
                     (3, 0x400)
                 } else {
                     (0, 0x800)
                 }
             }
-            0x0800...0x0BFF => {
+            0x0800..=0x0BFF => {
                 if self.chr_inversion {
                     (4, 0x400)
                 } else {
                     (1, 0x800)
                 }
             }
-            0x0C00...0x0FFF => {
+            0x0C00..=0x0FFF => {
                 if self.chr_inversion {
                     (5, 0x400)
                 } else {
                     (1, 0x800)
                 }
             }
-            0x1000...0x13FF => {
+            0x1000..=0x13FF => {
                 if self.chr_inversion {
                     (0, 0x800)
                 } else {
                     (2, 0x400)
                 }
             }
-            0x1400...0x17FF => {
+            0x1400..=0x17FF => {
                 if self.chr_inversion {
                     (0, 0x800)
                 } else {
                     (3, 0x400)
                 }
             }
-            0x1800...0x1BFF => {
+            0x1800..=0x1BFF => {
                 if self.chr_inversion {
                     (1, 0x800)
                 } else {
                     (4, 0x400)
                 }
             }
-            0x1C00...0x1FFF => {
+            0x1C00..=0x1FFF => {
                 if self.chr_inversion {
                     (1, 0x800)
                 } else {
@@ -155,28 +155,28 @@ impl Mapper for MMC3 {
     fn read_prg(&mut self, address: u16) -> u8 {
         let (bank_ix, bank_size) = match address {
             // PRG banks.
-            0x8000...0x9FFF => {
+            0x8000..=0x9FFF => {
                 if self.prg_inversion {
                     (8, 0x2000)
                 } else {
                     (6, 0x2000)
                 }
             }
-            0xA000...0xBFFF => {
+            0xA000..=0xBFFF => {
                 if self.prg_inversion {
                     (7, 0x2000)
                 } else {
                     (7, 0x2000)
                 }
             }
-            0xC000...0xDFFF => {
+            0xC000..=0xDFFF => {
                 if self.prg_inversion {
                     (6, 0x2000)
                 } else {
                     (8, 0x2000)
                 }
             }
-            0xE000...0xFFFF => {
+            0xE000..=0xFFFF => {
                 if self.prg_inversion {
                     (9, 0x2000)
                 } else {

@@ -31,7 +31,7 @@ const LENGTH_COUNTER_LOOKUP: [u8; 0x20] = [
 ];
 
 pub struct APU {
-    output: Box<AudioOut>,
+    output: Box<dyn AudioOut>,
 
     sequence_mode: SequenceMode,
     cycle_counter: u64,

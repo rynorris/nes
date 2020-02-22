@@ -150,8 +150,7 @@ fn ui_loop(
 
         let &(ref lock, ref cvar) = &*sync;
         let guard = lock.lock().unwrap();
-        cvar.wait_timeout(guard, Duration::from_millis(1000 / RENDER_FPS))
-            .unwrap();
+        let _ = cvar.wait_timeout(guard, Duration::from_millis(1000 / RENDER_FPS)).unwrap();
     }
 }
 
