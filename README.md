@@ -1,7 +1,7 @@
 # nes
 NES emulator written in Rust
 
-[![Build Status](https://travis-ci.org/rynorris/nes.svg?branch=master)](https://travis-ci.org/rynorris/nes) [![codecov](https://codecov.io/gh/rynorris/nes/branch/master/graph/badge.svg)](https://codecov.io/gh/rynorris/nes)
+[![CircleCI](https://circleci.com/gh/rynorris/nes.svg?style=svg)](https://circleci.com/gh/rynorris/nes) [![codecov](https://codecov.io/gh/rynorris/nes/branch/master/graph/badge.svg)](https://codecov.io/gh/rynorris/nes)
 
 ## Emulator Status
 
