@@ -33,7 +33,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
 
-    let rom_path = match args.get(2) {
+    let rom_path = match args.get(1) {
         None => panic!("You must pass in a path to a iNes ROM file."),
         Some(path) => path,
     };
