@@ -169,11 +169,11 @@ impl NES {
             self.nmi_pin = false;
         }
 
-        if self.apu.borrow_mut().irq_triggered() {
+        if self.apu.borrow().irq_triggered() {
             self.cpu.borrow_mut().trigger_irq();
         }
 
-        if self.mapper.borrow_mut().irq_triggered() {
+        if self.mapper.borrow().irq_triggered() {
             self.cpu.borrow_mut().trigger_irq();
         }
 

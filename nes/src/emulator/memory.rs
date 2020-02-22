@@ -207,7 +207,7 @@ pub trait Mapper: SaveState<'static, MapperState> {
     fn read_prg(&mut self, address: u16) -> u8;
     fn write_prg(&mut self, address: u16, byte: u8);
     fn mirror_mode(&self) -> MirrorMode;
-    fn irq_triggered(&mut self) -> bool {
+    fn irq_triggered(&self) -> bool {
         false
     }
 }
