@@ -12,12 +12,12 @@ use std::rc::Rc;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
+use nes::emulator::NES;
 use nes::emulator::apu::debug::APUDebug;
 use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::{Event, EventBus};
 use nes::emulator::ppu::debug::{PPUDebug, PPUDebugRender};
-use nes::emulator::NES;
 
 use crate::audio::{AudioQueue, SAMPLE_RATE};
 use crate::compositor::Compositor;

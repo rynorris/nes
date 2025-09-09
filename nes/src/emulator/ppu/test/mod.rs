@@ -3,7 +3,7 @@ mod data;
 
 use crate::emulator::memory;
 use crate::emulator::memory::Writer;
-use crate::emulator::ppu::{Colour, MirrorMode, Mirrorer, VideoOut, PPU};
+use crate::emulator::ppu::{Colour, MirrorMode, Mirrorer, PPU, VideoOut};
 
 fn new_ppu(output: Box<dyn VideoOut>) -> PPU {
     let ppu_memory = memory::PPUMemory::new(

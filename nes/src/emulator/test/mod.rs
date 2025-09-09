@@ -16,10 +16,10 @@ use std::rc::Rc;
 
 use md5::{Digest, Md5};
 
+use crate::emulator::NES;
 use crate::emulator::ines;
 use crate::emulator::io;
 use crate::emulator::io::event::EventBus;
-use crate::emulator::NES;
 
 use image_capture::ImageCapture;
 

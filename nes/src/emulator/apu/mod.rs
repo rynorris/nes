@@ -7,7 +7,7 @@ use std::rc::Rc;
 use crate::emulator::clock::Ticker;
 use crate::emulator::memory::{Reader, Writer};
 
-use self::synth::{Noise, Pulse, Sweep, Triangle, DMC};
+use self::synth::{DMC, Noise, Pulse, Sweep, Triangle};
 
 pub trait AudioOut {
     fn emit(&mut self, sample: f32);

@@ -1,9 +1,9 @@
 use crate::emulator::clock::Ticker;
 use crate::emulator::memory::Writer;
+use crate::emulator::ppu::test::ImageCapture;
 use crate::emulator::ppu::test::data;
 use crate::emulator::ppu::test::load_data_into_vram;
 use crate::emulator::ppu::test::new_ppu;
-use crate::emulator::ppu::test::ImageCapture;
 
 #[test]
 fn test_render_simple_background() {
