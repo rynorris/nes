@@ -10,7 +10,7 @@ jobs:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
       - run:
           name: Install Packages
-          command: sudo apt install libsdl2-dev
+          command: sudo apt update && sudo apt install libsdl2-dev
       - run:
           name: Build
           command: cargo build
