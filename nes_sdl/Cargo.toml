@@ -2,7 +2,7 @@
 name = "nes_sdl"
 version = "0.1.0"
 authors = ["Ryan Norris <rynorris@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 nes = { path = "../nes" }
