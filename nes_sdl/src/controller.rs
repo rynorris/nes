@@ -1,13 +1,13 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs::{create_dir_all, File};
+use std::fs::{File, create_dir_all};
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use dirs;
+use flate2::Compression;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
-use flate2::Compression;
 use serde::Serialize;
 use serde_json::Serializer;
 

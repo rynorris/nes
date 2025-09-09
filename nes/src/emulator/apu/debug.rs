@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::emulator::apu::synth::{Noise, Pulse, Triangle, DMC};
 use crate::emulator::apu::APU;
+use crate::emulator::apu::synth::{DMC, Noise, Pulse, Triangle};
 
 pub struct APUDebug {
     apu: Rc<RefCell<APU>>,
@@ -74,12 +74,12 @@ impl APUDebug {
                 };
 
                 for ix in from..=to {
-                    buffer[(((y + ix) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+                    buffer[((y + ix) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
                 }
             }
             prev_y = dy;
 
-            buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+            buffer[((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
         }
     }
 
@@ -94,7 +94,7 @@ impl APUDebug {
             let seq_ix = (dx * APUDebug::WAVEFORM_SCALE) / (period as usize);
             let dy = (15 - Triangle::SEQUENCE[seq_ix % 32] + 8) as usize;
 
-            buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+            buffer[((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
         }
     }
 
@@ -132,11 +132,11 @@ impl APUDebug {
                 };
 
                 for ix in from..=to {
-                    buffer[(((y + ix) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+                    buffer[((y + ix) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
                 }
             }
             prev_y = dy;
-            buffer[(((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+            buffer[((y + dy) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
         }
     }
 
@@ -151,21 +151,21 @@ impl APUDebug {
                 continue;
             }
 
-            buffer[(((y + 16) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+            buffer[((y + 16) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
 
             let half_inverse_width = (APUDebug::WAVEFORM_WIDTH / 2).saturating_sub(bar_width / 4);
             if dx < half_inverse_width || APUDebug::WAVEFORM_WIDTH - dx < half_inverse_width {
                 continue;
             }
-            buffer[(((y + 14) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
-            buffer[(((y + 18) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+            buffer[((y + 14) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
+            buffer[((y + 18) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
         }
     }
 
     fn draw_silence(buffer: &mut [u8], x: usize, y: usize) {
         // Base volume level is at 15, +8 to center it in the 32px tall box.
         for dx in 0..APUDebug::WAVEFORM_WIDTH {
-            buffer[(((y + 15 + 8) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3)] = 0xFF;
+            buffer[((y + 15 + 8) * APUDebug::WAVEFORM_WIDTH + x + dx) * 3] = 0xFF;
         }
     }
 }

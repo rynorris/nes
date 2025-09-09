@@ -3,14 +3,14 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/rust:latest
+      - image: cimg/rust:1.89.0
     steps:
       - checkout
       - restore_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
       - run:
           name: Install Packages
-          command: sudo apt install libsdl2-dev
+          command: sudo apt update && sudo apt install libsdl2-dev
       - run:
           name: Build
           command: cargo build
@@ -19,7 +19,7 @@ jobs:
           command: cargo test
       - run:
           name: Lint
-          command: rustup component add rustfmt && cargo fmt --all -- --check
+          command: cargo fmt --all -- --check
       - save_cache:
           key: v1-cargo-{{ checksum "Cargo.lock" }}
           paths:

@@ -20,8 +20,8 @@ use std::rc::Rc;
 
 use crate::emulator::apu::AudioOut;
 use crate::emulator::controller::Button;
-use crate::emulator::io::event::{EventBus, Key};
 use crate::emulator::io::Screen;
+use crate::emulator::io::event::{EventBus, Key};
 use crate::emulator::memory::{IORegisters, Writer};
 use crate::emulator::state::{NESState, SaveState};
 

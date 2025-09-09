@@ -5,10 +5,10 @@ use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 
+use nes::emulator::NES;
 use nes::emulator::ines;
 use nes::emulator::io;
 use nes::emulator::io::event::EventBus;
-use nes::emulator::NES;
 
 #[wasm_bindgen]
 pub struct Emulator {

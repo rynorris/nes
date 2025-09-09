@@ -2,7 +2,7 @@
 // -- Test each mapper once normally, and then once with a savestate.
 
 macro_rules! test_mapper {
-    ($name:ident, $rom:expr, $cycles:expr) => {
+    ($name:ident, $rom:expr_2021, $cycles:expr_2021) => {
         mod $name {
             use crate::emulator::state::SaveState;
 

@@ -70,7 +70,7 @@ mod test {
     }
 
     macro_rules! shr_test {
-        ($name:ident: $inp:expr => $out:expr, $cry:expr) => {
+        ($name:ident: $inp:expr_2021 => $out:expr_2021, $cry:expr_2021) => {
             #[test]
             fn $name() {
                 let (out, carry) = shift_right($inp);
@@ -85,7 +85,7 @@ mod test {
     shr_test!(test_shr_128: 0b1000_0000 => 0b0100_0000, false);
 
     macro_rules! shl_test {
-        ($name:ident: $inp:expr => $out:expr, $cry:expr) => {
+        ($name:ident: $inp:expr_2021 => $out:expr_2021, $cry:expr_2021) => {
             #[test]
             fn $name() {
                 let (out, carry) = shift_left($inp);
@@ -100,7 +100,7 @@ mod test {
     shl_test!(test_shl_carry: 0b1000_0000 => 0b0000_0000, true);
 
     macro_rules! rtr_test {
-        ($name:ident: $inp:expr, $cry:expr => $out:expr, $ncy:expr) => {
+        ($name:ident: $inp:expr_2021, $cry:expr_2021 => $out:expr_2021, $ncy:expr_2021) => {
             #[test]
             fn $name() {
                 let (out, carry) = rotate_right($inp, $cry);
@@ -117,7 +117,7 @@ mod test {
     rtr_test!(test_rtr_128_carry: 0b1000_0000, true => 0b1100_0000, false);
 
     macro_rules! rtl_test {
-        ($name:ident: $inp:expr, $cry:expr => $out:expr, $ncy:expr) => {
+        ($name:ident: $inp:expr_2021, $cry:expr_2021 => $out:expr_2021, $ncy:expr_2021) => {
             #[test]
             fn $name() {
                 let (out, carry) = rotate_left($inp, $cry);
@@ -134,7 +134,7 @@ mod test {
     rtl_test!(test_rtl_128_carry: 0b1000_0000, true => 0b0000_0001, true);
 
     macro_rules! b2h_test {
-        ($name:ident: $bcd:expr => $hex:expr) => {
+        ($name:ident: $bcd:expr_2021 => $hex:expr_2021) => {
             #[test]
             fn $name() {
                 assert_eq!(bcd_to_hex($bcd), $hex);
@@ -148,7 +148,7 @@ mod test {
     b2h_test!(test_b2h_98: 0b1001_1000 => 98);
 
     macro_rules! h2b_test {
-        ($name:ident: $hex:expr => $bcd:expr) => {
+        ($name:ident: $hex:expr_2021 => $bcd:expr_2021) => {
             #[test]
             fn $name() {
                 assert_eq!(hex_to_bcd($hex), $bcd);

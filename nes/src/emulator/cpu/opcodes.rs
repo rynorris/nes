@@ -1,5 +1,5 @@
 macro_rules! opcode {
-    ($name:ident, $value:expr) => {
+    ($name:ident, $value:expr_2021) => {
         pub const $name: u8 = $value;
     };
 }
